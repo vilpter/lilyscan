@@ -98,6 +98,9 @@ def compile_ly(
     if unknown:
         raise ValueError(f"unsupported formats: {sorted(unknown)}")
     s = settings or Settings.from_env()
+    # LilyPond runs from the source's directory, so relative paths must be resolved first.
+    source = source.resolve()
+    out_dir = out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     base = out_dir / source.stem
 
