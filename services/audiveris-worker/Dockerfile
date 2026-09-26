@@ -27,15 +27,23 @@ ENV DEBIAN_FRONTEND=noninteractive \
     AUDIVERIS_MAX_HEAP=3G \
     LILYSCAN_DATA_DIR=/data
 
+# The .deb is unpacked rather than installed: its post-install script only does
+# desktop integration (menus, MIME types), which fails in a headless container.
+# Its declared runtime dependencies are installed explicitly, minus xdg-utils.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl python3.12 fontconfig \
  && curl -fsSL -o /tmp/audiveris.deb \
       "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}-ubuntu24.04-x86_64.deb" \
- && apt-get install -y --no-install-recommends /tmp/audiveris.deb \
- && pkg="$(dpkg-deb -f /tmp/audiveris.deb Package)" \
- && launcher="$(dpkg -L "$pkg" | grep -E '/bin/Audiveris$' | head -n1)" \
- && cfg="$(dpkg -L "$pkg" | grep -E '/Audiveris\.cfg$' | head -n1)" \
- && test -n "$launcher" && test -n "$cfg" \
+ && deps="$(dpkg-deb -f /tmp/audiveris.deb Depends \
+      | tr ',' '\n' | sed -e 's/([^)]*)//g' -e 's/|.*//' -e 's/[[:space:]]//g' \
+      | grep -v -e '^$' -e '^xdg-utils$')" \
+ && echo "Audiveris runtime dependencies:" $deps \
+ && apt-get install -y --no-install-recommends $deps \
+ && dpkg-deb -x /tmp/audiveris.deb / \
+ && files="$(dpkg-deb -c /tmp/audiveris.deb | awk '{print $NF}' | sed 's|^\./|/|')" \
+ && launcher="$(echo "$files" | grep -E '/bin/Audiveris$' | head -n1)" \
+ && cfg="$(echo "$files" | grep -E '/Audiveris\.cfg$' | head -n1)" \
+ && test -n "$launcher" && test -n "$cfg" && test -x "$launcher" \
  && grep -q '^java-options=-Xmx' "$cfg" \
  && ln -s "$launcher" /usr/local/bin/audiveris \
  && ln -s "$cfg" /usr/local/etc/Audiveris.cfg \
