@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import re
+import shutil
 import subprocess
+import sys
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -84,9 +87,13 @@ def compile_ly(
     formats: Sequence[str] = ("pdf",),
     *,
     point_and_click: bool = False,
+    extra_args: Sequence[str] = (),
     settings: Settings | None = None,
 ) -> CompileResult:
-    """Compile ``source`` into ``out_dir``; output files share the source's stem."""
+    """Compile ``source`` into ``out_dir``; output files share the source's stem.
+
+    ``extra_args`` are passed to every run, e.g. ``["-dresolution=300"]`` for PNGs.
+    """
     unknown = set(formats) - set(FORMATS)
     if unknown:
         raise ValueError(f"unsupported formats: {sorted(unknown)}")
@@ -102,7 +109,7 @@ def compile_ly(
 
     returncode, log = 0, ""
     for flags in runs:
-        cmd = [s.lilypond_bin, "--loglevel=WARNING", f"--output={base}", *flags]
+        cmd = [s.lilypond_bin, "--loglevel=WARNING", f"--output={base}", *flags, *extra_args]
         if not point_and_click:
             cmd.append("-dno-point-and-click")
         cmd.append(str(source))
@@ -129,6 +136,31 @@ def compile_ly(
     diagnostics = list(dict.fromkeys(parse_diagnostics(log)))
     outputs = sorted(p for p in out_dir.glob(f"{source.stem}*") if p.suffix.lstrip(".") in formats)
     return CompileResult(returncode, log, diagnostics, outputs)
+
+
+def lilypond_tool(tool: str, settings: Settings | None = None) -> list[str]:
+    """Command prefix for a script shipped with LilyPond, such as ``musicxml2ly``.
+
+    Linux builds ship executable scripts next to ``lilypond``; Windows builds ship
+    ``<tool>.py`` plus a bundled ``python.exe``.
+    """
+    s = settings or Settings.from_env()
+    exe = shutil.which(s.lilypond_bin)
+    if exe is None:
+        raise FileNotFoundError(f"LilyPond not found ({s.lilypond_bin})")
+    bin_dir = Path(exe).resolve().parent
+    script = bin_dir / tool
+    if script.is_file() and os.name != "nt":
+        return [str(script)]
+    py_script = bin_dir / f"{tool}.py"
+    if py_script.is_file():
+        for name in ("python.exe", "python3", "python"):
+            if (bin_dir / name).is_file():
+                return [str(bin_dir / name), str(py_script)]
+        return [sys.executable, str(py_script)]
+    if script.is_file():
+        return [sys.executable, str(script)]
+    raise FileNotFoundError(f"{tool} not found next to {exe}")
 
 
 def lilypond_version(settings: Settings | None = None) -> str | None:

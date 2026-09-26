@@ -1,0 +1,197 @@
+{
+  "description": "Seed corpus: generated pieces with exact MusicXML ground truth (design doc \u00a79.1).",
+  "pieces": [
+    {
+      "id": "solo-01",
+      "category": "solo",
+      "seed": 100,
+      "measures": 16
+    },
+    {
+      "id": "solo-02",
+      "category": "solo",
+      "seed": 101,
+      "measures": 16
+    },
+    {
+      "id": "solo-03",
+      "category": "solo",
+      "seed": 102,
+      "measures": 16
+    },
+    {
+      "id": "solo-04",
+      "category": "solo",
+      "seed": 103,
+      "measures": 16
+    },
+    {
+      "id": "solo-05",
+      "category": "solo",
+      "seed": 104,
+      "measures": 16
+    },
+    {
+      "id": "solo-06",
+      "category": "solo",
+      "seed": 105,
+      "measures": 16
+    },
+    {
+      "id": "piano-01",
+      "category": "piano",
+      "seed": 100,
+      "measures": 12
+    },
+    {
+      "id": "piano-02",
+      "category": "piano",
+      "seed": 101,
+      "measures": 12
+    },
+    {
+      "id": "piano-03",
+      "category": "piano",
+      "seed": 102,
+      "measures": 12
+    },
+    {
+      "id": "piano-04",
+      "category": "piano",
+      "seed": 103,
+      "measures": 12
+    },
+    {
+      "id": "piano-05",
+      "category": "piano",
+      "seed": 104,
+      "measures": 12
+    },
+    {
+      "id": "piano-06",
+      "category": "piano",
+      "seed": 105,
+      "measures": 12
+    },
+    {
+      "id": "satb-01",
+      "category": "satb",
+      "seed": 100,
+      "measures": 8,
+      "language": "lat"
+    },
+    {
+      "id": "satb-02",
+      "category": "satb",
+      "seed": 101,
+      "measures": 8,
+      "language": "lat"
+    },
+    {
+      "id": "satb-03",
+      "category": "satb",
+      "seed": 102,
+      "measures": 8,
+      "language": "deu"
+    },
+    {
+      "id": "satb-04",
+      "category": "satb",
+      "seed": 103,
+      "measures": 8,
+      "language": "deu"
+    },
+    {
+      "id": "satb-05",
+      "category": "satb",
+      "seed": 104,
+      "measures": 8,
+      "language": "fra"
+    },
+    {
+      "id": "satb-06",
+      "category": "satb",
+      "seed": 105,
+      "measures": 8,
+      "language": "fra"
+    },
+    {
+      "id": "satb-07",
+      "category": "satb",
+      "seed": 106,
+      "measures": 8,
+      "language": "eng"
+    },
+    {
+      "id": "satb-08",
+      "category": "satb",
+      "seed": 107,
+      "measures": 8,
+      "language": "eng"
+    },
+    {
+      "id": "leadsheet-01",
+      "category": "leadsheet",
+      "seed": 100,
+      "measures": 12,
+      "language": "eng"
+    },
+    {
+      "id": "leadsheet-02",
+      "category": "leadsheet",
+      "seed": 101,
+      "measures": 12,
+      "language": "fra"
+    },
+    {
+      "id": "leadsheet-03",
+      "category": "leadsheet",
+      "seed": 102,
+      "measures": 12,
+      "language": "deu"
+    },
+    {
+      "id": "leadsheet-04",
+      "category": "leadsheet",
+      "seed": 103,
+      "measures": 12,
+      "language": "eng"
+    },
+    {
+      "id": "quartet-01",
+      "category": "quartet",
+      "seed": 100,
+      "measures": 8
+    },
+    {
+      "id": "quartet-02",
+      "category": "quartet",
+      "seed": 101,
+      "measures": 8
+    },
+    {
+      "id": "quartet-03",
+      "category": "quartet",
+      "seed": 102,
+      "measures": 8
+    },
+    {
+      "id": "quartet-04",
+      "category": "quartet",
+      "seed": 103,
+      "measures": 8
+    },
+    {
+      "id": "quartet-05",
+      "category": "quartet",
+      "seed": 104,
+      "measures": 8
+    },
+    {
+      "id": "quartet-06",
+      "category": "quartet",
+      "seed": 105,
+      "measures": 8
+    }
+  ]
+}
