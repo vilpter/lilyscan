@@ -8,7 +8,7 @@ Sheet music (PDF, scans, phone photos) → editable LilyPond, via optical music 
 **Revision 3 (2026-09-26):**
 - Closed D5 (LilyPond 2.26.0) and added D8 (name, public repo, project management).
 - Recorded what M0 measured and confirmed about Audiveris 5.11.0 (§5, Stage 2, Stage 3).
-- Opened D9: whether to align the implementation stack with Audiveris's JVM stack (§5.2).
+- Opened and closed D9: the implementation stack stays Python around the Audiveris CLI (§5.2).
 - Added the synthetic seed corpus (§9.1) and a status log (§14).
 
 ---
@@ -53,7 +53,7 @@ Ingest sheet music (born-digital PDF, scanned print, phone photo) and produce **
 | D6 | Recognition engine | **Wrap Audiveris; do not fork it.** Talk to it only through its public surfaces: batch CLI, `-constant key=value` overrides, exported MusicXML, and saved `.omr` project files. Send bugs and fixes upstream as issues or PRs with minimal repros from the corpus. Keep a local patch only as a last resort, and only with explicit approval. |
 | D7 | Audiveris version | Pin one release (currently **5.11.0**) in the Audiveris worker image. An upgrade is a deliberate change: run the full eval harness on the new release and bump only if nothing regresses. The `.omr` reader is versioned against the pinned release. |
 | D8 | Name, repository, management | **Lilyscan**, at `github.com/vilpter/lilyscan`, public.<br>• Commits use the GitHub no-reply address and conventional-commit messages, one or more per milestone.<br>• Milestones M0–M10 are GitHub Milestones, with one issue per deliverable and exit criterion, labeled by pipeline stage and tracked on a GitHub Projects board.<br>• CI publishes the `api`, `worker`, and `audiveris` images to `ghcr.io/vilpter/lilyscan-*`, so the homelab pulls images instead of building them.<br>• The CUDA image builds only on manual dispatch or a weekly schedule. |
-| D9 | Implementation stack | **OPEN.** Keep Python around the Audiveris CLI, or align with Audiveris's JVM stack. The options and a recommendation are in §5.2. Decide before M1 code lands, because the M0 skeleton is Python. |
+| D9 | Implementation stack | **Python around the Audiveris CLI (option A)**, decided 2026-09-26. Option D (a small JVM tool that exports the `.omr` model to project-owned JSON) is the fallback if the Python `.omr` reader proves too fragile at M3. The analysis is in §5.2. |
 
 ## 5. System Architecture
 
@@ -75,7 +75,7 @@ Ingest sheet music (born-digital PDF, scanned print, phone photo) and produce **
                      all stages read/write ─▶ shared artifact store (per-stage JSON, images, .omr, .mxl, .ly)
 ```
 
-- **Backend:** Python 3.12, FastAPI, RQ on Valkey, which speaks the Redis protocol (subject to D9, §5.2).
+- **Backend:** Python 3.12, FastAPI, RQ on Valkey, which speaks the Redis protocol (D9).
   - A job is a chain of RQ jobs linked with `depends_on`: `engine_transcribe` on the `engine` queue, then `pipeline_finish` on the `pipeline` queue.
   - Job records live in SQLite (`jobs.sqlite` in the data volume), with a Postgres-compatible schema.
 - **Pipeline worker image:** includes LilyPond, OpenCV, PyMuPDF, music21, and ONNX Runtime. PyTorch is included only in the CUDA variant or once a custom model is added. Built in CPU and CUDA variants (§5.1).
@@ -126,7 +126,7 @@ Ingest sheet music (born-digital PDF, scanned print, phone photo) and produce **
   - These are initial targets; revise them after the M1 measurements on the homelab CPU.
 - **CI runs CPU-only.** GPU tests are marked (`@pytest.mark.gpu`) and skipped when no GPU is present. Audiveris-dependent tests are marked (`@pytest.mark.engine`) and run in a CI job that uses the Audiveris worker image.
 
-### 5.2 Stack Alignment with Audiveris (D9, open)
+### 5.2 Stack Alignment with Audiveris (D9, decided: option A)
 
 Audiveris is a Java application: a Gradle build, a bundled Java 25 runtime, a Swing GUI, JAXB for `.omr` and MusicXML (proxymusic), PDFBox, and Tesseract and Leptonica through JavaCPP. It is **not published as a library**; only `org.audiveris:proxymusic` is on Maven Central. Any in-process use means taking jars from the release package or building from source.
 
@@ -159,7 +159,7 @@ Audiveris is a Java application: a Gradle build, a bundled Java 25 runtime, a Sw
 - **D6 compatibility:** options B and C vendor the Audiveris jars. That amounts to linking rather than wrapping, and would need D6 amended. Option D confines this to one small, replaceable tool.
 - **Existing work:** the M0 skeleton (~700 lines of Python) is small; this is not a deciding factor either.
 
-**Recommendation: A, with D held in reserve for M3.** Everything this project owns is either Python-leaning (CV, ML, music analysis, LilyPond tooling, evaluation) or neutral (web, queue). The one place the JVM clearly wins is reading Audiveris's model, and D gets that benefit without moving the whole stack. **Choose C only if you would rather maintain Java than Python**, for example if contributing upstream to Audiveris becomes a major goal. Maintainer fluency matters more than any row in the tables above.
+**Decided (2026-09-26): option A, with D held in reserve for M3.** Everything this project owns is either Python-leaning (CV, ML, music analysis, LilyPond tooling, evaluation) or neutral (web, queue). The one place the JVM clearly wins is reading Audiveris's model, and D gets that benefit without moving the whole stack. **Choose C only if you would rather maintain Java than Python**, for example if contributing upstream to Audiveris becomes a major goal. Maintainer fluency matters more than any row in the tables above.
 
 ## 6. Recognition Pipeline (core of the project)
 
@@ -396,7 +396,7 @@ Build strategy: M2 delivers a working product built on Audiveris. Each later mil
 
 ## 11. Proposed Repo Layout
 
-Assumes option A (D9). Option C would replace this with a Gradle multi-module layout.
+Option A (D9): Python throughout, with Audiveris as an external process.
 
 ```
 lilyscan/
@@ -473,4 +473,4 @@ lilyscan/
 
 | Date | Milestone | State |
 |---|---|---|
-| 2026-09-26 | M0 | Implemented locally and renamed to Lilyscan: package `lilyscan`, service package `lilyscan_app`, CLI `lilyscan`, images `lilyscan-*`, env vars `LILYSCAN_*`. Redis replaced by Valkey 8.<br>• Python package with config, device abstraction, LilyPond runner, and Audiveris runner.<br>• FastAPI job API, SQLite job store, RQ dispatch, and worker entry points.<br>• Dockerfiles (api, worker cpu/cuda, audiveris) with OCI labels; Compose file pointing at GHCR images; CI (tests, forward-compatible LilyPond check, image build, smoke test, GHCR publish on `main`); separate on-demand/weekly CUDA image workflow.<br>• Audiveris heap cap via an entrypoint that rewrites the launcher config; checksum-pinned full `tessdata` English model; OCR-failure detection in the runner, the engine job, and the smoke test.<br>• AGPL-3.0 `LICENSE`; `docs/design.md`.<br>• 27 tests pass, including real-Audiveris integration tests with working OCR; ruff and `mypy --strict` pass.<br>• Verified on the dev machine: LilyPond 2.26.0 compile; Audiveris 5.11.0 transcription (PNG and PDF → `.omr` + `.mxl`, OCR on); entrypoint heap rewrite and validation.<br>• CI green on GitHub: all three images build, the engine smoke test passes in Docker (`.omr` + `.mxl`, OCR languages: eng), and images are published to `ghcr.io/vilpter/lilyscan-{api,worker,audiveris}`. The first CI runs surfaced and fixed the two container-install issues in §5.<br>**Open:** `docker compose up` on the homelab (#2); CUDA image build (#3); make the GHCR packages public (#4); D9 stack decision (#5). |
+| 2026-09-26 | M0 | Implemented locally and renamed to Lilyscan: package `lilyscan`, service package `lilyscan_app`, CLI `lilyscan`, images `lilyscan-*`, env vars `LILYSCAN_*`. Redis replaced by Valkey 8.<br>• Python package with config, device abstraction, LilyPond runner, and Audiveris runner.<br>• FastAPI job API, SQLite job store, RQ dispatch, and worker entry points.<br>• Dockerfiles (api, worker cpu/cuda, audiveris) with OCI labels; Compose file pointing at GHCR images; CI (tests, forward-compatible LilyPond check, image build, smoke test, GHCR publish on `main`); separate on-demand/weekly CUDA image workflow.<br>• Audiveris heap cap via an entrypoint that rewrites the launcher config; checksum-pinned full `tessdata` English model; OCR-failure detection in the runner, the engine job, and the smoke test.<br>• AGPL-3.0 `LICENSE`; `docs/design.md`.<br>• 27 tests pass, including real-Audiveris integration tests with working OCR; ruff and `mypy --strict` pass.<br>• Verified on the dev machine: LilyPond 2.26.0 compile; Audiveris 5.11.0 transcription (PNG and PDF → `.omr` + `.mxl`, OCR on); entrypoint heap rewrite and validation.<br>• CI green on GitHub: all three images build, the engine smoke test passes in Docker (`.omr` + `.mxl`, OCR languages: eng), and images are published to `ghcr.io/vilpter/lilyscan-{api,worker,audiveris}`. The first CI runs surfaced and fixed the two container-install issues in §5.<br>**Done since:** CUDA image built and published (#3); GHCR packages confirmed publicly pullable (#4); D9 decided: Python (#5).<br>**Open:** `docker compose up` on the homelab (#2). |
