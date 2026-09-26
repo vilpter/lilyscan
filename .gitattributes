@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.jpg binary
+*.mxl binary
+*.omr binary
+*.traineddata binary
