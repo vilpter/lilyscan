@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 
 from lilyscan.evaluation.compare import align, compare, levenshtein, staff_sigs
-from lilyscan.evaluation.harness import merge_scores
 from lilyscan.ir.models import (
     Event,
     Lyric,
@@ -16,6 +15,7 @@ from lilyscan.ir.models import (
     TimeSignature,
     Voice,
 )
+from lilyscan.ir.ops import merge_scores
 
 
 def n(

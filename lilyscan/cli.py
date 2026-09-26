@@ -54,6 +54,17 @@ def _cmd_selftest(args: argparse.Namespace) -> int:
         return 0 if result.ok else 1
 
 
+def _cmd_convert(args: argparse.Namespace) -> int:
+    from lilyscan.pipeline import convert_file
+
+    report = convert_file(Path(args.musicxml), Path(args.out))
+    for check in report["qa"]["checks"]:
+        mark = "ok  " if check["passed"] else "FAIL"
+        print(f"{mark} {check['id']} {check['name']}: {check['summary']}")
+    print(f"LilyPond project: {Path(args.out) / 'ly' / 'main.ly'}")
+    return 0 if report["qa"]["checks"][0]["passed"] else 1
+
+
 def _cmd_corpus_build(args: argparse.Namespace) -> int:
     # Imported here: corpus generation needs the musicxml and vision extras.
     from lilyscan.synth.corpus import build_corpus
@@ -94,6 +105,11 @@ def build_parser() -> argparse.ArgumentParser:
     st = sub.add_parser("selftest", help="compile a hello-world score with LilyPond")
     st.add_argument("--out", help="keep the output PDF in this directory")
     st.set_defaults(fn=_cmd_selftest)
+
+    cv = sub.add_parser("convert", help="MusicXML -> LilyPond project + QA report")
+    cv.add_argument("musicxml", help=".musicxml, .xml, or .mxl file")
+    cv.add_argument("--out", required=True, help="output directory")
+    cv.set_defaults(fn=_cmd_convert)
 
     corpus = sub.add_parser("corpus", help="synthetic evaluation corpus").add_subparsers(
         dest="corpus_command", required=True

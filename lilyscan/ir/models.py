@@ -75,6 +75,12 @@ class Pitch(_Model):
     def key(self) -> tuple[str, int, int]:
         return (self.step, self.alter, self.octave)
 
+    @property
+    def label(self) -> str:
+        """Human-readable name, e.g. ``F#4`` or ``Eb2``."""
+        accidental = "#" * self.alter if self.alter > 0 else "b" * -self.alter
+        return f"{self.step}{accidental}{self.octave}"
+
 
 class Lyric(_Model):
     text: str

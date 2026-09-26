@@ -19,6 +19,7 @@ from lilyscan.engine.audiveris.runner import audiveris_version, run_audiveris
 from lilyscan.evaluation.compare import Comparison, compare
 from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import MusicXMLError, load_musicxml
+from lilyscan.ir.ops import merge_scores
 from lilyscan.lilypond.compile import lilypond_version
 from lilyscan.runtime.config import Settings
 from lilyscan.synth.corpus import VARIANTS, CorpusItem, Variant
@@ -45,17 +46,6 @@ class ItemResult:
             "engine_errors": self.engine_errors,
             **self.comparison.to_dict(),
         }
-
-
-def merge_scores(scores: list[Score]) -> Score:
-    """Concatenate multi-movement engine output staff by staff."""
-    base = scores[0].model_copy(deep=True)
-    for extra in scores[1:]:
-        for (_, staff), (_, more) in zip(base.staves(), extra.staves(), strict=False):
-            offset = len(staff.measures)
-            for m in more.measures:
-                staff.measures.append(m.model_copy(update={"index": m.index + offset}))
-    return base
 
 
 def _engine_output(
