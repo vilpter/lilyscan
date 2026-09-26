@@ -30,6 +30,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # The .deb is unpacked rather than installed: its post-install script only does
 # desktop integration (menus, MIME types), which fails in a headless container.
 # Its declared runtime dependencies are installed explicitly, minus xdg-utils.
+# Setting sun.java2d.uiScale in the launcher config skips Audiveris's GTK-based
+# HiDPI probe, which otherwise needs libgtk-3 even in batch mode.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl python3.12 fontconfig \
  && curl -fsSL -o /tmp/audiveris.deb \
@@ -45,6 +47,7 @@ RUN apt-get update \
  && cfg="$(echo "$files" | grep -E '/Audiveris\.cfg$' | head -n1)" \
  && test -n "$launcher" && test -n "$cfg" && test -x "$launcher" \
  && grep -q '^java-options=-Xmx' "$cfg" \
+ && sed -i '/^java-options=-Xmx/a java-options=-Dsun.java2d.uiScale=1' "$cfg" \
  && ln -s "$launcher" /usr/local/bin/audiveris \
  && ln -s "$cfg" /usr/local/etc/Audiveris.cfg \
  && mkdir -p "$TESSDATA_PREFIX" \
@@ -61,7 +64,7 @@ COPY lilyscan ./lilyscan
 COPY services/lilyscan_app ./services/lilyscan_app
 RUN uv sync --frozen --no-dev --python python3.12 --extra worker
 COPY services/audiveris-worker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh && lilyscan versions
+RUN chmod +x /usr/local/bin/entrypoint.sh && audiveris -batch -version && lilyscan versions
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["python", "-m", "lilyscan_app.worker", "--role", "engine"]
