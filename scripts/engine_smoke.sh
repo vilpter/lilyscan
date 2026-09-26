@@ -9,7 +9,12 @@ engine_image="${2:-lilyscan-audiveris}"
 
 work="$(mktemp -d)"
 chmod 777 "$work"
-trap 'rm -rf "$work"' EXIT
+cleanup() {
+  # The containers run as root, so remove what they wrote from inside a container.
+  docker run --rm -v "$work:/work" "$worker_image" find /work -mindepth 1 -delete || true
+  rm -rf "$work" || true
+}
+trap cleanup EXIT
 
 docker run --rm -v "$work:/work" "$worker_image" lilyscan selftest --out /work
 test -f "$work/hello.pdf"
