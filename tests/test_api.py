@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from lilyscan.runtime.config import Settings
+from lilyscan_app import api
 from lilyscan_app.api import create_app
 
 
@@ -60,6 +61,38 @@ def test_rejects_unsupported_type(client: TestClient, dispatcher: RecordingDispa
     r = client.post("/api/jobs", files=[("files", ("notes.txt", b"hi", "text/plain"))])
     assert r.status_code == 415
     assert dispatcher.submitted == []
+
+
+def test_per_job_ocr_languages(client: TestClient) -> None:
+    pdf = [("files", ("a.pdf", b"x", "application/pdf"))]
+    job = client.post("/api/jobs", files=pdf, data={"ocr_languages": "ENG+ita"}).json()
+    assert job["options"] == {"ocr_languages": "eng+ita"}
+    assert client.post("/api/jobs", files=pdf).json()["options"] == {}
+
+
+def test_rejects_bad_ocr_languages(client: TestClient, dispatcher: RecordingDispatcher) -> None:
+    pdf = [("files", ("a.pdf", b"x", "application/pdf"))]
+    r = client.post("/api/jobs", files=pdf, data={"ocr_languages": "eng+../etc"})
+    assert r.status_code == 422
+    assert dispatcher.submitted == []
+    assert client.get("/api/jobs").json() == []
+
+
+def test_oversize_upload_leaves_no_job(
+    client: TestClient, dispatcher: RecordingDispatcher, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(api, "MAX_UPLOAD_BYTES", 4)
+    files = [
+        ("files", ("ok.pdf", b"x", "application/pdf")),
+        ("files", ("big.pdf", b"123456", "application/pdf")),
+    ]
+    assert client.post("/api/jobs", files=files).status_code == 413
+    assert client.get("/api/jobs").json() == []
+    assert dispatcher.submitted == []
+
+
+def test_health_reports_ocr_languages(client: TestClient) -> None:
+    assert client.get("/api/health").json()["ocr_languages"] == "eng+lat+deu+fra"
 
 
 def test_file_download_blocks_traversal(client: TestClient) -> None:

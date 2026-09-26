@@ -20,7 +20,9 @@ docker run --rm -v "$work:/work" "$worker_image" lilyscan selftest --out /work
 test -f "$work/hello.pdf"
 
 docker run --rm -v "$work:/work" "$engine_image" \
-  audiveris -batch -transcribe -export -save -output /work/out -- /work/hello.pdf \
+  audiveris -batch -transcribe -export -save -output /work/out \
+  -constant org.audiveris.omr.text.Language.defaultSpecification=eng+lat+deu+fra \
+  -- /work/hello.pdf \
   2>&1 | tee "$work/engine.log"
 
 omr="$(find "$work/out" -name '*.omr' | head -n1)"
@@ -34,9 +36,16 @@ fi
 # Audiveris skips text recognition silently when Tesseract data is missing or
 # lacks the legacy engine; treat that as a failure.
 if cat "$work/engine.log" "$work"/out/*.log 2>/dev/null \
-    | grep -E "supported languages is empty|Tesseract \(legacy\) engine requested"; then
+    | grep -E "supported languages is empty|Tesseract \(legacy\) engine requested|Missing support for"; then
   echo "engine smoke FAILED: OCR is not working in the Audiveris image" >&2
   exit 1
 fi
 
-echo "engine smoke ok: $(basename "$omr"), $(basename "$mxl"), OCR available"
+# The default lyric languages must all be installed.
+if ! grep -q "Installed OCR languages: deu,eng,fra,lat" "$work/engine.log"; then
+  echo "engine smoke FAILED: expected OCR languages deu,eng,fra,lat" >&2
+  grep "Installed OCR languages" "$work/engine.log" >&2 || true
+  exit 1
+fi
+
+echo "engine smoke ok: $(basename "$omr"), $(basename "$mxl"), OCR languages deu,eng,fra,lat"

@@ -29,3 +29,15 @@ def test_transcribes_engraved_page_with_working_ocr(tmp_path: Path) -> None:
     assert [p.suffix for p in run.omr_files] == [".omr"]
     assert [p.suffix for p in run.mxl_files] == [".mxl"]
     assert run.ocr_problems == []
+
+
+def test_ocr_language_constant_is_honoured(tmp_path: Path) -> None:
+    """Audiveris ignores unknown -constant keys silently, so prove this one is read:
+    asking for a language that is not installed must produce a complaint."""
+    src = tmp_path / "hello.ly"
+    src.write_text(HELLO_WORLD, encoding="utf-8")
+    engraved = compile_ly(src, tmp_path / "engraved", ("pdf",))
+
+    run = run_audiveris(engraved.outputs, tmp_path / "engine", ocr_languages="eng+zzz")
+
+    assert any("zzz" in p for p in run.ocr_problems), run.log[-3000:]
