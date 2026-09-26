@@ -43,7 +43,8 @@ jobs:
           sudo tar -xzf /tmp/ly.tgz -C /opt
           echo "/opt/lilypond-${LILYPOND_NEXT}/bin" >> "$GITHUB_PATH"
       - run: uv sync --frozen --all-extras
-      - run: uv run pytest -m lilypond
+      # The pin check is expected to differ here; everything else must still pass.
+      - run: uv run pytest -m lilypond -k "not matches_pin"
 
   images:
     needs: test
