@@ -60,6 +60,24 @@ def test_low_confidence_and_repair_markers() -> None:
     assert "g'2 %{ ?? conf=0.42 bbox=p2:(812,340) %} %{ fix: missing-dot %}" in text
 
 
+HOSTILE_LYRICS = ["V2.26.0", "__", "--", "{x}", "a\\b", 'say "hi"', "2nd", "#t", "l'amour", "Kö-"]
+
+
+@pytest.mark.lilypond
+def test_engine_text_in_lyrics_always_compiles(tmp_path: Path) -> None:
+    """OCR can put page footers or noise into lyrics; the project must still compile."""
+    score = load_musicxml(FIXTURE)
+    events = [e for m in score.parts[0].staves[0].measures for v in m.voices for e in v.events]
+    sung = [e for e in events if e.lyrics]
+    for event, text in zip(sung, HOSTILE_LYRICS, strict=False):
+        event.lyrics[0].text = text
+    project = write_project(score, tmp_path)
+    report = run_checks(score, tmp_path, project)
+    assert report.check("Q1").passed, report.check("Q1").details
+    assert "l'amour" in project.files["parts/voice.ly"]  # plain words stay unquoted
+    assert '"V2.26.0"' in project.files["parts/voice.ly"]
+
+
 @pytest.mark.lilypond
 def test_generated_project_passes_all_checks(tmp_path: Path) -> None:
     score = load_musicxml(FIXTURE)

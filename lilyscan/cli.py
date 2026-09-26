@@ -86,7 +86,12 @@ def _cmd_eval_run(args: argparse.Namespace) -> int:
     if args.category:
         items = [i for i in items if i.spec.category in set(args.category)]
     results = run_evaluation(
-        items, Path(args.work), variants=args.variants, jobs=args.jobs, reuse=not args.no_reuse
+        items,
+        Path(args.work),
+        variants=args.variants,
+        jobs=args.jobs,
+        reuse=not args.no_reuse,
+        lilypond=args.lilypond,
     )
     out = Path(args.out) if args.out else Path("eval/results") / args.label
     path = write_results(results, out, args.label, notes=args.notes)
@@ -137,6 +142,9 @@ def build_parser() -> argparse.ArgumentParser:
     er.add_argument("--category", nargs="*", help="piece categories")
     er.add_argument("--jobs", type=int, default=1, help="parallel Audiveris processes")
     er.add_argument("--no-reuse", action="store_true", help="ignore cached engine output")
+    er.add_argument(
+        "--lilypond", action="store_true", help="also run engine output -> LilyPond -> Q1-Q5"
+    )
     er.add_argument("--label", default="latest")
     er.add_argument("--out", help="results directory (default eval/results/<label>)")
     er.add_argument("--notes", default="", help="free text recorded with the results")

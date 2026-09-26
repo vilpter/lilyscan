@@ -21,6 +21,7 @@ from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import MusicXMLError, load_musicxml
 from lilyscan.ir.ops import merge_scores
 from lilyscan.lilypond.compile import lilypond_version
+from lilyscan.pipeline import produce
 from lilyscan.runtime.config import Settings
 from lilyscan.synth.corpus import VARIANTS, CorpusItem, Variant
 
@@ -35,6 +36,8 @@ class ItemResult:
     wall_s: float | None
     engine_errors: list[str]
     cached: bool
+    # Q1-Q5 outcome of the full pipeline on the engine output (None when not run).
+    qa: dict[str, bool] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -44,6 +47,7 @@ class ItemResult:
             "variant": self.variant,
             "wall_s": self.wall_s,
             "engine_errors": self.engine_errors,
+            "qa": self.qa,
             **self.comparison.to_dict(),
         }
 
@@ -79,11 +83,19 @@ def _engine_output(
 
 
 def evaluate_item(
-    item: CorpusItem, variant: Variant, work: Path, settings: Settings, reuse: bool
+    item: CorpusItem,
+    variant: Variant,
+    work: Path,
+    settings: Settings,
+    reuse: bool,
+    lilypond: bool = False,
 ) -> ItemResult:
     gt = load_musicxml(item.ground_truth, "ground-truth")
     pred, wall_s, errors, cached = _engine_output(item, variant, work, settings, reuse)
     result = ItemResult(item, variant, compare(gt, pred), wall_s, errors, cached)
+    if lilypond and pred is not None:
+        report = produce(pred, work / item.spec.id / variant / "lilyscan", settings)
+        result.qa = {c["id"]: c["passed"] for c in report["qa"]["checks"]}
     log.info(
         "%s/%s: measures %.0f%%, note F1 %.2f%s",
         item.spec.id,
@@ -102,11 +114,15 @@ def run_evaluation(
     jobs: int = 1,
     reuse: bool = True,
     settings: Settings | None = None,
+    lilypond: bool = False,
 ) -> list[ItemResult]:
+    """Evaluate every item/variant; ``lilypond`` also runs the pipeline and checks Q1-Q5."""
     s = settings or Settings.from_env()
     tasks = [(item, v) for item in items for v in variants]
     with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
-        futures = [pool.submit(evaluate_item, item, v, work, s, reuse) for item, v in tasks]
+        futures = [
+            pool.submit(evaluate_item, item, v, work, s, reuse, lilypond) for item, v in tasks
+        ]
         return [f.result() for f in futures]
 
 
@@ -138,8 +154,15 @@ def summarize(results: list[ItemResult]) -> dict[str, dict[str, Any]]:
             "lyric_accuracy": _mean([x.lyric_accuracy for x in c if x.lyric_accuracy is not None]),
             "chord_accuracy": _mean([x.chord_accuracy for x in c if x.chord_accuracy is not None]),
             "mean_wall_s": _mean([r.wall_s for r in rs if r.wall_s is not None]),
+            # Share of pipeline runs (engine output -> LilyPond) passing Q1 / Q2.
+            "compiles": _rate([r.qa["Q1"] for r in rs if r.qa is not None]),
+            "bar_checks_clean": _rate([r.qa["Q2"] for r in rs if r.qa is not None]),
         }
     return out
+
+
+def _rate(flags: list[bool]) -> float | None:
+    return round(sum(flags) / len(flags), 4) if flags else None
 
 
 def _fmt(v: Any, pct: bool = True) -> str:
@@ -170,6 +193,8 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
         encoding="utf-8",
     )
 
+    with_qa = any(r.qa is not None for r in results)
+    qa_head = " Compiles (Q1) | Bar checks (Q2) |" if with_qa else ""
     lines = [
         f"# Evaluation: {label}",
         "",
@@ -179,15 +204,18 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
         notes,
         "",
         "| Group | Items | Engine OK | Exact measures | Edit rate | Note F1 | Onset F1 "
-        "| Lyrics | Chords | s/page |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        f"| Lyrics | Chords | s/page |{qa_head}",
+        "|---|---|---|---|---|---|---|---|---|---|" + ("---|---|" if with_qa else ""),
     ]
     for key, row in summary.items():
+        qa_cells = (
+            f" {_fmt(row['compiles'])} | {_fmt(row['bar_checks_clean'])} |" if with_qa else ""
+        )
         lines.append(
             f"| {key} | {row['items']} | {row['engine_ok']} | {_fmt(row['measure_accuracy'])} "
             f"| {_fmt(row['edit_rate'])} | {_fmt(row['note_f1'])} | {_fmt(row['onset_f1'])} "
             f"| {_fmt(row['lyric_accuracy'])} | {_fmt(row['chord_accuracy'])} "
-            f"| {_fmt(row['mean_wall_s'], pct=False)} |"
+            f"| {_fmt(row['mean_wall_s'], pct=False)} |{qa_cells}"
         )
     lines += [
         "",

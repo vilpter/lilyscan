@@ -330,6 +330,17 @@ def _staff_music(
     return lines, numbers
 
 
+# A bare lyric word: letters, optional apostrophe-joined letters, trailing punctuation.
+_APOSTROPHES = "'\N{RIGHT SINGLE QUOTATION MARK}"
+_PLAIN_SYLLABLE = re.compile(r"^[^\W\d_]+(?:[" + _APOSTROPHES + r"][^\W\d_]+)*[.,;:!?]*$")
+
+
+def _lyric_token(text: str) -> str:
+    """Quote anything LilyPond's lyric mode could misread (digits read as durations,
+    braces, backslashes, the -- and __ operators, OCR noise)."""
+    return text if _PLAIN_SYLLABLE.match(text) else lily_string(text)
+
+
 def _lyrics_lines(measures: list[Measure], verse: int) -> list[str] | None:
     """Syllables of voice 1, one line per measure; None when the verse is empty."""
     lines: list[str] = []
@@ -347,9 +358,7 @@ def _lyrics_lines(measures: list[Measure], verse: int) -> list[str] | None:
                 tokens.append("_")
                 continue
             found = True
-            tokens.append(
-                lily_string(lyric.text) if re.search(r"[\s{}\"\\#]|^\d", lyric.text) else lyric.text
-            )
+            tokens.append(_lyric_token(lyric.text))
             if lyric.syllabic in ("begin", "middle"):
                 tokens.append("--")
             elif lyric.extend:
