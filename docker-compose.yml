@@ -1,0 +1,89 @@
+# Pull published images:  docker compose pull && docker compose up -d
+# Or build locally:       docker compose up -d --build
+# With a GPU:             docker compose --profile gpu up -d --scale worker=0
+#                         (requires the NVIDIA Container Toolkit on the host)
+
+x-app-env: &app-env
+  REDIS_URL: redis://redis:6379/0
+  LILYSCAN_DATA_DIR: /data
+
+services:
+  # Valkey: BSD-3 fork of Redis, protocol-compatible with RQ and redis-py.
+  redis:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    image: ghcr.io/vilpter/lilyscan-api:${LILYSCAN_TAG:-latest}
+    restart: unless-stopped
+    environment: *app-env
+    ports:
+      - "${LILYSCAN_PORT:-8000}:8000"
+    volumes:
+      - lilyscan-data:/data
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+      args:
+        VARIANT: cpu
+    image: ghcr.io/vilpter/lilyscan-worker:${LILYSCAN_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      LILYSCAN_DEVICE: cpu
+    volumes:
+      - lilyscan-data:/data
+    depends_on:
+      - redis
+
+  worker-cuda:
+    profiles: ["gpu"]
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+      args:
+        VARIANT: cuda
+    image: ghcr.io/vilpter/lilyscan-worker:cuda
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      LILYSCAN_DEVICE: auto
+    volumes:
+      - lilyscan-data:/data
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  audiveris:
+    build:
+      context: .
+      dockerfile: services/audiveris-worker/Dockerfile
+    image: ghcr.io/vilpter/lilyscan-audiveris:${LILYSCAN_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      # JVM heap cap, written into the Audiveris launcher config at container start.
+      AUDIVERIS_MAX_HEAP: "${AUDIVERIS_MAX_HEAP:-3G}"
+    volumes:
+      - lilyscan-data:/data
+    depends_on:
+      - redis
+
+volumes:
+  lilyscan-data:
+  redis-data:
