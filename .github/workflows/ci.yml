@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0
       - name: Install LilyPond
         run: |
           curl -fsSL -o /tmp/ly.tgz "https://gitlab.com/lilypond/lilypond/-/releases/v${LILYPOND_VERSION}/downloads/lilypond-${LILYPOND_VERSION}-linux-x86_64.tar.gz"
@@ -36,7 +36,7 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0
       - name: Install next LilyPond
         run: |
           curl -fsSL -o /tmp/ly.tgz "https://gitlab.com/lilypond/lilypond/-/releases/v${LILYPOND_NEXT}/downloads/lilypond-${LILYPOND_NEXT}-linux-x86_64.tar.gz"
