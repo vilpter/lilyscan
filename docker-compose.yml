@@ -6,6 +6,9 @@
 x-app-env: &app-env
   REDIS_URL: redis://redis:6379/0
   LILYSCAN_DATA_DIR: /data
+  # OCR languages for lyrics and text (Tesseract codes joined with +). eng, lat, deu,
+  # and fra are built in; others are downloaded by the audiveris service at startup.
+  LILYSCAN_OCR_LANGUAGES: "${LILYSCAN_OCR_LANGUAGES:-eng+lat+deu+fra}"
 
 services:
   # Valkey: BSD-3 fork of Redis, protocol-compatible with RQ and redis-py.
@@ -81,9 +84,12 @@ services:
       AUDIVERIS_MAX_HEAP: "${AUDIVERIS_MAX_HEAP:-3G}"
     volumes:
       - lilyscan-data:/data
+      # Extra OCR models (downloaded or custom *.traineddata) persist here.
+      - tessdata-cache:/var/cache/lilyscan/tessdata
     depends_on:
       - redis
 
 volumes:
   lilyscan-data:
   redis-data:
+  tessdata-cache:

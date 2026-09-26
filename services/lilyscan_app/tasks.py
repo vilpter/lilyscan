@@ -42,7 +42,13 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
         root = job_dir(settings.data_dir, job_id)
         inputs = [root / "input" / name for name in job.inputs]
         constants = {str(k): str(v) for k, v in job.options.get("audiveris_constants", {}).items()}
-        run = run_audiveris(inputs, root / "engine", constants=constants, settings=settings)
+        run = run_audiveris(
+            inputs,
+            root / "engine",
+            constants=constants,
+            settings=settings,
+            ocr_languages=job.options.get("ocr_languages"),
+        )
         summary = {
             "command": run.command,
             "returncode": run.returncode,
@@ -51,17 +57,22 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
             "omr_files": [str(p.relative_to(root)) for p in run.omr_files],
             "mxl_files": [str(p.relative_to(root)) for p in run.mxl_files],
             "ocr_problems": run.ocr_problems,
+            "step_errors": run.step_errors,
         }
         _write_json(root / "engine" / "run.json", summary)
         if run.ocr_problems:
             # A deployment fault: the output would silently lack lyrics and text.
             raise RuntimeError(
-                "Audiveris ran without working OCR (check TESSDATA_PREFIX and that the "
-                "traineddata includes the legacy engine); see engine/audiveris.log"
+                "Audiveris ran without working OCR for the requested languages "
+                f"({'; '.join(run.ocr_problems)}); check LILYSCAN_OCR_LANGUAGES and "
+                "TESSDATA_PREFIX, and that the models include the legacy engine"
             )
         if not run.ok:
+            reason = "; ".join(run.step_errors) or f"exit {run.returncode}"
+            if run.timed_out:
+                reason = f"timed out after {settings.audiveris_timeout_s:.0f}s"
             raise RuntimeError(
-                f"Audiveris produced no MusicXML (exit {run.returncode}); see engine/audiveris.log"
+                f"Audiveris produced no MusicXML ({reason}); see engine/audiveris.log"
             )
         return summary
     except Exception as exc:

@@ -54,6 +54,7 @@ Ingest sheet music (born-digital PDF, scanned print, phone photo) and produce **
 | D7 | Audiveris version | Pin one release (currently **5.11.0**) in the Audiveris worker image. An upgrade is a deliberate change: run the full eval harness on the new release and bump only if nothing regresses. The `.omr` reader is versioned against the pinned release. |
 | D8 | Name, repository, management | **Lilyscan**, at `github.com/vilpter/lilyscan`, public.<br>• Commits use the GitHub no-reply address and conventional-commit messages, one or more per milestone.<br>• Milestones M0–M10 are GitHub Milestones, with one issue per deliverable and exit criterion, labeled by pipeline stage and tracked on a GitHub Projects board.<br>• CI publishes the `api`, `worker`, and `audiveris` images to `ghcr.io/vilpter/lilyscan-*`, so the homelab pulls images instead of building them.<br>• The CUDA image builds only on manual dispatch or a weekly schedule. |
 | D9 | Implementation stack | **Python around the Audiveris CLI (option A)**, decided 2026-09-26. Option D (a small JVM tool that exports the `.omr` model to project-owned JSON) is the fallback if the Python `.omr` reader proves too fragile at M3. The analysis is in §5.2. |
+| D10 | OCR languages | Lyrics and text are recognized in **English, Latin, German, and French by default** (`eng+lat+deu+fra`).<br>• `LILYSCAN_OCR_LANGUAGES` (Tesseract codes joined with `+`) sets the deployment default. The Audiveris container downloads any listed language it doesn't have at startup, from the same pinned `tessdata` commit, into a persistent cache volume. Custom `*.traineddata` models dropped into that volume are picked up too.<br>• A job can override the languages at upload (`ocr_languages` form field). A requested language that isn't installed fails the job with a clear message.<br>• More languages slow OCR down somewhat, so the default stays at four. |
 
 ## 5. System Architecture
 
@@ -88,8 +89,8 @@ Ingest sheet music (born-digital PDF, scanned print, phone photo) and produce **
     - It uses Tesseract's **legacy** engine. The LSTM-only `tessdata_fast` models, which Ubuntu's `tesseract-ocr-*` packages ship, fail with "Tesseract (legacy) engine requested, but components are not present".
     - With no data at all, it logs "The collection of supported languages is empty".
     - Either way, text recognition is skipped silently: no lyrics, titles, or chord names.
-    - The image downloads `eng.traineddata` from `tesseract-ocr/tessdata` (Apache-2.0), verifies its checksum, and sets `TESSDATA_PREFIX`.
-    - The runner detects both failure messages. An engine job with broken OCR fails, and so does the smoke test.
+    - The image bakes in the default language models (`eng`, `lat`, `deu`, `fra`) from `tesseract-ocr/tessdata` (Apache-2.0) at a pinned commit and verifies them against `services/audiveris-worker/tessdata.sha256`. Other languages are handled as D10 describes.
+    - The runner detects these failure messages, plus "Missing support for ..." when a requested language has no model. An engine job with broken OCR fails, and so does the smoke test, which also requires all four default languages.
   - **Heap cap.** The launcher config (`lib/app/Audiveris.cfg`) hard-codes `-Xms512m -Xmx8G`. Command-line options override `JAVA_TOOL_OPTIONS`, so an environment variable cannot lower the heap that way. Instead, the container entrypoint rewrites the `-Xmx` line from `AUDIVERIS_MAX_HEAP` (default `3G`, validated) at each start. This is package configuration, not a source change, so it is allowed under D6.
   - The shim runs one book at a time per container; scale by adding replicas. Each job is a fresh Audiveris process, so a crash or out-of-memory error loses only that job.
   - Per-job Audiveris options (for example, forcing the interline or disabling a recognition step) are passed as `-constant key=value` and stored with the job for reproducibility.
@@ -202,6 +203,9 @@ Audiveris expects clean, flat, scan-like pages. This stage turns every raster in
 - Invoke the pinned Audiveris release in batch mode (confirmed against 5.11.0 at M0):
   `audiveris -batch -transcribe -export -save -output <dir> [-constant key=value ...] [-sheets "1 3-4"] -- <inputs...>`
 - Inputs: the prepared page images (or 400 DPI renders), plus per-job `-constant` overrides. PDF input is accepted directly; Audiveris rasterizes it with PDFBox.
+- OCR languages are passed on every run as `-constant org.audiveris.omr.text.Language.defaultSpecification=<spec>` (D10).
+- **Audiveris silently ignores unknown `-constant` keys.** This was verified: the `Language$Constants.defaultSpecification` spelling is accepted without complaint and does nothing. Every key the project relies on therefore has a behavioural test against the pinned release. For example, the OCR key is proven by requesting an uninstalled language and checking that Audiveris complains.
+- Failure messages from Audiveris steps (for example `StepException: No system found` on inputs with no recognizable staff) are extracted from the log into the job error.
 - Outputs, written flat into `<dir>`: `<book>.omr`, `<book>.mxl` (per-movement files may appear for multi-movement books), and `<book>-<timestamp>.log`. The runner also records the command, wall time, and exit status in `engine/run.json`. Everything is stored in the artifact store.
 - **Failure handling:** a crash or timeout on one sheet must not fail the whole book. Record which sheets failed and surface them in the job report.
 - Never modify Audiveris behavior except through documented options (D6).
@@ -438,7 +442,7 @@ lilyscan/
 | Component | Candidate | Note |
 |---|---|---|
 | Recognition engine | **Audiveris 5.11.0** (pinned, D7), official Ubuntu 24.04 `.deb` | AGPL-3.0, approved (D2). Actively developed. Bundles its own Java 25 runtime (GPLv2 + Classpath Exception), Tesseract 5.5.2, Leptonica, and PDFBox. No separate JDK image is needed |
-| OCR language data | `eng.traineddata` from `tesseract-ocr/tessdata` (full models with the legacy engine), checksum-pinned | Apache-2.0. Required, or Audiveris skips text recognition silently. The `tessdata_fast` models and Ubuntu's `tesseract-ocr-*` packages do **not** work (§5) |
+| OCR language data | `eng`, `lat`, `deu`, `fra` from `tesseract-ocr/tessdata` at a pinned commit (full models with the legacy engine), checksum-verified; other languages fetched on demand (D10) | Apache-2.0. Required, or Audiveris skips text recognition silently. The `tessdata_fast` models and Ubuntu's `tesseract-ocr-*` packages do **not** work (§5) |
 | API / queue | FastAPI, uvicorn, RQ, **Valkey 8** as the Redis-protocol server | MIT / BSD / BSD / BSD-3. Not Redis 7.4+, which is RSALv2/SSPL (source-available, not approved under D2). Valkey is the Linux Foundation's BSD-3 fork and a drop-in replacement for RQ and redis-py |
 | Job store | SQLite (stdlib), Postgres later | Public domain / PostgreSQL License |
 | Tooling | uv, ruff, mypy, pytest; GitHub Actions; GHCR | Dev and CI only |

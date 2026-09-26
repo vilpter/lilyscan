@@ -46,6 +46,20 @@ Services:
   by `AUDIVERIS_MAX_HEAP` (default `3G`).
 - `redis`: job queue, served by Valkey (BSD-3, Redis-protocol compatible).
 
+### OCR languages
+
+Lyrics and text are recognized in English, Latin, German, and French by default. To add
+languages, list their [Tesseract codes](https://github.com/tesseract-ocr/tessdata) in
+`LILYSCAN_OCR_LANGUAGES` (for example in a `.env` file next to `docker-compose.yml`):
+
+```bash
+LILYSCAN_OCR_LANGUAGES=eng+lat+deu+fra+ita+spa
+```
+
+The `audiveris` service downloads missing models at startup into the `tessdata-cache`
+volume, where custom `*.traineddata` models can also be placed. A single job can override
+the languages with the `ocr_languages` form field when uploading.
+
 ## Develop
 
 ```bash

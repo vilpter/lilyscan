@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from lilyscan.runtime.config import Settings
+from lilyscan.runtime.config import AUDIVERIS_OCR_LANGUAGES_KEY, Settings, parse_ocr_languages
 
 _CONSTANT_KEY = re.compile(r"^[A-Za-z_][\w.$]*$")
 
@@ -20,12 +20,21 @@ _OCR_PROBLEMS = (
     "The collection of supported languages is empty",
     # LSTM-only ("fast") models; Audiveris needs the legacy engine components.
     "Tesseract (legacy) engine requested, but components are not present",
+    # A requested language has no traineddata installed.
+    "Missing support for",
 )
+_STEP_ERROR = re.compile(r"StepException: (.+)$")
 
 
 def ocr_problems(log: str) -> list[str]:
     """Log lines showing that Audiveris ran without working OCR."""
     return [line.strip() for line in log.splitlines() if any(p in line for p in _OCR_PROBLEMS)]
+
+
+def step_errors(log: str) -> list[str]:
+    """Distinct Audiveris step failure messages, e.g. ``No system found``."""
+    found = (m[1].strip() for line in log.splitlines() if (m := _STEP_ERROR.search(line)))
+    return list(dict.fromkeys(found))
 
 
 @dataclass
@@ -45,6 +54,10 @@ class AudiverisRun:
     @property
     def ocr_problems(self) -> list[str]:
         return ocr_problems(self.log)
+
+    @property
+    def step_errors(self) -> list[str]:
+        return step_errors(self.log)
 
 
 def build_command(
@@ -75,10 +88,16 @@ def run_audiveris(
     constants: Mapping[str, str] | None = None,
     sheets: str | None = None,
     settings: Settings | None = None,
+    ocr_languages: str | None = None,
 ) -> AudiverisRun:
+    """Transcribe ``inputs``; ``ocr_languages`` defaults to the configured spec."""
     s = settings or Settings.from_env()
+    merged = dict(constants or {})
+    if AUDIVERIS_OCR_LANGUAGES_KEY in merged:
+        raise ValueError("set OCR languages with ocr_languages, not as a raw constant")
+    merged[AUDIVERIS_OCR_LANGUAGES_KEY] = parse_ocr_languages(ocr_languages or s.ocr_languages)
     out_dir.mkdir(parents=True, exist_ok=True)
-    cmd = build_command(s.audiveris_bin, inputs, out_dir, constants, sheets)
+    cmd = build_command(s.audiveris_bin, inputs, out_dir, merged, sheets)
     start = time.monotonic()
     try:
         proc = subprocess.run(

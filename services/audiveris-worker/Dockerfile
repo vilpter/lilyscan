@@ -6,11 +6,12 @@
 
 FROM ubuntu:24.04
 ARG AUDIVERIS_VERSION=5.11.0
-# Full "tessdata" English model (Apache-2.0). Audiveris uses Tesseract's legacy
-# engine, which the LSTM-only "tessdata_fast" models (and Ubuntu's
-# tesseract-ocr-* packages) do not include.
-ARG TESSDATA_ENG_URL=https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
-ARG TESSDATA_ENG_SHA256=daa0c97d651c19fba3b25e81317cd697e9908c8208090c94c3905381c23fc047
+# OCR models come from the full "tessdata" repository (Apache-2.0) at a pinned
+# commit. Audiveris uses Tesseract's legacy engine, which the LSTM-only
+# "tessdata_fast" models (and Ubuntu's tesseract-ocr-* packages) do not include.
+# The models listed in tessdata.sha256 are baked in and checksum-verified; other
+# languages named in LILYSCAN_OCR_LANGUAGES are fetched at startup (entrypoint.sh).
+ARG TESSDATA_COMMIT=ced78752cc61322fb554c280d13360b35b8684e4
 
 LABEL org.opencontainers.image.source=https://github.com/vilpter/lilyscan \
       org.opencontainers.image.description="Lilyscan Audiveris engine worker" \
@@ -24,6 +25,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PATH=/app/.venv/bin:$PATH \
     AUDIVERIS_BIN=/usr/local/bin/audiveris \
     TESSDATA_PREFIX=/opt/tessdata \
+    TESSDATA_BASE_URL=https://github.com/tesseract-ocr/tessdata/raw/${TESSDATA_COMMIT} \
+    TESSDATA_CACHE=/var/cache/lilyscan/tessdata \
+    LILYSCAN_OCR_LANGUAGES=eng+lat+deu+fra \
     AUDIVERIS_MAX_HEAP=3G \
     LILYSCAN_DATA_DIR=/data
 
@@ -50,11 +54,16 @@ RUN apt-get update \
  && sed -i '/^java-options=-Xmx/a java-options=-Dsun.java2d.uiScale=1' "$cfg" \
  && ln -s "$launcher" /usr/local/bin/audiveris \
  && ln -s "$cfg" /usr/local/etc/Audiveris.cfg \
- && mkdir -p "$TESSDATA_PREFIX" \
- && curl -fsSL -o "$TESSDATA_PREFIX/eng.traineddata" "$TESSDATA_ENG_URL" \
- && echo "$TESSDATA_ENG_SHA256  $TESSDATA_PREFIX/eng.traineddata" | sha256sum -c - \
  && rm /tmp/audiveris.deb \
  && rm -rf /var/lib/apt/lists/*
+
+COPY services/audiveris-worker/tessdata.sha256 /opt/tessdata/SHA256SUMS
+RUN cd "$TESSDATA_PREFIX" \
+ && for model in $(awk '{print $2}' SHA256SUMS); do \
+      curl -fsSL -o "$model" "$TESSDATA_BASE_URL/$model" || exit 1; \
+    done \
+ && sha256sum -c SHA256SUMS \
+ && mkdir -p "$TESSDATA_CACHE"
 
 COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /usr/local/bin/uv
 WORKDIR /app
