@@ -70,6 +70,31 @@ uv run lilyscan device
 uv run lilyscan selftest
 ```
 
+Convert a MusicXML file (for example Audiveris output) into an editable LilyPond project
+with a QA report (Q1-Q5):
+
+```bash
+uv run lilyscan convert score.mxl --out out/score
+```
+
+### Evaluation
+
+The seed corpus is generated from `eval/corpus/seed.json` (random-but-valid music with exact
+MusicXML ground truth, engraved with LilyPond, then degraded to simulated scans and photos).
+Build it, then score Audiveris on every piece and input variant:
+
+```bash
+uv run lilyscan corpus build
+```
+
+```bash
+uv run lilyscan eval run --label my-run --lilypond
+```
+
+Results go to `eval/results/<label>/` (`summary.md`, `results.json`); engine output is cached
+in `eval/work/`. `--lilypond` also runs the full pipeline on each engine output and reports
+how often it compiles (Q1) and passes bar checks (Q2).
+
 Tests marked `lilypond` need LilyPond (`LILYPOND_BIN`, default `lilypond`); `engine` tests
 need Audiveris (`AUDIVERIS_BIN`, default `audiveris`); `gpu` tests need a CUDA device. Missing
 tools cause a skip, not a failure.
