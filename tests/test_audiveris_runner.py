@@ -101,3 +101,13 @@ def test_build_command_rejects_injection_in_keys() -> None:
 def test_build_command_requires_inputs() -> None:
     with pytest.raises(ValueError):
         build_command("audiveris", [], Path("o"))
+
+
+def test_engine_timeout_grows_with_pages() -> None:
+    from lilyscan.engine.audiveris.runner import engine_timeout
+    from lilyscan.runtime.config import Settings
+
+    s = Settings.from_env({"AUDIVERIS_TIMEOUT_S": "900", "AUDIVERIS_TIMEOUT_PER_PAGE_S": "240"})
+    assert engine_timeout(s, None) == 900
+    assert engine_timeout(s, 2) == 900  # short books get the minimum
+    assert engine_timeout(s, 20) == 4800

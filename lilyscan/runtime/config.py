@@ -84,7 +84,8 @@ class Settings:
     lilypond_bin: str
     audiveris_bin: str
     lilypond_timeout_s: float
-    audiveris_timeout_s: float
+    audiveris_timeout_s: float  # the least time an engine run gets
+    audiveris_timeout_per_page_s: float  # more for long books: this much per page
     ocr_languages: str = DEFAULT_OCR_LANGUAGES
     dispatch: str = "rq"  # "rq" (Redis workers) or "inline" (in the API process)
     web_dir: Path | None = None  # the web UI's static files; None disables it
@@ -99,6 +100,7 @@ class Settings:
             audiveris_bin=e.get("AUDIVERIS_BIN", "audiveris"),
             lilypond_timeout_s=float(e.get("LILYPOND_TIMEOUT_S", "120")),
             audiveris_timeout_s=float(e.get("AUDIVERIS_TIMEOUT_S", "900")),
+            audiveris_timeout_per_page_s=float(e.get("AUDIVERIS_TIMEOUT_PER_PAGE_S", "240")),
             ocr_languages=parse_ocr_languages(
                 e.get("LILYSCAN_OCR_LANGUAGES", DEFAULT_OCR_LANGUAGES)
             ),

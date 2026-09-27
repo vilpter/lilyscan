@@ -86,6 +86,11 @@ def build_command(
     return cmd
 
 
+def engine_timeout(settings: Settings, pages: int | None) -> float:
+    """Seconds an engine run on ``pages`` pages may take."""
+    return max(settings.audiveris_timeout_s, (pages or 0) * settings.audiveris_timeout_per_page_s)
+
+
 def run_audiveris(
     inputs: Sequence[Path],
     out_dir: Path,
@@ -93,8 +98,13 @@ def run_audiveris(
     sheets: str | None = None,
     settings: Settings | None = None,
     ocr_languages: str | None = None,
+    pages: int | None = None,
 ) -> AudiverisRun:
-    """Transcribe ``inputs``; ``ocr_languages`` defaults to the configured spec."""
+    """Transcribe ``inputs``; ``ocr_languages`` defaults to the configured spec.
+
+    ``pages`` (when known) extends the time limit for long books: the run gets the
+    larger of the configured minimum and a per-page allowance.
+    """
     s = settings or Settings.from_env()
     merged = dict(constants or {})
     if AUDIVERIS_OCR_LANGUAGES_KEY in merged:
@@ -110,7 +120,7 @@ def run_audiveris(
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=s.audiveris_timeout_s,
+            timeout=engine_timeout(s, pages),
             check=False,
         )
         returncode, log, timed_out = proc.returncode, proc.stdout + proc.stderr, False

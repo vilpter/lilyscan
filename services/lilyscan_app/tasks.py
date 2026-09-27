@@ -14,7 +14,7 @@ import traceback
 from pathlib import Path
 from typing import Any
 
-from lilyscan.engine.audiveris.runner import AudiverisRun, run_audiveris
+from lilyscan.engine.audiveris.runner import AudiverisRun, engine_timeout, run_audiveris
 from lilyscan.pipeline import (
     assess_engine_run,
     import_engine_output,
@@ -105,6 +105,10 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
         else:
             candidates = [("uploaded", [root / "input" / name for name in job.inputs], "engine")]
         constants = {str(k): str(v) for k, v in job.options.get("audiveris_constants", {}).items()}
+        report = root / "prepared" / "report.json"
+        page_count = (
+            len(json.loads(report.read_text(encoding="utf-8"))) if report.is_file() else None
+        ) or len(job.inputs)
         runs = []
         for label, inputs, out in candidates:
             run = run_audiveris(
@@ -113,6 +117,7 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
                 constants=constants,
                 settings=settings,
                 ocr_languages=job.options.get("ocr_languages"),
+                pages=page_count,
             )
             summary = {
                 "pages": label,
@@ -138,7 +143,7 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
         if not run.ok:
             reason = "; ".join(run.step_errors) or f"exit {run.returncode}"
             if run.timed_out:
-                reason = f"timed out after {settings.audiveris_timeout_s:.0f}s"
+                reason = f"timed out after {engine_timeout(settings, page_count):.0f}s"
             raise RuntimeError(
                 f"Audiveris produced no MusicXML ({reason}); see engine/audiveris.log"
             )

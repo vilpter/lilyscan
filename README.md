@@ -86,7 +86,9 @@ Services:
 - `api`: FastAPI, upload and job status (`/api/jobs`).
 - `worker`: pipeline worker (LilyPond, OpenCV, ONNX Runtime). `worker-cuda` under the `gpu` profile.
 - `audiveris`: Audiveris 5.11.0 behind an RQ worker on the `engine` queue. JVM heap is capped
-  by `AUDIVERIS_MAX_HEAP` (default `3G`).
+  by `AUDIVERIS_MAX_HEAP` (default `3G`). An engine run may take the larger of
+  `AUDIVERIS_TIMEOUT_S` (default 900) and `AUDIVERIS_TIMEOUT_PER_PAGE_S` (default 240) per
+  page, so long scores are not cut off.
 - `redis`: job queue, served by Valkey (BSD-3, Redis-protocol compatible).
 
 ### OCR languages
