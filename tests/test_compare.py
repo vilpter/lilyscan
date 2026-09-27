@@ -119,6 +119,31 @@ def test_merge_scores_appends_measures() -> None:
     assert [m.index for m in staff.measures] == [0, 1, 2, 3, 4, 5]
 
 
+def test_merge_keeps_parts_a_movement_adds() -> None:
+    # Audiveris split a violin-and-piano page into a violin-only first movement and the
+    # rest: the piano part comes in with the second, and is absent from the first.
+    violin = Part(
+        id="P1", name="Voice", staves=[Staff(number=1, measures=[measure(0, [n("A", 4, 0, 4)])])]
+    )
+    first = Score(parts=[violin])
+    piano = Part(
+        id="P2",
+        name="Piano",
+        staves=[
+            Staff(number=1, measures=[measure(0, [n("C", 5, 0, 4)])]),
+            Staff(number=2, measures=[measure(0, [n("C", 3, 0, 4)])]),
+        ],
+    )
+    second = Score(parts=[violin.model_copy(deep=True), piano])
+    merged = merge_scores([first, second])
+    assert [p.name for p in merged.parts] == ["Voice", "Piano"]
+    assert all(len(st.measures) == 2 for _, st in merged.staves())
+    absent = merged.parts[1].staves[0].measures[0]
+    assert absent.bbox is None and absent.voices[0].events[0].measure_rest
+    assert absent.voices[0].events[0].duration == 4
+    assert merged.parts[1].staves[1].measures[1].voices[0].events[0].pitches[0].label == "C3"
+
+
 def test_event_correctness_marks_the_wrong_note() -> None:
     from lilyscan.evaluation.compare import event_correctness
 
