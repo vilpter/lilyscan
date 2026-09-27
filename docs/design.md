@@ -223,6 +223,13 @@ Audiveris expects clean, flat, scan-like pages. This stage turns every raster in
   - `sheet#N/sheet#N.xml`: the scale (interline, line thickness, the music font Audiveris matched), and per system the *stacks* (measures), each with *slots* giving the x-offset of every time offset. It also has the staves with their line polylines, and the interpretation graph (`sig`).
   - Interpretations carry `shape`, `grade` (intrinsic confidence), `ctx-grade` (confidence in context), `staff`, and `bounds` in page pixels. Noteheads also carry a staff-relative `pitch` step. `head-chord` elements contain their heads through `containment` relations; `head-stem`, `beam-stem`, `alter-head`, `augmentation`, `slur-head` and `chord-tuplet` relations link the rest.
   - **Join plan:** MusicXML measure *i* is the *i*-th stack in page/system order. Within a stack, an event's onset selects a slot (and so an x-position). The head-chord on that staff nearest that x, whose heads' staff steps match the event's pitches under the active clef, supplies the bbox (the union of its heads) and the confidence (the minimum `ctx-grade` of the chord and its heads).
+- **Implemented (M3):** `lilyscan/engine/audiveris/omr.py`.
+  - An event's notehead is searched near its slot's x-position. A head at exactly the expected staff step may be up to 2.5 interlines away; any other head only 1 interline. This is needed because the engine's MusicXML onsets can disagree with its own slots after a rhythm misread. No head is given to two events.
+  - Whole-measure rests are looked up anywhere in the measure, since they are drawn centred.
+  - An event whose pitch matched no head at the expected step gets half the confidence.
+  - Engines pad a part that is absent from a system with invented rests. Those measures have nothing on the page to locate and are excluded from the coverage rate.
+  - On the seed corpus, 98% of locatable events get a box.
+- **Confidence is not calibrated (M3 finding).** Audiveris grades measure how well a *symbol* was recognized. Most errors, though, are interpretation errors: octave clefs, rhythm, part splits, which a confident notehead does not reveal. On the seed corpus, events graded 0.9-1.0 (mean ~0.95) are right only about three times in four, and final interpretations are never graded below 0.5. So a raw grade never trips the `% ??` marker, and the review list must not rely on grades alone (see Stage 5, item 9). Per-band accuracy and the expected calibration error are reported in `eval/results/`.
 - **Format risk:** `.omr` is an internal format, not a stable API. The reader is versioned against the pinned Audiveris release. It is guarded by golden-file tests built from saved `.omr` files, and it degrades to MusicXML-only import (with a warning) if parsing fails. Verify the exact schema against the pinned release's schema docs at M3. If the Python reader proves too fragile, switch to option D (§5.2): a small JVM tool that exports the model to project-owned JSON.
 
 ### Stage 4 — Born-Digital Vector Oracle
@@ -249,6 +256,8 @@ Pure functions over the IR, with heavy unit testing. This is where this project 
 6. **Lyrics cleanup.** Fix syllable-to-note attachment by x-alignment, handle hyphens and extenders, and handle verse numbering and stacked verse lines.
 7. **Transposing instruments.** Tag parts by instrument name so the generator can emit `\transposition`.
 8. **Structure.** Normalize repeats and voltas into `\repeat volta N { } \alternative { }`, and multi-measure rests into `R1*N`.
+
+9. **Lilyscan's own confidence.** Combine the engine grade with the evidence Lilyscan already has, and calibrate the result against the corpus (for example isotonic regression per feature set), so that `% ??` markers and review ranking mean what they say. The evidence: the pitch/step mismatch from Stage 3, measures failing Q3 (rhythm), notes flagged by Q4 (range), and parts flagged by Q5 (alignment). Target: expected calibration error below 0.05 on the corpus.
 
 Each repair records its provenance and before/after values in the IR, so the UI can show what changed and why.
 
