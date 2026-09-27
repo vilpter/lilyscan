@@ -8,8 +8,8 @@ one multi-page TIFF:
   scanned PDF pages are rendered at their image's own resolution and, like photos and
   image scans, go through Stage 1.
 - ``uploaded.tif``: the same pages as uploaded (born-digital pages rendered, the rest
-  untouched), written only when some page is a scan, so the engine can also read it and
-  the better run be kept.
+  untouched but for the quarter turns that stand them upright), written only when some
+  page is a scan, so the engine can also read it and the better run be kept.
 
 Needs the ``vision`` extra, and the ``vector`` extra for PDFs.
 """
@@ -122,15 +122,18 @@ def assemble(inputs: list[Path], out_dir: Path) -> Book:
             continue
         for number, (kind, pixels) in enumerate(pages):
             entry: dict[str, Any] = {"input": path.name, "page": number, "kind": kind}
-            uploaded.append(pixels)
             if kind == "vector":
                 entry.update(born_digital=True, rendered_dpi=PDF_RENDER_DPI, passed=True)
                 prepared.append(pixels)
+                uploaded.append(pixels)
             else:
                 gray, report = prepare_page(
                     pixels.astype(np.float32) / np.float32(255.0), path.name
                 )
                 prepared.append(np.clip(gray * 255 + 0.5, 0, 255).astype(np.uint8))
+                # Audiveris cannot read a page lying on its side, as uploaded or not.
+                turns = round(report.rotated / 90) % 4
+                uploaded.append(np.ascontiguousarray(np.rot90(pixels, turns)))
                 entry.update(report.to_dict())
             book.pages.append(entry)
     if not prepared:

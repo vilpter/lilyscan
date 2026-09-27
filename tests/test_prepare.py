@@ -79,6 +79,16 @@ def test_photo_is_found_straightened_and_passes_the_gate(tmp_path: Path) -> None
     assert lines < 0.15
 
 
+def test_an_outline_through_the_music_is_not_used() -> None:
+    # The paper runs off the frame and a shadow darkens its lower left corner: the bright
+    # region's outline cuts off the start of the lower staves, so the photo stays whole.
+    img = page()
+    h, w = img.shape
+    ys, xs = np.mgrid[0:h, 0:w]
+    img[xs < 0.5 * w * (ys - 0.3 * h) / (0.7 * h)] *= 0.45
+    assert find_page(img) is None
+
+
 def test_scan_is_deskewed_without_cropping(tmp_path: Path) -> None:
     src, dst = tmp_path / "scan.png", tmp_path / "prepared.png"
     save_png(scan(page(), seed=5), src)
@@ -177,3 +187,53 @@ def test_job_task_can_skip_preparation(tmp_path: Path, monkeypatch: pytest.Monke
     (job_dir(tmp_path, job.id) / "input").mkdir(parents=True)
     assert tasks.prepare_inputs(job.id) == {"pages": []}
     store.close()
+
+
+def page_with_text() -> np.ndarray:
+    """The synthetic page with a title and a line of Latin text, as most real pages have."""
+    img = (page() * 255).astype(np.uint8)
+    for y, text in (
+        (70, "Twinkle, Twinkle, Little Star - Variations"),
+        (1690, "Allegretto: lightly, with the tip of the bow"),
+    ):
+        cv2.putText(img, text, (100, y), cv2.FONT_HERSHEY_SIMPLEX, 1.1, 0, 2, cv2.LINE_AA)
+    return img.astype(np.float32) / np.float32(255.0)
+
+
+@pytest.mark.parametrize("turns", [1, 2, 3])
+def test_turned_page_comes_back_upright(tmp_path: Path, turns: int) -> None:
+    upright = page_with_text()
+    src, dst = tmp_path / "turned.png", tmp_path / "prepared.png"
+    save_png(np.ascontiguousarray(np.rot90(upright, turns)), src)
+    report = prepare_image(src, dst)
+    assert report.rotated % 360 == pytest.approx({1: 270, 2: 180, 3: 90}[turns], abs=1)
+    out = load_gray(dst)
+    assert out.shape == upright.shape
+    # The title is at the top again.
+    assert out[40:90].mean() < out[1720:1760].mean() + 0.02
+
+
+def test_the_page_as_uploaded_is_stood_upright_too(tmp_path: Path) -> None:
+    # A scan lying on its side: the second engine run gets it upright, otherwise as is.
+    from lilyscan.ingest.book import assemble
+
+    upright = page_with_text()
+    src = tmp_path / "sideways.png"
+    save_png(np.ascontiguousarray(np.rot90(upright, 1)), src)
+    book = assemble([src], tmp_path / "prepared")
+    assert book.uploaded is not None
+    ok, pages = cv2.imreadmulti(str(book.uploaded), flags=cv2.IMREAD_GRAYSCALE)
+    assert ok and pages[0].shape == upright.shape
+    assert np.abs(pages[0] / 255.0 - upright).mean() < 0.01
+
+
+def test_tilted_photo_is_levelled(tmp_path: Path) -> None:
+    from lilyscan.prepare.image import staff_angle
+
+    tilted = cv2.warpAffine(
+        page_with_text(),
+        cv2.getRotationMatrix2D((620, 877), 12, 1.0),
+        (1240, 1754),
+        borderValue=1.0,
+    )
+    assert staff_angle(np.asarray(tilted, dtype=np.float32)) == pytest.approx(-12, abs=0.5)
