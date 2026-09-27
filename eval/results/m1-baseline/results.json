@@ -1,13 +1,13 @@
 {
   "environment": {
     "label": "m1-baseline",
-    "created": "2026-09-27T02:46:52+00:00",
+    "created": "2026-09-27T03:04:52+00:00",
     "lilyscan": "0.1.0",
     "audiveris": "5.11.0",
     "lilypond": "2.26.0",
     "platform": "Windows-11-10.0.26200-SP0",
     "processor": "Intel64 Family 6 Model 142 Stepping 10, GenuineIntel",
-    "notes": "Raw Audiveris 5.11.0 on the generated seed corpus (30 pieces x 4 input variants); no Lilyscan repair stages applied. Compiles/bar-check columns run the M2 pipeline (engine MusicXML -> IR -> LilyPond -> Q1/Q2) on each engine output; Boxes and ECE come from the M3 .omr reader. Dev laptop: Intel i7-8550U (4 cores), 8 GB RAM, two Audiveris processes in parallel plus other work, so s/page is inflated by contention."
+    "notes": "Raw Audiveris 5.11.0 on the generated seed corpus (30 pieces x 4 input variants); no Lilyscan repair stages applied. Compiles/bar-check columns run the pipeline (engine MusicXML -> IR -> LilyPond -> Q1/Q2) on each engine output; Boxes and ECE come from the M3 .omr reader. Dev laptop: Intel i7-8550U (4 cores), 8 GB RAM, two Audiveris processes in parallel plus other work, so s/page is inflated by contention."
   },
   "summary": {
     "all": {
@@ -20,8 +20,8 @@
       "lyric_accuracy": 0.4296,
       "chord_accuracy": 0.2948,
       "mean_wall_s": 57.0969,
-      "compiles": 0.6697,
-      "bar_checks_clean": 0.2018,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.7615,
       "box_coverage": 0.9583,
       "calibration": {
         "events": 16261,
@@ -72,8 +72,8 @@
       "lyric_accuracy": 0.4068,
       "chord_accuracy": 0.2948,
       "mean_wall_s": 51.58,
-      "compiles": 0.7143,
-      "bar_checks_clean": 0.5,
+      "compiles": 1.0,
+      "bar_checks_clean": 1.0,
       "box_coverage": 1.0,
       "calibration": {
         "events": 1356,
@@ -122,8 +122,8 @@
       "lyric_accuracy": null,
       "chord_accuracy": null,
       "mean_wall_s": 44.2854,
-      "compiles": 0.9565,
-      "bar_checks_clean": 0.087,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.3478,
       "box_coverage": 0.997,
       "calibration": {
         "events": 2327,
@@ -172,8 +172,8 @@
       "lyric_accuracy": null,
       "chord_accuracy": null,
       "mean_wall_s": 60.5038,
-      "compiles": 0.2609,
-      "bar_checks_clean": 0.087,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.7826,
       "box_coverage": 0.9356,
       "calibration": {
         "events": 4914,
@@ -224,8 +224,8 @@
       "lyric_accuracy": 0.441,
       "chord_accuracy": null,
       "mean_wall_s": 81.0694,
-      "compiles": 0.7037,
-      "bar_checks_clean": 0.037,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.8148,
       "box_coverage": 0.9402,
       "calibration": {
         "events": 5331,
@@ -276,8 +276,8 @@
       "lyric_accuracy": null,
       "chord_accuracy": null,
       "mean_wall_s": 38.2163,
-      "compiles": 0.7273,
-      "bar_checks_clean": 0.4545,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.9545,
       "box_coverage": 0.9833,
       "calibration": {
         "events": 2333,
@@ -328,8 +328,8 @@
       "lyric_accuracy": 0.5434,
       "chord_accuracy": 0.3525,
       "mean_wall_s": 44.601,
-      "compiles": 0.6897,
-      "bar_checks_clean": 0.1034,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.8966,
       "box_coverage": 0.9756,
       "calibration": {
         "events": 4632,
@@ -380,8 +380,8 @@
       "lyric_accuracy": 0.1101,
       "chord_accuracy": 0.1059,
       "mean_wall_s": 72.4013,
-      "compiles": 0.4091,
-      "bar_checks_clean": 0.0,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.4091,
       "box_coverage": 0.8429,
       "calibration": {
         "events": 2652,
@@ -432,8 +432,8 @@
       "lyric_accuracy": 0.5467,
       "chord_accuracy": 0.3533,
       "mean_wall_s": 49.8107,
-      "compiles": 0.7931,
-      "bar_checks_clean": 0.4138,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.8966,
       "box_coverage": 0.9898,
       "calibration": {
         "events": 4524,
@@ -484,8 +484,8 @@
       "lyric_accuracy": 0.5181,
       "chord_accuracy": 0.3674,
       "mean_wall_s": 61.5747,
-      "compiles": 0.7241,
-      "bar_checks_clean": 0.2414,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.7586,
       "box_coverage": 0.9721,
       "calibration": {
         "events": 4453,
@@ -625,7 +625,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -668,8 +668,8 @@
       "wall_s": 53.73,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -885,7 +885,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -972,8 +972,8 @@
       "wall_s": 33.0,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -1017,7 +1017,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": false
@@ -1060,8 +1060,8 @@
       "wall_s": 37.75,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -1148,8 +1148,8 @@
       "wall_s": 49.72,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -1233,7 +1233,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -1364,7 +1364,7 @@
       "wall_s": 100.66,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": false,
@@ -1409,7 +1409,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -1496,8 +1496,8 @@
       "wall_s": 34.28,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -1541,7 +1541,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -1945,7 +1945,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": true
@@ -1990,7 +1990,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": true
@@ -2125,7 +2125,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": true
@@ -2170,7 +2170,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": true
@@ -2435,7 +2435,7 @@
       "wall_s": 90.31,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": true,
@@ -2481,7 +2481,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": true
@@ -2616,7 +2616,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": true
@@ -2661,7 +2661,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -2707,8 +2707,8 @@
       "wall_s": 54.08,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": false
@@ -2755,7 +2755,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -2849,7 +2849,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -2896,7 +2896,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": false
@@ -2943,7 +2943,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -2989,8 +2989,8 @@
       "wall_s": 106.17,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3037,7 +3037,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3084,7 +3084,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3131,7 +3131,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3178,7 +3178,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3225,7 +3225,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3272,7 +3272,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3319,7 +3319,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3408,8 +3408,8 @@
       "wall_s": 70.84,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": false
@@ -3456,7 +3456,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3503,7 +3503,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3549,7 +3549,7 @@
       "wall_s": 157.91,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": false,
@@ -3597,7 +3597,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3691,7 +3691,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3737,7 +3737,7 @@
       "wall_s": 63.89,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": false,
@@ -3949,7 +3949,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": true
@@ -3995,8 +3995,8 @@
       "wall_s": 102.33,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": false
@@ -4042,7 +4042,7 @@
       "wall_s": 118.62,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": false,
@@ -4089,7 +4089,7 @@
       "wall_s": 152.97,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": false,
@@ -4136,8 +4136,8 @@
       "wall_s": 52.66,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4268,8 +4268,8 @@
       "wall_s": 83.25,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4485,7 +4485,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4616,8 +4616,8 @@
       "wall_s": 80.61,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4660,8 +4660,8 @@
       "wall_s": 43.8,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4705,7 +4705,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4749,7 +4749,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4833,7 +4833,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4880,7 +4880,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4927,7 +4927,7 @@
       "engine_errors": [],
       "qa": {
         "Q1": true,
-        "Q2": false,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -4973,7 +4973,7 @@
       "wall_s": 72.86,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": true,
@@ -5020,8 +5020,8 @@
       "wall_s": 47.97,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5067,8 +5067,8 @@
       "wall_s": 55.14,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5114,8 +5114,8 @@
       "wall_s": 67.7,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5161,7 +5161,7 @@
       "wall_s": 120.78,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": true,
@@ -5208,8 +5208,8 @@
       "wall_s": 33.7,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5349,8 +5349,8 @@
       "wall_s": 75.45,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5396,8 +5396,8 @@
       "wall_s": 44.05,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5443,8 +5443,8 @@
       "wall_s": 56.27,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5490,8 +5490,8 @@
       "wall_s": 61.0,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5580,8 +5580,8 @@
       "wall_s": 53.77,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5627,8 +5627,8 @@
       "wall_s": 60.02,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5674,8 +5674,8 @@
       "wall_s": 70.38,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": true,
         "Q5": false
@@ -5721,7 +5721,7 @@
       "wall_s": 97.73,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": false,
@@ -5768,8 +5768,8 @@
       "wall_s": 36.05,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": false
@@ -5815,8 +5815,8 @@
       "wall_s": 41.61,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
-        "Q2": false,
+        "Q1": true,
+        "Q2": true,
         "Q3": false,
         "Q4": false,
         "Q5": false
@@ -5862,7 +5862,7 @@
       "wall_s": 52.83,
       "engine_errors": [],
       "qa": {
-        "Q1": false,
+        "Q1": true,
         "Q2": false,
         "Q3": false,
         "Q4": false,
