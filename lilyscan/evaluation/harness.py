@@ -22,7 +22,7 @@ from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import MusicXMLError, load_musicxml
 from lilyscan.ir.ops import merge_scores
 from lilyscan.lilypond.compile import lilypond_version
-from lilyscan.pipeline import produce
+from lilyscan.pipeline import expected_right, produce
 from lilyscan.repair import apply_repairs
 from lilyscan.repair.confidence import calibrate_confidence
 from lilyscan.runtime.config import Settings
@@ -133,6 +133,35 @@ def _engine_output(
     return score, summary["wall_s"], errors, cached, report
 
 
+@dataclass
+class _Processed:
+    """An engine output after Stage 3 geometry and (optionally) Stage 5."""
+
+    pred: Score | None
+    out_dir: Path
+    omr: Path | None
+    located: int = 0
+    mappable: int = 0
+    repairs: list[dict[str, Any]] = field(default_factory=list)
+
+
+def _process(pred: Score | None, out_dir: Path, repair: bool, errors: list[str]) -> _Processed:
+    omr = next(iter(sorted(out_dir.glob("*.omr"))), None)
+    done = _Processed(pred, out_dir, omr)
+    book = None
+    if pred is not None and omr is not None:
+        try:
+            book = read_omr(omr)
+            stats = attach_geometry(pred, book)
+            done.located, done.mappable = stats.located, stats.mappable
+        except OmrError as exc:
+            errors.append(f"cannot read .omr: {exc}")
+    if repair and pred is not None:
+        done.repairs = [r.to_dict() for r in apply_repairs(pred, book=book)]
+        calibrate_confidence(pred)
+    return done
+
+
 def evaluate_item(
     item: CorpusItem,
     variant: Variant,
@@ -147,29 +176,32 @@ def evaluate_item(
     pred, wall_s, errors, cached, prepared = _engine_output(
         item, variant, work, settings, reuse, prepare
     )
-    out_dir = engine_dir(work, item, variant, prepare)
-    located = mappable = 0
-    book = None
-    omr = next(iter(sorted(out_dir.glob("*.omr"))), None)
-    if pred is not None and omr is not None:
-        try:
-            book = read_omr(omr)
-            stats = attach_geometry(pred, book)
-            located, mappable = stats.located, stats.mappable
-        except OmrError as exc:
-            errors.append(f"cannot read .omr: {exc}")
-    repairs: list[dict[str, Any]] = []
-    if repair and pred is not None:
-        repairs = [r.to_dict() for r in apply_repairs(pred, book=book)]
-        calibrate_confidence(pred)
+    done = _process(pred, engine_dir(work, item, variant, prepare), repair, errors)
+    # As in a job: when Stage 1 found no page edges (a scan), the page as uploaded is
+    # transcribed too, and the run Lilyscan expects to have more right is kept.
+    if repair and prepared is not None and prepared.get("page_found") is False:
+        alt, alt_wall, alt_errors, alt_cached, _ = _engine_output(
+            item, variant, work, settings, reuse, False
+        )
+        other = _process(alt, engine_dir(work, item, variant, False), repair, alt_errors)
+        mine = expected_right(pred) if pred is not None else -1.0
+        theirs = expected_right(alt) if alt is not None else -1.0
+        prepared = {
+            **prepared,
+            "expected_right": {"prepared": round(mine, 2), "uploaded": round(theirs, 2)},
+            "chosen": "uploaded" if theirs > mine else "prepared",
+        }
+        wall_s = (wall_s or 0.0) + (alt_wall or 0.0)
+        if theirs > mine:
+            pred, errors, cached, done = alt, alt_errors, alt_cached and cached, other
     result = ItemResult(item, variant, compare(gt, pred), wall_s, errors, cached)
-    result.located, result.mappable, result.repairs = located, mappable, repairs
+    result.located, result.mappable, result.repairs = done.located, done.mappable, done.repairs
     result.prepare = prepared
-    if pred is not None and omr is not None:
+    if pred is not None and done.omr is not None:
         result.correctness = event_correctness(gt, pred)
     if lilypond and pred is not None:
         out = "lilyscan-repaired" if repair else "lilyscan"
-        report = produce(pred, out_dir / out, settings)
+        report = produce(pred, done.out_dir / out, settings)
         result.qa = {c["id"]: c["passed"] for c in report["qa"]["checks"]}
     log.info(
         "%s/%s: measures %.0f%%, note F1 %.2f%s",

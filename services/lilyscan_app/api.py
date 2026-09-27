@@ -123,6 +123,12 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
             raise HTTPException(404, "file not found")
         return FileResponse(target)
 
+    def _engine_run(root: Path) -> dict[str, Any]:
+        """The engine run the job kept (its files are listed relative to the job folder)."""
+        path = root / "engine" / "run.json"
+        run: dict[str, Any] = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+        return run
+
     def _job_root(job_id: str, jobs: JobStore) -> Path:
         if jobs.get(job_id) is None:
             raise HTTPException(404, "job not found")
@@ -132,12 +138,7 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
     def get_page(job_id: str, page: int, jobs: Store) -> Response:
         """Page ``page`` (1-based) as the engine analysed it; review boxes use its pixels."""
         root = _job_root(job_id, jobs)
-        run_path = root / "engine" / "run.json"
-        omr = (
-            json.loads(run_path.read_text(encoding="utf-8")).get("omr_files")
-            if run_path.is_file()
-            else None
-        )
+        omr = _engine_run(root).get("omr_files")
         if not omr:
             raise HTTPException(404, "no engine project for this job")
         with zipfile.ZipFile(root / omr[0]) as z:
@@ -236,7 +237,7 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
         candidates = {
             "pdf": [ly_root / "main.pdf"],
             "midi": [ly_root / "main.midi", ly_root / "main.mid"],
-            "musicxml": sorted((root / "engine").glob("*.mxl")),
+            "musicxml": [root / name for name in _engine_run(root).get("mxl_files", [])],
         }.get(kind)
         if candidates is None:
             raise HTTPException(404, f"unknown download {kind!r}")

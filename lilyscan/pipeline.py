@@ -194,3 +194,26 @@ def convert_file(musicxml: Path, out_dir: Path, settings: Settings | None = None
         json.dumps(report, indent=2), encoding="utf-8", newline="\n"
     )
     return report
+
+
+def expected_right(score: Score) -> float:
+    """How many events Lilyscan expects to be right: the sum of calibrated confidences."""
+    return sum(
+        e.confidence
+        for _, s in score.staves()
+        for m in s.measures
+        for v in m.voices
+        for e in v.events
+        if e.confidence is not None
+    )
+
+
+def assess_engine_run(root: Path, engine: dict[str, Any]) -> float:
+    """Lilyscan's estimate of how good an engine run is, for choosing between runs on
+    different versions of the same pages: the events expected to be right after repair."""
+    score, geometry = import_engine_output(root, engine)
+    ok = geometry is not None and "error" not in geometry
+    book = read_omr(root / geometry["source"]) if geometry is not None and ok else None
+    apply_repairs(score, book=book)
+    calibrate_confidence(score)
+    return round(expected_right(score), 2)
