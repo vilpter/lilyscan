@@ -28,7 +28,7 @@ from music21 import (
     tie,
 )
 
-Category = Literal["solo", "piano", "satb", "leadsheet", "quartet"]
+Category = Literal["solo", "piano", "satb", "leadsheet", "quartet", "song"]
 Syllabic = Literal["single", "begin", "middle", "end"]
 
 LYRICS: dict[str, list[str]] = {
@@ -81,15 +81,25 @@ class PieceSpec:
     seed: int
     measures: int
     language: str | None = None  # lyrics language for satb/leadsheet
+    # Real repertoire (D11): a music21 corpus work, excerpted from measure ``first``.
+    # When set, the piece is taken from the corpus instead of generated.
+    work: str | None = None
+    first: int = 1
+    engraver: str = "musicxml2ly"  # or "lilyscan" (see lilyscan.synth.engrave)
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        out: dict[str, object] = {
             "id": self.id,
             "category": self.category,
             "seed": self.seed,
             "measures": self.measures,
             "language": self.language,
         }
+        if self.work is not None:
+            out |= {"work": self.work, "first": self.first}
+        if self.engraver != "musicxml2ly":
+            out["engraver"] = self.engraver
+        return out
 
 
 @dataclass
@@ -408,7 +418,8 @@ def write_ground_truth(spec: PieceSpec, out_dir: Path) -> Path:
     """Write the piece's MusicXML ground truth and return its path."""
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{spec.id}.musicxml"
-    build_score(spec).write("musicxml", fp=str(path))
+    score = build_score(spec) if spec.work is None else corpus_excerpt(spec)
+    score.write("musicxml", fp=str(path))
     # music21 copies the title into <movement-title>, which engraves as a duplicate
     # subtitle; the work title alone is enough.
     text = path.read_text(encoding="utf-8")
@@ -425,3 +436,43 @@ def write_ground_truth(spec: PieceSpec, out_dir: Path) -> Path:
         text = text.replace(old, new)
     path.write_text(text, encoding="utf-8")
     return path
+
+
+def corpus_excerpt(spec: PieceSpec) -> stream.Score:
+    """Measures ``first`` .. ``first + measures - 1`` of a music21 corpus work."""
+    from music21 import corpus
+
+    assert spec.work is not None
+    parsed = corpus.parse(spec.work)
+    if not isinstance(parsed, stream.Score):
+        raise ValueError(f"{spec.work} is not a single score")
+    excerpt = parsed.measures(spec.first, spec.first + spec.measures - 1)
+    if not isinstance(excerpt, stream.Score):
+        raise ValueError(f"cannot excerpt {spec.work}")
+    # Keep the real title and composer; without them music21 prints "Music21".
+    original = parsed.metadata
+    title = (original.title if original is not None else None) or spec.work
+    composer = original.composer if original is not None else None
+    fallback = spec.work.split("/")[0].replace("_", " ").title()
+    excerpt.metadata = metadata.Metadata(title=title, composer=composer or fallback)
+    return excerpt
+
+
+def corpus_rights(work: str) -> str:
+    """The <rights> statement embedded in a corpus work's MusicXML, or 'unstated'."""
+    from xml.etree import ElementTree as ET
+
+    from music21 import corpus
+
+    from lilyscan.ir.musicxml import read_musicxml_bytes
+
+    path = corpus.getWork(work)
+    if isinstance(path, list):
+        path = path[0]
+    root = ET.fromstring(read_musicxml_bytes(Path(path)))
+    rights = [
+        (el.text or "").strip()
+        for el in root.iter()
+        if isinstance(el.tag, str) and el.tag.split("}")[-1] == "rights" and (el.text or "").strip()
+    ]
+    return "; ".join(rights) or "unstated"

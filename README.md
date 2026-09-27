@@ -92,8 +92,32 @@ uv run lilyscan eval run --label my-run --lilypond
 ```
 
 Results go to `eval/results/<label>/` (`summary.md`, `results.json`); engine output is cached
-in `eval/work/`. `--lilypond` also runs the full pipeline on each engine output and reports
-how often it compiles (Q1) and passes bar checks (Q2).
+in `eval/work/`. The summary reports exact-measure accuracy, edit rate, note F1, lyric and
+chord accuracy, how many engine events were located on the page, and how well the engine's
+confidence is calibrated. `--lilypond` also runs the full pipeline on each engine output and
+reports how often it compiles (Q1) and passes bar checks (Q2).
+
+A second corpus holds real repertoire: excerpts of public-domain works from music21's bundled
+corpus (`eval/corpus/repertoire.json`). The encodings are not committed; the build fetches them
+from the installed music21 package and records each work's rights statement in the manifest.
+Evaluate it separately from the generated pieces:
+
+```bash
+uv run lilyscan corpus build --spec eval/corpus/repertoire.json --out eval/corpus/repertoire
+```
+
+```bash
+uv run lilyscan eval run --corpus eval/corpus/repertoire --label my-repertoire-run --lilypond
+```
+
+### Job outputs
+
+A finished job's folder holds `ir/score.json` (the internal model, with page boxes and
+confidence per event), the LilyPond project in `ly/` (`main.ly`, `parts/`, `layout/`, plus the
+compiled PDF and MIDI), `report.json` (engine run, geometry, QA checks Q1-Q5), and
+`overlays/page-N.png`: each page as the engine saw it, with every note boxed in green, amber,
+or red by confidence. Low-confidence notes are also marked in the LilyPond source as
+`%{ ?? conf=... %}`, so `grep "??"` lists them.
 
 Tests marked `lilypond` need LilyPond (`LILYPOND_BIN`, default `lilypond`); `engine` tests
 need Audiveris (`AUDIVERIS_BIN`, default `audiveris`); `gpu` tests need a CUDA device. Missing

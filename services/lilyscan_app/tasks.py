@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from lilyscan.engine.audiveris.runner import run_audiveris
-from lilyscan.pipeline import import_musicxml_files, produce
+from lilyscan.pipeline import import_engine_output, produce
 from lilyscan.runtime.config import Settings
 
 from .jobs import JobStatus, JobStore, job_dir
@@ -28,7 +28,9 @@ def _store(settings: Settings) -> JobStore:
 
 def _write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, sort_keys=True, default=str), encoding="utf-8")
+    path.write_text(
+        json.dumps(data, indent=2, sort_keys=True, default=str), encoding="utf-8", newline="\n"
+    )
 
 
 def engine_transcribe(job_id: str) -> dict[str, Any]:
@@ -95,9 +97,9 @@ def pipeline_finish(job_id: str) -> dict[str, Any]:
         store.update(job_id, status=JobStatus.RUNNING, stage="import")
         root = job_dir(settings.data_dir, job_id)
         engine = json.loads((root / "engine" / "run.json").read_text(encoding="utf-8"))
-        score = import_musicxml_files([root / p for p in engine["mxl_files"]], "audiveris")
+        score, geometry = import_engine_output(root, engine)
         store.update(job_id, stage="lilypond")
-        report = {"engine": engine, **produce(score, root, settings)}
+        report = {"engine": engine, "geometry": geometry, **produce(score, root, settings)}
         _write_json(root / "report.json", report)
         store.update(job_id, status=JobStatus.DONE, stage="done", report=report)
         return report

@@ -117,3 +117,49 @@ def test_merge_scores_appends_measures() -> None:
     merged = merge_scores([GT, GT])
     staff = merged.parts[0].staves[0]
     assert [m.index for m in staff.measures] == [0, 1, 2, 3, 4, 5]
+
+
+def test_event_correctness_marks_the_wrong_note() -> None:
+    from lilyscan.evaluation.compare import event_correctness
+
+    pred = score(
+        measure(0, [n("C", 4, 0, lyric="Ky"), n("D", 4, 1, lyric="ri")]),
+        measure(1, [n("E", 4, 0), n("G", 4, 1)]),
+        measure(2, [n("G", 4, 0, 2)]),
+    )
+    pred.parts[0].staves[0].measures[1].voices[0].events[1].confidence = 0.3
+    pairs = event_correctness(GT, pred)
+    assert [ok for _, ok in pairs] == [True, True, True, False, True]
+    assert pairs[3] == (0.3, False)
+
+
+def test_event_correctness_counts_extra_measures_as_wrong() -> None:
+    from lilyscan.evaluation.compare import event_correctness
+
+    extra = score(*GT.parts[0].staves[0].measures, measure(3, [n("A", 4, 0, 2)]))
+    pairs = event_correctness(GT, extra)
+    assert [ok for _, ok in pairs] == [True] * 5 + [False]
+
+
+def test_calibration_bands_and_ece() -> None:
+    from lilyscan.evaluation.compare import calibration
+
+    pairs = [(0.95, True)] * 9 + [(0.95, False)] + [(0.3, False)] * 2 + [(None, True)]
+    result = calibration(pairs)
+    top = next(b for b in result["bands"] if b["band"] == "0.9-1.0")
+    low = next(b for b in result["bands"] if b["band"] == "0.0-0.5")
+    assert (top["events"], top["accuracy"], top["mean_confidence"]) == (10, 0.9, 0.95)
+    assert (low["events"], low["accuracy"]) == (2, 0.0)
+    # ECE = 10/12 * |0.9 - 0.95| + 2/12 * |0.0 - 0.3|
+    assert result["ece"] == round(10 / 12 * 0.05 + 2 / 12 * 0.3, 4)
+    assert (result["scored_events"], result["unscored_accuracy"]) == (12, 1.0)
+
+
+def test_voices_with_rest_and_note_at_same_onset_compare() -> None:
+    # Voice order is canonicalized by sorting; a rest and a note sharing onset and
+    # duration used to make that sort compare None with a tuple.
+    a = [rest(0, 1), n("D", 4, 1)]
+    b = [n("C", 4, 0), n("E", 4, 1)]
+    gt = score(measure(0, a, b))
+    pred = score(measure(0, b, a))
+    assert compare(gt, pred).measure_accuracy == 1.0

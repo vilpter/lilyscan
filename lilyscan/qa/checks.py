@@ -76,13 +76,15 @@ def compile_checks(
         {"file": _relative(d.file, root), "line": d.line, "message": d.message}
         for d in result.errors
     ]
-    q1 = CheckResult(
-        "Q1",
-        "compiles",
-        passed=result.ok,
-        details=errors,
-        summary="compiled" if result.ok else f"{len(errors)} error(s)",
-    )
+    internal = [d for d in result.warnings if d.is_internal]
+    details = errors + [
+        {"file": _relative(d.file, root), "line": d.line, "message": d.message, "internal": True}
+        for d in internal
+    ]
+    summary = "compiled" if result.ok else f"{len(errors)} error(s)"
+    if internal:
+        summary += f" ({len(internal)} LilyPond internal warning(s))"
+    q1 = CheckResult("Q1", "compiles", passed=result.ok, details=details, summary=summary)
     failures = []
     for d in result.warnings:
         if not d.is_barcheck:

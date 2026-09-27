@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass, field
 from fractions import Fraction
 from typing import Any
 
-from lilyscan.ir.models import Event, Measure, Score
+from lilyscan.ir.models import Event, Measure, Score, Staff
 
 PitchKey = tuple[str, int, int]
 Token = tuple[Fraction, Fraction, tuple[PitchKey, ...] | None, bool]
@@ -72,20 +72,31 @@ def measure_sig(m: Measure, measure_length: Fraction | None) -> MeasureSig:
         for ly in e.lyrics
         if ly.verse == 1
     )
-    return MeasureSig(tuple(sorted(voices)), events, notes, onsets, lyrics)
+    # Order voices canonically (voice numbers are ignored). Rests carry None instead of
+    # pitches, so sort on a key where they compare as empty.
+    ordered = sorted(voices, key=lambda v: [(t[0], t[1], t[2] or (), t[3]) for t in v])
+    return MeasureSig(tuple(ordered), events, notes, onsets, lyrics)
+
+
+def _measure_lengths(staff: Staff) -> list[Fraction | None]:
+    """The time-signature length in force at each measure."""
+    lengths: list[Fraction | None] = []
+    length: Fraction | None = None
+    for m in staff.measures:
+        if m.time is not None:
+            length = m.time.measure_length
+        lengths.append(length)
+    return lengths
 
 
 def staff_sigs(score: Score) -> list[list[MeasureSig]]:
-    out: list[list[MeasureSig]] = []
-    for _, staff in score.staves():
-        length: Fraction | None = None
-        sigs = []
-        for m in staff.measures:
-            if m.time is not None:
-                length = m.time.measure_length
-            sigs.append(measure_sig(m, length))
-        out.append(sigs)
-    return out
+    return [
+        [
+            measure_sig(m, length)
+            for m, length in zip(staff.measures, _measure_lengths(staff), strict=True)
+        ]
+        for _, staff in score.staves()
+    ]
 
 
 def _sub_cost(a: MeasureSig, b: MeasureSig) -> float:
@@ -257,3 +268,69 @@ def compare(gt: Score, pred: Score | None) -> Comparison:
 
     result.chord_edits = levenshtein(_chords(gt), _chords(pred)) if result.gt_chords else 0
     return result
+
+
+def event_correctness(gt: Score, pred: Score) -> list[tuple[float | None, bool]]:
+    """(confidence, correct) for every predicted event.
+
+    An event is correct when an identical event (onset, duration, spelled pitches,
+    grace flag) is still unclaimed in the ground-truth measure it aligns to. Events in
+    measures or staves with no ground-truth counterpart are incorrect.
+    """
+    gt_sigs = staff_sigs(gt)
+    out: list[tuple[float | None, bool]] = []
+    for k, (_, staff) in enumerate(pred.staves()):
+        lengths = _measure_lengths(staff)
+        pred_sigs = [measure_sig(m, n) for m, n in zip(staff.measures, lengths, strict=True)]
+        reference = gt_sigs[k] if k < len(gt_sigs) else []
+        for gi, pi in align(reference, pred_sigs):
+            if pi is None:
+                continue
+            available = Counter(reference[gi].events) if gi is not None else Counter()
+            for v in staff.measures[pi].voices:
+                for e in v.events:
+                    token = _token(e, lengths[pi])
+                    correct = available[token] > 0
+                    if correct:
+                        available[token] -= 1
+                    out.append((e.confidence, correct))
+    return out
+
+
+# Confidence bands for calibration reports: [low, high).
+CALIBRATION_BANDS = [(0.0, 0.5), (0.5, 0.7), (0.7, 0.8), (0.8, 0.9), (0.9, 1.01)]
+
+
+def calibration(pairs: list[tuple[float | None, bool]]) -> dict[str, Any]:
+    """Accuracy per confidence band and the expected calibration error (ECE).
+
+    A well-calibrated engine is right about 60% of the time on events it scores 0.6.
+    ECE is the event-weighted mean gap between band accuracy and band confidence.
+    """
+    scored = [(c, ok) for c, ok in pairs if c is not None]
+    bands = []
+    ece = 0.0
+    for lo, hi in CALIBRATION_BANDS:
+        members = [(c, ok) for c, ok in scored if lo <= c < hi]
+        if not members:
+            bands.append({"band": f"{lo:.1f}-{min(hi, 1.0):.1f}", "events": 0})
+            continue
+        accuracy = sum(ok for _, ok in members) / len(members)
+        confidence = sum(c for c, _ in members) / len(members)
+        ece += len(members) / len(scored) * abs(accuracy - confidence)
+        bands.append(
+            {
+                "band": f"{lo:.1f}-{min(hi, 1.0):.1f}",
+                "events": len(members),
+                "accuracy": round(accuracy, 4),
+                "mean_confidence": round(confidence, 4),
+            }
+        )
+    unscored = [ok for c, ok in pairs if c is None]
+    return {
+        "events": len(pairs),
+        "scored_events": len(scored),
+        "ece": round(ece, 4) if scored else None,
+        "bands": bands,
+        "unscored_accuracy": round(sum(unscored) / len(unscored), 4) if unscored else None,
+    }

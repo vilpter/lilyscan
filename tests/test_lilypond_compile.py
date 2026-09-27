@@ -75,3 +75,8 @@ def test_compile_reports_syntax_error(tmp_path: Path) -> None:
     result = compile_ly(src, tmp_path / "out")
     assert not result.ok
     assert result.errors
+
+
+def test_programming_errors_are_warnings() -> None:
+    [d] = parse_diagnostics("programming error: Multi measure rest seems misplaced.")
+    assert d.is_internal and not d.is_error

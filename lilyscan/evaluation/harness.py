@@ -8,15 +8,16 @@ import platform
 from collections import defaultdict
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from statistics import mean
 from typing import Any
 
 from lilyscan import __version__
+from lilyscan.engine.audiveris.omr import OmrError, attach_geometry, read_omr
 from lilyscan.engine.audiveris.runner import audiveris_version, run_audiveris
-from lilyscan.evaluation.compare import Comparison, compare
+from lilyscan.evaluation.compare import Comparison, calibration, compare, event_correctness
 from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import MusicXMLError, load_musicxml
 from lilyscan.ir.ops import merge_scores
@@ -38,6 +39,11 @@ class ItemResult:
     cached: bool
     # Q1-Q5 outcome of the full pipeline on the engine output (None when not run).
     qa: dict[str, bool] | None = None
+    # .omr geometry: events that could be located vs. those that could be mapped.
+    located: int = 0
+    mappable: int = 0
+    # (confidence, correct) per engine event, for calibration; not serialized per item.
+    correctness: list[tuple[float | None, bool]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -48,6 +54,8 @@ class ItemResult:
             "wall_s": self.wall_s,
             "engine_errors": self.engine_errors,
             "qa": self.qa,
+            "located_events": self.located,
+            "mappable_events": self.mappable,
             **self.comparison.to_dict(),
         }
 
@@ -69,7 +77,7 @@ def _engine_output(
             "errors": run.step_errors + run.ocr_problems,
             "timed_out": run.timed_out,
         }
-        summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8", newline="\n")
 
     errors: list[str] = list(summary["errors"])
     score: Score | None = None
@@ -93,6 +101,14 @@ def evaluate_item(
     gt = load_musicxml(item.ground_truth, "ground-truth")
     pred, wall_s, errors, cached = _engine_output(item, variant, work, settings, reuse)
     result = ItemResult(item, variant, compare(gt, pred), wall_s, errors, cached)
+    omr = next(iter(sorted((work / item.spec.id / variant).glob("*.omr"))), None)
+    if pred is not None and omr is not None:
+        try:
+            stats = attach_geometry(pred, read_omr(omr))
+            result.located, result.mappable = stats.located, stats.mappable
+        except OmrError as exc:
+            result.engine_errors.append(f"cannot read .omr: {exc}")
+        result.correctness = event_correctness(gt, pred)
     if lilypond and pred is not None:
         report = produce(pred, work / item.spec.id / variant / "lilyscan", settings)
         result.qa = {c["id"]: c["passed"] for c in report["qa"]["checks"]}
@@ -157,6 +173,11 @@ def summarize(results: list[ItemResult]) -> dict[str, dict[str, Any]]:
             # Share of pipeline runs (engine output -> LilyPond) passing Q1 / Q2.
             "compiles": _rate([r.qa["Q1"] for r in rs if r.qa is not None]),
             "bar_checks_clean": _rate([r.qa["Q2"] for r in rs if r.qa is not None]),
+            # Share of mappable engine events that got a box from the .omr (Stage 3).
+            "box_coverage": round(sum(r.located for r in rs) / mappable, 4)
+            if (mappable := sum(r.mappable for r in rs))
+            else None,
+            "calibration": calibration([pair for r in rs for pair in r.correctness]),
         }
     return out
 
@@ -191,10 +212,12 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
         )
         + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
     with_qa = any(r.qa is not None for r in results)
     qa_head = " Compiles (Q1) | Bar checks (Q2) |" if with_qa else ""
+    qa_head += " Boxes | ECE |"
     lines = [
         f"# Evaluation: {label}",
         "",
@@ -205,12 +228,14 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
         "",
         "| Group | Items | Engine OK | Exact measures | Edit rate | Note F1 | Onset F1 "
         f"| Lyrics | Chords | s/page |{qa_head}",
-        "|---|---|---|---|---|---|---|---|---|---|" + ("---|---|" if with_qa else ""),
+        "|---|---|---|---|---|---|---|---|---|---|" + ("---|---|" if with_qa else "") + "---|---|",
     ]
     for key, row in summary.items():
         qa_cells = (
             f" {_fmt(row['compiles'])} | {_fmt(row['bar_checks_clean'])} |" if with_qa else ""
         )
+        ece = row["calibration"]["ece"]
+        qa_cells += f" {_fmt(row['box_coverage'])} | {'-' if ece is None else f'{ece:.3f}'} |"
         lines.append(
             f"| {key} | {row['items']} | {row['engine_ok']} | {_fmt(row['measure_accuracy'])} "
             f"| {_fmt(row['edit_rate'])} | {_fmt(row['note_f1'])} | {_fmt(row['onset_f1'])} "
@@ -221,9 +246,25 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
         "",
         "Exact measures: share of ground-truth measures reproduced exactly (pitch, duration, "
         "voices). Edit rate: event edits per ground-truth event (lower is better). "
-        "Onset F1 ignores durations.",
+        "Onset F1 ignores durations. Boxes: engine events located on the page from the .omr "
+        "(Stage 3). ECE: expected calibration error of the engine's confidence (lower is better).",
         "",
     ]
+    bands = summary.get("all", {}).get("calibration", {}).get("bands", [])
+    if any(b["events"] for b in bands):
+        lines += [
+            "## Confidence calibration (all items)",
+            "",
+            "| Confidence | Events | Accuracy | Mean confidence |",
+            "|---|---|---|---|",
+        ]
+        for b in bands:
+            if b["events"]:
+                lines.append(
+                    f"| {b['band']} | {b['events']} | {_fmt(b['accuracy'])} "
+                    f"| {_fmt(b['mean_confidence'])} |"
+                )
+        lines.append("")
     path = out_dir / "summary.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
+    path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     return path
