@@ -15,12 +15,16 @@ class RecordingDispatcher:
     def __init__(self) -> None:
         self.submitted: list[str] = []
         self.recompiled: list[str] = []
+        self.combined: list[str] = []
 
     def submit(self, job_id: str) -> None:
         self.submitted.append(job_id)
 
     def recompile(self, job_id: str) -> None:
         self.recompiled.append(job_id)
+
+    def combine(self, job_id: str) -> None:
+        self.combined.append(job_id)
 
 
 @pytest.fixture
@@ -207,3 +211,49 @@ def test_downloads(client: TestClient, finished_job: str) -> None:
 def test_web_app_is_served(client: TestClient) -> None:
     page = client.get("/")
     assert page.status_code == 200 and "<title>Lilyscan</title>" in page.text
+
+
+@pytest.mark.lilypond
+def test_combine_parts_of_finished_jobs(
+    client: TestClient, finished_job: str, dispatcher: RecordingDispatcher, tmp_path: Path
+) -> None:
+    from lilyscan_app import tasks
+
+    parts = client.get(f"/api/jobs/{finished_job}/parts").json()
+    assert parts and {"id", "name", "staves", "measures"} <= set(parts[0])
+    body = {
+        "title": "Duo",
+        "parts": [
+            {"job": finished_job, "part": parts[0]["id"]},
+            {"job": finished_job, "part": parts[0]["id"], "transpose": "-P8", "name": "Low"},
+        ],
+    }
+    r = client.post("/api/scores", json=body)
+    assert r.status_code == 201, r.text
+    job = r.json()
+    assert dispatcher.combined == [job["id"]] and job["inputs"] == []
+    assert job["options"]["combine"]["title"] == "Duo"
+
+    report = tasks.combine_job(job["id"])  # what the pipeline worker would run
+    assert report["qa"]["checks"][0]["passed"]
+    done = client.get(f"/api/jobs/{job['id']}").json()
+    assert done["status"] == "done"
+    assert client.get(f"/api/jobs/{job['id']}/download/pdf").status_code == 200
+
+
+@pytest.mark.lilypond
+def test_combine_rejects_bad_requests(client: TestClient, finished_job: str) -> None:
+    part = client.get(f"/api/jobs/{finished_job}/parts").json()[0]["id"]
+    assert client.post("/api/scores", json={"parts": []}).status_code == 422
+    missing = {"parts": [{"job": "nope", "part": part}]}
+    assert client.post("/api/scores", json=missing).status_code == 404
+    no_part = {"parts": [{"job": finished_job, "part": "P99"}]}
+    assert client.post("/api/scores", json=no_part).status_code == 422
+    bad = {"parts": [{"job": finished_job, "part": part, "transpose": "M4"}]}
+    assert client.post("/api/scores", json=bad).status_code == 422
+
+
+def test_combine_needs_finished_jobs(client: TestClient) -> None:
+    job = client.post("/api/jobs", files=[("files", ("p.png", b"x", "image/png"))]).json()
+    body = {"parts": [{"job": job["id"], "part": "P1"}]}
+    assert client.post("/api/scores", json=body).status_code == 409

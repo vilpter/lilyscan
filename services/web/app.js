@@ -70,16 +70,98 @@ async function refreshJobs() {
         "tr",
         {},
         el("td", {}, el("a", { href: `#/job/${job.id}` }, job.id)),
-        el("td", {}, job.inputs.map((n) => n.replace(/^\d\d-/, "")).join(", ")),
+        el("td", {}, jobLabel(job)),
         el("td", {}, el("span", { class: `pill ${job.status}` }, `${job.status}${job.status === "done" ? "" : ` · ${job.stage}`}`)),
         el("td", { class: "muted" }, job.created_at.replace("T", " ").replace("+00:00", " UTC")),
       ),
     ),
   );
   if (!jobs.length) rows.append(el("tr", {}, el("td", { colspan: 4, class: "muted" }, "No jobs yet.")));
+  renderCombine(jobs);
   const busy = jobs.some((j) => j.status === "queued" || j.status === "running");
   if (busy && !$("home").hidden) pollTimer = setTimeout(refreshJobs, 3000);
 }
+
+function jobLabel(job) {
+  if (job.options && job.options.combine) return `Combined: ${job.options.combine.title || "score"}`;
+  return job.inputs.map((n) => n.replace(/^\d\d-/, "")).join(", ");
+}
+
+// Score combiner: parts of finished jobs, each optionally transposed.
+const INTERVALS = [
+  ["", "as written"],
+  ["M2", "up a major 2nd"],
+  ["-M2", "down a major 2nd"],
+  ["m3", "up a minor 3rd"],
+  ["-m3", "down a minor 3rd"],
+  ["P4", "up a 4th"],
+  ["-P4", "down a 4th"],
+  ["P5", "up a 5th"],
+  ["-P5", "down a 5th"],
+  ["P8", "up an octave"],
+  ["-P8", "down an octave"],
+];
+const combineParts = new Map(); // job id -> parts, fetched once
+
+async function renderCombine(jobs) {
+  const done = jobs.filter((j) => j.status === "done").slice(0, 20);
+  const rows = [];
+  for (const job of done) {
+    if (!combineParts.has(job.id)) {
+      try {
+        combineParts.set(job.id, await getJSON(`/api/jobs/${job.id}/parts`));
+      } catch {
+        combineParts.set(job.id, []);
+      }
+    }
+    for (const part of combineParts.get(job.id)) {
+      const box = el("input", { type: "checkbox" });
+      const choices = part.transpose_semitones ? [...INTERVALS, ["concert", "at concert pitch"]] : INTERVALS;
+      const interval = el("select", {}, ...choices.map(([v, label]) => el("option", { value: v }, label)));
+      box.addEventListener("change", updateCombine);
+      const row = el(
+        "label",
+        { class: "row" },
+        box,
+        `${jobLabel(job)} · ${part.name} (${part.measures} measures)`,
+        interval,
+      );
+      row.dataset.job = job.id;
+      row.dataset.part = part.id;
+      rows.push(row);
+    }
+  }
+  $("combine-parts").replaceChildren(...(rows.length ? rows : [el("span", { class: "muted" }, "No finished jobs yet.")]));
+  updateCombine();
+}
+
+function updateCombine() {
+  $("combine-btn").disabled = !$("combine-parts").querySelector("input:checked");
+}
+
+$("combine-btn").addEventListener("click", async () => {
+  const parts = [...$("combine-parts").querySelectorAll(".row")]
+    .filter((row) => row.querySelector("input").checked)
+    .map((row) => {
+      const transpose = row.querySelector("select").value;
+      return { job: row.dataset.job, part: row.dataset.part, ...(transpose ? { transpose } : {}) };
+    });
+  $("combine-btn").disabled = true;
+  $("combine-msg").textContent = "Combining...";
+  try {
+    const response = await api("/api/scores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: $("combine-title").value.trim() || null, parts }),
+    });
+    const job = await response.json();
+    $("combine-msg").textContent = "";
+    location.hash = `#/job/${job.id}`;
+  } catch (err) {
+    $("combine-msg").textContent = `Could not combine: ${err.message}`;
+    updateCombine();
+  }
+});
 
 const drop = $("drop");
 const fileInput = $("files");
@@ -144,6 +226,7 @@ const STAGES = {
   repair: "Repairing parts, clefs, and rhythm",
   lilypond: "Engraving with LilyPond and running checks",
   recompile: "Recompiling your edits",
+  combine: "Combining the parts",
 };
 
 function showJob(id) {
@@ -164,7 +247,7 @@ async function pollJob() {
     showError(err.message);
     return;
   }
-  $("job-title").textContent = job.inputs.map((n) => n.replace(/^\d\d-/, "")).join(", ");
+  $("job-title").textContent = jobLabel(job);
   const status = $("job-status");
   status.className = `pill ${job.status}`;
   status.textContent = job.status;
@@ -238,7 +321,10 @@ function renderSource(review) {
   const source = $("source");
   source.replaceChildren();
   if (!review.pages.length) {
-    source.append(el("p", { class: "muted" }, "No page images: the engine did not save its project for this job."));
+    const why = review.combined_from
+      ? "A combined score has no pages of its own: open the jobs its parts came from to see them."
+      : "No page images: the engine did not save its project for this job.";
+    source.append(el("p", { class: "muted" }, why));
     return;
   }
   review.pages.forEach((page, index) => {

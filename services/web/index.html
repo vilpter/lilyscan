@@ -33,6 +33,17 @@
       </form>
     </section>
     <section class="card">
+      <h2>Combine parts</h2>
+      <p class="muted">Pick parts of finished jobs to make a new score. The parts need the same
+        measures; your edits to each part carry over.</p>
+      <div id="combine-parts" class="combine"></div>
+      <label class="field">Title
+        <input id="combine-title" placeholder="Combined score">
+      </label>
+      <button id="combine-btn" type="button" disabled>Combine</button>
+      <span id="combine-msg" class="muted"></span>
+    </section>
+    <section class="card">
       <h2>Jobs</h2>
       <table class="jobs">
         <thead><tr><th>Job</th><th>Input</th><th>Status</th><th>Created</th></tr></thead>

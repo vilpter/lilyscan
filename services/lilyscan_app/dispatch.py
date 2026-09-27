@@ -23,6 +23,8 @@ class Dispatcher(Protocol):
 
     def recompile(self, job_id: str) -> None: ...
 
+    def combine(self, job_id: str) -> None: ...
+
 
 class RqDispatcher:
     def __init__(self, settings: Settings) -> None:
@@ -50,6 +52,9 @@ class RqDispatcher:
 
     def recompile(self, job_id: str) -> None:
         self._pipeline.enqueue("lilyscan_app.tasks.recompile_job", job_id, job_timeout=600)
+
+    def combine(self, job_id: str) -> None:
+        self._pipeline.enqueue("lilyscan_app.tasks.combine_job", job_id, job_timeout=600)
 
 
 class InlineDispatcher:
@@ -80,6 +85,11 @@ class InlineDispatcher:
         from . import tasks
 
         self._run(tasks.recompile_job, job_id=job_id)
+
+    def combine(self, job_id: str) -> None:
+        from . import tasks
+
+        self._run(tasks.combine_job, job_id=job_id)
 
     def shutdown(self) -> None:
         self._pool.shutdown(wait=False, cancel_futures=True)

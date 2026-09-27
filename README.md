@@ -39,6 +39,13 @@ Fixes Lilyscan made on its own (parts the engine split between systems, tenor cl
 without their 8, missed triplets, page text or chord names read as lyrics, syllables read as
 one word) are listed above the review list and noted in the source as `% fix:` comments.
 
+**Combine parts** (on the home page) makes a new score from parts of finished jobs: say a
+violin part and a cello part scanned separately. Each part can be transposed, or taken at
+concert pitch if it is a transposing instrument. The parts must have the same measures. Your
+edits to each part carry over, because the new score includes the parts' own LilyPond
+sources (transposition is done by LilyPond's `\transpose`, so those sources stay as
+written). The combined score is a job like any other: review it, edit it, download it.
+
 To try it on one machine without Docker or Redis (jobs run inside the server process):
 
 ```bash

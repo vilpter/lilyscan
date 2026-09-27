@@ -15,7 +15,10 @@ from typing import Annotated, Any
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
+from lilyscan.ir.models import Score
+from lilyscan.ir.transpose import Interval
 from lilyscan.pipeline import SOURCE_MAP
 from lilyscan.runtime.config import (
     AUDIVERIS_VERSION,
@@ -32,6 +35,18 @@ MAX_UPLOAD_BYTES = 200 * 1024 * 1024
 MAX_LY_BYTES = 5 * 1024 * 1024
 _LY_FILE = re.compile(r"[A-Za-z0-9_./-]+\.ly")
 _SAFE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+class CombinePart(BaseModel):
+    job: str
+    part: str  # part id in that job's score
+    transpose: str | None = None  # an interval ("M2", "-m3") or "concert"
+    name: str | None = None  # a new instrument name
+
+
+class CombineRequest(BaseModel):
+    title: str | None = None
+    parts: list[CombinePart]
 
 
 def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None = None) -> FastAPI:
@@ -65,6 +80,49 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
             "audiveris": AUDIVERIS_VERSION,
             "ocr_languages": s.ocr_languages,
         }
+
+    def _parts(root: Path) -> list[dict[str, Any]]:
+        path = root / "ir" / "score.json"
+        if not path.is_file():
+            raise HTTPException(404, "no finished score for this job")
+        score = Score.model_validate_json(path.read_text(encoding="utf-8"))
+        return [
+            {
+                "id": p.id,
+                "name": p.name or p.id,
+                "staves": len(p.staves),
+                "measures": len(p.staves[0].measures) if p.staves else 0,
+                "transpose_semitones": p.transpose_semitones,
+            }
+            for p in score.parts
+        ]
+
+    @app.get("/api/jobs/{job_id}/parts")
+    def get_parts(job_id: str, jobs: Store) -> list[dict[str, Any]]:
+        """The parts of a finished job's score, for the score combiner."""
+        return _parts(_job_root(job_id, jobs))
+
+    @app.post("/api/scores", status_code=201)
+    def create_score(body: CombineRequest, jobs: Store, dispatch: Disp) -> dict[str, Any]:
+        """A new score from parts of finished jobs (M9); built by a pipeline worker."""
+        if not body.parts:
+            raise HTTPException(422, "choose at least one part")
+        for p in body.parts:
+            source = jobs.get(p.job)
+            if source is None:
+                raise HTTPException(404, f"job {p.job} not found")
+            if source.status is not JobStatus.DONE:
+                raise HTTPException(409, f"job {p.job} is not finished")
+            if p.part not in {x["id"] for x in _parts(job_dir(s.data_dir, p.job))}:
+                raise HTTPException(422, f"job {p.job} has no part {p.part}")
+            if p.transpose and p.transpose != "concert":
+                try:
+                    Interval.parse(p.transpose)
+                except ValueError as exc:
+                    raise HTTPException(422, str(exc)) from exc
+        job = jobs.create([], {"combine": body.model_dump()})
+        dispatch.combine(job.id)
+        return job.to_dict()
 
     @app.post("/api/jobs", status_code=201)
     async def create_job(
@@ -166,6 +224,7 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
         review["pages"] = (report.get("geometry") or {}).get("pages", [])
         review["prepare"] = report.get("prepare", [])
         review["alternatives"] = (report.get("engine") or {}).get("alternatives", [])
+        review["combined_from"] = report.get("combined_from")
         return review
 
     def _ly_path(root: Path, path: str) -> Path:
