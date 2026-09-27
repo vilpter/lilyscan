@@ -202,7 +202,7 @@ def _markers(e: Event) -> list[str]:
 
 # Repairs that change a whole staff are noted once, at the top of the staff's music,
 # instead of on every event they touched.
-STAFF_REPAIRS = frozenset({"octave-clef", "part-merge"})
+STAFF_REPAIRS = frozenset({"octave-clef", "part-merge", "lyric-verse"})
 
 
 def _staff_notes(score: Score) -> dict[tuple[str, int], list[str]]:

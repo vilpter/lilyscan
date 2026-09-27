@@ -35,9 +35,10 @@ def apply_repairs(score: Score, rules: list[Rule] | None = None) -> list[Repair]
     Parts are merged first, so later rules see each part's whole line.
     """
     from lilyscan.repair.clefs import octave_clefs
+    from lilyscan.repair.lyrics import clean_lyrics
     from lilyscan.repair.parts import merge_split_parts
 
     log: list[Repair] = []
-    for rule in rules if rules is not None else [merge_split_parts, octave_clefs]:
+    for rule in rules if rules is not None else [merge_split_parts, octave_clefs, clean_lyrics]:
         log += rule(score)
     return log

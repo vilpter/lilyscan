@@ -11,6 +11,7 @@ from lilyscan.ir.models import (
     BBox,
     Clef,
     Event,
+    Lyric,
     Measure,
     NoteHead,
     Part,
@@ -24,7 +25,9 @@ from lilyscan.ir.musicxml import load_musicxml
 from lilyscan.lilypond.generate import generate_project
 from lilyscan.qa.checks import QaReport
 from lilyscan.repair import apply_repairs
+from lilyscan.repair.chords import parse_chord_name
 from lilyscan.repair.clefs import octave_clefs
+from lilyscan.repair.lyrics import clean_lyrics
 from lilyscan.repair.parts import merge_split_parts, names_compatible
 from lilyscan.review import build_review
 from lilyscan.runtime.config import AUDIVERIS_VERSION
@@ -228,3 +231,96 @@ def test_recorded_engine_output_split_flute() -> None:
     repairs = apply_repairs(score)
     assert [r.detail for r in repairs] == ["merged P1 (F1.) into P2 (Flute)"]
     assert [p.name for p in score.parts] == ["Flute"]
+
+
+@pytest.mark.parametrize(
+    ("text", "root", "kind", "bass"),
+    [
+        ("C", "C", "major", None),
+        ("F#m7b5", "F#", "half-diminished", None),
+        ("Bb/D", "Bb", "major", "D"),
+        ("Cm7", "C", "minor-seventh", None),
+        ("CM7", "C", "major-seventh", None),
+        ("FSUS4", "F", "suspended-fourth", None),  # OCR upper case
+        ("E♭°7", "Eb", "diminished-seventh", None),
+    ],
+)
+def test_parse_chord_name(text: str, root: str, kind: str, bass: str | None) -> None:
+    name = parse_chord_name(text)
+    assert name is not None and (name.root, name.kind, name.bass) == (root, kind, bass)
+
+
+@pytest.mark.parametrize("text", ["Gott", "Ag", "H", "GQ", "Cmaj7x", ""])
+def test_parse_chord_name_rejects_words(text: str) -> None:
+    assert parse_chord_name(text) is None
+
+
+def sung(words: list[str], verses: dict[int, list[str]] | None = None) -> Score:
+    """One staff, one measure per syllable; ``verses`` adds lines by verse number."""
+    lines = verses or {1: words}
+    measures = []
+    for i in range(max(len(v) for v in lines.values())):
+        e = note("C", 5)
+        e.lyrics = [Lyric(text=v[i], verse=n) for n, v in lines.items() if i < len(v) and v[i]]
+        measures.append(
+            Measure(
+                index=i,
+                number=str(i + 1),
+                clefs=[TREBLE] if i == 0 else [],
+                time=TimeSignature(beats=1, beat_type=4) if i == 0 else None,
+                voices=[Voice(number=1, events=[e])],
+            )
+        )
+    return Score(parts=[Part(id="P1", name="Voice", staves=[Staff(number=1, measures=measures)])])
+
+
+def lyrics_of(score: Score) -> dict[int, list[str]]:
+    out: dict[int, list[str]] = {}
+    for m in score.parts[0].staves[0].measures:
+        for ly in m.voices[0].events[0].lyrics:
+            out.setdefault(ly.verse, []).append(ly.text)
+    return out
+
+
+def test_stray_line_above_the_lyrics_is_dropped_and_verses_renumbered() -> None:
+    score = sung([], {1: ["x,", "", "m"], 2: ["Ky", "ri", "e"]})
+    repairs = clean_lyrics(score)
+    assert lyrics_of(score) == {1: ["Ky", "ri", "e"]}
+    assert [r.rule for r in repairs] == ["lyric-text", "lyric-verse"]
+    first = score.parts[0].staves[0].measures[0].voices[0].events[0]
+    assert first.provenance[-1].before == {"lyrics": [[1, "x,"], [2, "Ky"]]}
+    assert score.provenance[-1].rule == "lyric-verse"
+
+
+def test_page_text_line_is_dropped() -> None:
+    score = sung([], {1: ["Ky", "ri", "e"], 2: ["LilyPond", "V2.26.0", ""]})
+    clean_lyrics(score)
+    assert lyrics_of(score) == {1: ["Ky", "ri", "e"]}
+
+
+def test_chord_names_become_chord_symbols() -> None:
+    score = sung([], {1: ["A", "ma", "zing"], 2: ["Cm7", "", "E7"]})
+    clean_lyrics(score)
+    assert lyrics_of(score) == {1: ["A", "ma", "zing"]}
+    chords = [
+        (m.index, c.root, c.kind)
+        for m in score.parts[0].staves[0].measures
+        for c in m.chord_symbols
+    ]
+    assert chords == [(0, "C", "minor-seventh"), (2, "E", "dominant")]
+
+
+def test_real_lyrics_are_left_alone() -> None:
+    words = ["O", "Tan", "nen", "baum", "A", "Da", "Em"]
+    score = sung(words)
+    assert clean_lyrics(score) == []
+    assert lyrics_of(score) == {1: words}
+
+
+def test_verses_are_renumbered_per_system() -> None:
+    score = sung([], {1: ["la", "la", "", ""], 2: ["", "", "lo", "lo"]})
+    for i, m in enumerate(score.parts[0].staves[0].measures):
+        # Two systems: measures 1-2 and 3-4 (x restarts at the left margin).
+        m.bbox = BBox(page=0, x=100.0 + 200 * (i % 2), y=100.0 + 300 * (i // 2), w=150, h=80)
+    clean_lyrics(score)
+    assert lyrics_of(score) == {1: ["la", "la", "lo", "lo"]}
