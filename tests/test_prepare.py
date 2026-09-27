@@ -213,6 +213,20 @@ def test_turned_page_comes_back_upright(tmp_path: Path, turns: int) -> None:
     assert out[40:90].mean() < out[1720:1760].mean() + 0.02
 
 
+def test_the_page_as_uploaded_is_stood_upright_too(tmp_path: Path) -> None:
+    # A scan lying on its side: the second engine run gets it upright, otherwise as is.
+    from lilyscan.ingest.book import assemble
+
+    upright = page_with_text()
+    src = tmp_path / "sideways.png"
+    save_png(np.ascontiguousarray(np.rot90(upright, 1)), src)
+    book = assemble([src], tmp_path / "prepared")
+    assert book.uploaded is not None
+    ok, pages = cv2.imreadmulti(str(book.uploaded), flags=cv2.IMREAD_GRAYSCALE)
+    assert ok and pages[0].shape == upright.shape
+    assert np.abs(pages[0] / 255.0 - upright).mean() < 0.01
+
+
 def test_tilted_photo_is_levelled(tmp_path: Path) -> None:
     from lilyscan.prepare.image import staff_angle
 
