@@ -110,14 +110,26 @@ def repair_engine_output(
     return repairs
 
 
-def produce(score: Score, root: Path, settings: Settings | None = None) -> dict[str, Any]:
-    """Write ``ir/score.json`` and the ``ly/`` project under ``root``; return the report."""
+def produce(
+    score: Score,
+    root: Path,
+    settings: Settings | None = None,
+    project: LyProject | None = None,
+) -> dict[str, Any]:
+    """Write ``ir/score.json`` and the ``ly/`` project under ``root``; return the report.
+
+    ``project`` is written instead of generating one from ``score`` (the score combiner
+    reuses the parts' own, possibly edited, sources).
+    """
     ir_path = root / "ir" / "score.json"
     ir_path.parent.mkdir(parents=True, exist_ok=True)
     ir_path.write_text(score.model_dump_json(indent=1), encoding="utf-8", newline="\n")
 
     ly_root = root / "ly"
-    project = write_project(score, ly_root)
+    if project is None:
+        project = write_project(score, ly_root)
+    else:
+        project.write(ly_root)
     (ly_root / SOURCE_MAP).write_text(
         json.dumps({"staff_vars": project.staff_vars}, indent=1), encoding="utf-8", newline="\n"
     )

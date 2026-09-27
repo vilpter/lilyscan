@@ -222,6 +222,39 @@ def pipeline_finish(job_id: str) -> dict[str, Any]:
         store.close()
 
 
+def combine_job(job_id: str) -> dict[str, Any]:
+    """M9: a new score from parts of finished jobs (``options["combine"]``)."""
+    from lilyscan.combine import Selection, combine
+
+    settings = Settings.from_env()
+    store = _store(settings)
+    try:
+        job = store.get(job_id)
+        if job is None:
+            raise LookupError(f"unknown job {job_id}")
+        store.update(job_id, status=JobStatus.RUNNING, stage="combine")
+        spec = job.options["combine"]
+        selections = [
+            Selection(
+                job_dir(settings.data_dir, p["job"]),
+                p["part"],
+                transpose=p.get("transpose"),
+                name=p.get("name"),
+            )
+            for p in spec["parts"]
+        ]
+        root = job_dir(settings.data_dir, job_id)
+        report = combine(selections, root, spec.get("title"), settings)
+        store.update(job_id, status=JobStatus.DONE, stage="done", report=report)
+        return report
+    except Exception as exc:
+        store.update(job_id, status=JobStatus.FAILED, error=f"combine: {exc}")
+        log.error("combine_job %s failed:\n%s", job_id, traceback.format_exc())
+        raise
+    finally:
+        store.close()
+
+
 def recompile_job(job_id: str) -> dict[str, Any]:
     """After the user edits the LilyPond project: recompile, re-render, refresh the review."""
     settings = Settings.from_env()
