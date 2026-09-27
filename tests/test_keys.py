@@ -153,3 +153,53 @@ def test_a_movement_stating_no_key_has_none() -> None:
     second = score(measure(0, None, ("C", 0, False)), measure(1, None))
     merged = merge_scores([first, second])
     assert keys(merged) == [(0, 3), (2, 0)]
+
+
+def in_force(staff: Staff) -> list[int]:
+    """The key in force in each measure."""
+    out, fifths = [], 0
+    for m in staff.measures:
+        fifths = m.key.fifths if m.key else fifths
+        out.append(fifths)
+    return out
+
+
+def ensemble(*reads: list[int]) -> Score:
+    """One single-staff part per list: the key it was read in on each system (one measure
+    per system), with a G on every system."""
+    return Score(
+        parts=[
+            Part(
+                id=f"P{i + 1}",
+                staves=[
+                    Staff(
+                        number=1,
+                        measures=[
+                            measure(j, k, ("G", key_alter(k, "G"), False))
+                            for j, k in enumerate(keys)
+                        ],
+                    )
+                ],
+            )
+            for i, keys in enumerate(reads)
+        ]
+    )
+
+
+def test_the_parts_of_a_piece_vote_together() -> None:
+    # The viola's alto-clef key is misread on three systems of four; the violin and cello
+    # read four sharps throughout, as does the viola's first system.
+    s = ensemble([4, 4, 4, 4], [4, 2, 2, 2], [4, 4, 4, 4])
+    log = consistent_keys(s, book(1, 1, 1, 1))
+    assert [r.part for r in log] == ["P2"]
+    viola = s.parts[1].staves[0]
+    assert [m.key.fifths for m in viola.measures if m.key] == [4]
+    assert all(pitches(m) == ["G#5"] for m in viola.measures)
+
+
+def test_a_transposing_part_keeps_its_own_key() -> None:
+    # A clarinet reads two sharps more than the strings, a horn no key at all.
+    s = ensemble([1, 1, 1], [3, 3, 3], [0, 0, 0], [1, 0, 1])
+    log = consistent_keys(s, book(1, 1, 1))
+    assert [r.part for r in log] == ["P4"]
+    assert [in_force(p.staves[0]) for p in s.parts] == [[1] * 3, [3] * 3, [0] * 3, [1] * 3]

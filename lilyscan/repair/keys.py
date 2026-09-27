@@ -8,6 +8,12 @@ system or after a double bar. So within each stretch of a piece between real cha
 the key read on most systems wins (on a tie, the one with more accidentals: a missed
 accidental is likelier than an invented one). Systems read in another key are set to
 it, and the notes that the misread key had altered follow.
+
+Where no staff changes key, the staves of a piece vote together: a viola's alto-clef
+key signature, say, can be misread on most of its systems while the other parts read
+it right. A staff takes the piece's key when it reads it on its first system or on
+most of them; a transposing instrument, or horns written without a key, read another
+key throughout and keep their own vote.
 """
 
 from __future__ import annotations
@@ -93,16 +99,46 @@ def _stretches(staff: Staff, starts: list[int], movements: set[int]) -> list[lis
     return stretches
 
 
-def _winner(segments: list[_Segment]) -> int | None:
-    """The stretch's key: read on the most systems, then the one with more accidentals."""
-    votes = Counter(s.fifths for s in segments if s.system_start)
-    if len(votes) < 2:
+def _readings(stretch: list[_Segment]) -> list[int]:
+    """The key read at the start of each system of a stretch."""
+    return [s.fifths for s in stretch if s.system_start]
+
+
+def _vote(readings: list[int]) -> int | None:
+    """The key read most often, then the one with more accidentals; None on a draw
+    between keys with as many (as many systems in two sharps as in two flats)."""
+    ranked = sorted(Counter(readings).items(), key=lambda kv: (kv[1], abs(kv[0])), reverse=True)
+    if not ranked:
         return None
-    ranked = sorted(votes.items(), key=lambda kv: (kv[1], abs(kv[0])), reverse=True)
-    (best, n), (runner, n2) = ranked[0], ranked[1]
-    if n == n2 and abs(best) == abs(runner):
-        return None  # e.g. as many systems in two sharps as in two flats: no call
+    (best, n), *rest = ranked
+    if rest and rest[0][1] == n and abs(rest[0][0]) == abs(best):
+        return None
     return best
+
+
+def _targets(stretches: list[list[list[_Segment]]], pieces: list[int]) -> dict[int, int]:
+    """The key each stretch of each staff should be in, by the stretch's ``id``."""
+
+    def piece(stretch: list[_Segment]) -> int:
+        start = stretch[0].measures[0].index
+        return max((p for p in pieces if p <= start), default=0)
+
+    targets: dict[int, int] = {}
+    for p in {piece(st) for staff in stretches for st in staff}:
+        in_piece = [[st for st in staff if piece(st) == p] for staff in stretches]
+        in_piece = [staff for staff in in_piece if staff]
+        # The staves vote together only when none of them changes key in the piece.
+        together = all(len(staff) == 1 for staff in in_piece)
+        key = _vote([r for staff in in_piece for r in _readings(staff[0])]) if together else None
+        for staff in in_piece:
+            for stretch in staff:
+                readings = _readings(stretch)
+                own = _vote(readings)
+                if key is not None and readings and key in (readings[0], own):
+                    targets[id(stretch)] = key
+                elif own is not None:
+                    targets[id(stretch)] = own
+    return targets
 
 
 def _respell(m: Measure, old: int, new: int) -> int:
@@ -136,37 +172,39 @@ def _respell(m: Measure, old: int, new: int) -> int:
 
 def consistent_keys(score: Score, book: OmrBook) -> list[Repair]:
     starts, movements = _layout(book)
+    staves = [(part, staff) for part in score.parts for staff in part.staves]
+    stretches = [_stretches(staff, starts, movements) for _, staff in staves]
+    targets = _targets(stretches, sorted(movements))
     repairs: list[Repair] = []
-    for part in score.parts:
-        for staff in part.staves:
-            first: list[str] = []  # where each corrected system starts
-            fixed: list[str] = []
-            notes = 0
-            for stretch in _stretches(staff, starts, movements):
-                key = _winner(stretch)
-                if key is None:
-                    continue
-                for segment in stretch:
-                    if segment.fifths == key:
-                        continue
-                    for m in segment.measures:
-                        notes += _respell(m, segment.fifths, key)
-                        if m.key is not None or m.index in movements:
-                            mode = m.key.mode if m.key is not None else None
-                            m.key = KeySignature(fifths=key, mode=mode)
-                        fixed.append(m.number or str(m.index + 1))
-                    first.append(fixed[-len(segment.measures)])
-            if not fixed:
+    for (part, staff), own in zip(staves, stretches, strict=True):
+        first: list[str] = []  # where each corrected system starts
+        fixed: list[str] = []
+        notes = 0
+        for stretch in own:
+            key = targets.get(id(stretch))
+            if key is None:
                 continue
-            _drop_restated_keys(staff, movements)
-            detail = (
-                f"{part.name or part.id}: key signature misread on the system(s) from measure "
-                f"{', '.join(first)}; set to the key read on the rest of the piece "
-                f"({notes} note(s) respelled)"
-            )
-            repairs.append(
-                Repair(rule=RULE, part=part.id, staff=staff.number, detail=detail, measures=fixed)
-            )
+            for segment in stretch:
+                if segment.fifths == key:
+                    continue
+                for m in segment.measures:
+                    notes += _respell(m, segment.fifths, key)
+                    if m.key is not None or m.index in movements:
+                        mode = m.key.mode if m.key is not None else None
+                        m.key = KeySignature(fifths=key, mode=mode)
+                    fixed.append(m.number or str(m.index + 1))
+                first.append(fixed[-len(segment.measures)])
+        if not fixed:
+            continue
+        _drop_restated_keys(staff, movements)
+        detail = (
+            f"{part.name or part.id}: key signature misread on the system(s) from measure "
+            f"{', '.join(first)}; set to the key the piece is read in "
+            f"({notes} note(s) respelled)"
+        )
+        repairs.append(
+            Repair(rule=RULE, part=part.id, staff=staff.number, detail=detail, measures=fixed)
+        )
     return repairs
 
 
