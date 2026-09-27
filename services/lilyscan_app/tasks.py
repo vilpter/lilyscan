@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from lilyscan.engine.audiveris.runner import run_audiveris
-from lilyscan.pipeline import import_engine_output, produce, recompile
+from lilyscan.pipeline import import_engine_output, produce, recompile, repair_engine_output
 from lilyscan.runtime.config import Settings
 
 from .jobs import JobStatus, JobStore, job_dir
@@ -87,7 +87,7 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
 
 
 def pipeline_finish(job_id: str) -> dict[str, Any]:
-    """Stages 3 and 6-8: import the engine's MusicXML, generate LilyPond, run QA.
+    """Stages 3 and 5-8: import the engine's output, repair it, generate LilyPond, run QA.
 
     QA findings do not fail the job; they are the review list for the user.
     """
@@ -98,8 +98,15 @@ def pipeline_finish(job_id: str) -> dict[str, Any]:
         root = job_dir(settings.data_dir, job_id)
         engine = json.loads((root / "engine" / "run.json").read_text(encoding="utf-8"))
         score, geometry = import_engine_output(root, engine)
+        store.update(job_id, stage="repair")
+        repairs = repair_engine_output(score, root, geometry)
         store.update(job_id, stage="lilypond")
-        report = {"engine": engine, "geometry": geometry, **produce(score, root, settings)}
+        report = {
+            "engine": engine,
+            "geometry": geometry,
+            "repairs": repairs,
+            **produce(score, root, settings),
+        }
         _write_json(root / "report.json", report)
         store.update(job_id, status=JobStatus.DONE, stage="done", report=report)
         return report

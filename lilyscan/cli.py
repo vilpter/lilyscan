@@ -122,10 +122,26 @@ def _cmd_eval_run(args: argparse.Namespace) -> int:
         jobs=args.jobs,
         reuse=not args.no_reuse,
         lilypond=args.lilypond,
+        repair=args.repair,
     )
     out = Path(args.out) if args.out else Path("eval/results") / args.label
     path = write_results(results, out, args.label, notes=args.notes)
     print(path.read_text(encoding="utf-8"))
+    return 0
+
+
+def _cmd_eval_calibrate(args: argparse.Namespace) -> int:
+    from lilyscan.evaluation.calibrate import calibrate, collect
+    from lilyscan.synth.corpus import load_corpus
+
+    corpora = {Path(c).name: collect(load_corpus(Path(c)), Path(args.work)) for c in args.corpus}
+    model = calibrate(corpora, Path(args.out))
+    for row in model["trained"]["evaluation"]:
+        print(
+            f"{row['corpus']}: {row['events']} events, ECE out of fold {row['ece_out_of_fold']}"
+            f" (in sample {row['ece_in_sample']}, engine grades {row['ece_engine_grade']})"
+        )
+    print(f"model: {args.out}")
     return 0
 
 
@@ -181,10 +197,19 @@ def build_parser() -> argparse.ArgumentParser:
     er.add_argument(
         "--lilypond", action="store_true", help="also run engine output -> LilyPond -> Q1-Q5"
     )
+    er.add_argument(
+        "--repair", action="store_true", help="apply the Stage 5 repair rules before scoring"
+    )
     er.add_argument("--label", default="latest")
     er.add_argument("--out", help="results directory (default eval/results/<label>)")
     er.add_argument("--notes", default="", help="free text recorded with the results")
     er.set_defaults(fn=_cmd_eval_run)
+
+    ec = ev.add_parser("calibrate", help="fit Lilyscan's confidence model on cached engine output")
+    ec.add_argument("--corpus", nargs="+", default=["eval/corpus/seed", "eval/corpus/repertoire"])
+    ec.add_argument("--work", default="eval/work", help="cache of engine output")
+    ec.add_argument("--out", default="lilyscan/repair/confidence.json")
+    ec.set_defaults(fn=_cmd_eval_calibrate)
     return p
 
 

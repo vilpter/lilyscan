@@ -14,6 +14,7 @@ a ``% m. N`` comment. Output is deterministic: the same IR gives the same bytes.
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
@@ -29,6 +30,7 @@ from lilyscan.lilypond.notation import (
     key_command,
     lily_string,
     single_duration,
+    skips,
     split_duration,
     time_command,
     transposition_pitch,
@@ -195,9 +197,27 @@ def _markers(e: Event) -> list[str]:
             where = f" bbox=p{e.bbox.page + 1}:({round(e.bbox.x)},{round(e.bbox.y)})"
         out.append(f"%{{ ?? conf={e.confidence:.2f}{where} %}}")
     for prov in e.provenance:
-        if prov.stage == "repair":
+        if prov.stage == "repair" and prov.rule not in STAFF_REPAIRS:
             out.append(f"%{{ fix: {prov.rule or 'repair'} %}}")
     return out
+
+
+# Repairs that change a whole staff are noted once, at the top of the staff's music,
+# instead of on every event they touched.
+STAFF_REPAIRS = frozenset({"octave-clef", "part-merge", "lyric-verse"})
+
+
+def _staff_notes(score: Score) -> dict[tuple[str, int], list[str]]:
+    notes: dict[tuple[str, int], list[str]] = {}
+    for prov in score.provenance:
+        before = prov.before or {}
+        if prov.stage == "repair" and "part" in before and "staff" in before:
+            key = (str(before["part"]), int(before["staff"]))
+            detail = before.get("detail")
+            notes.setdefault(key, []).append(
+                f"% fix: {prov.rule}" + (f": {detail}" if detail else "")
+            )
+    return notes
 
 
 def _full_rest(length: Fraction) -> str:
@@ -230,7 +250,7 @@ def _voice_tokens(
     while i < len(events):
         e = events[i]
         if e.offset > position:
-            tokens += ["s" + d for d in split_duration(e.offset - position)]
+            tokens += skips(e.offset - position)
             position = e.offset
         while pending and pending[0].offset <= e.offset:
             tokens.append(clef_command(pending.pop(0)))
@@ -434,7 +454,7 @@ def _staff_music(
         numbers.append(label)
         body = _measure_music(m, target)
         if target is not None and 0 < own < target and not is_pickup:
-            body += " " + " ".join("s" + d for d in split_duration(target - own))
+            body += " " + " ".join(skips(target - own))
         if m.index in leads and not _opens_with_grace(m):
             body = f"{_grace_skip(leads[m.index])} {body}"
         suffix = _barline_command(m.right_barline, left=False)
@@ -526,16 +546,26 @@ def _chord_lines(
         tokens: list[str] = [_grace_skip(grace_leads[m.index])] if m.index in grace_leads else []
         position = Fraction(0)
         for k, c in enumerate(chords):
-            if c.offset > position:
-                tokens += ["s" + d for d in split_duration(c.offset - position)]
-                position = c.offset
-            end = chords[k + 1].offset if k + 1 < len(chords) else total
-            tokens += _chord_tokens(c, max(end - position, Fraction(1, 32)))
+            # Chord names sit on a 128th-note grid; skips absorb any remainder.
+            start = max(_snap(c.offset), position)
+            if start > position:
+                tokens += skips(start - position)
+                position = start
+            end = _snap(chords[k + 1].offset) if k + 1 < len(chords) else _snap(total)
+            end = max(end, position + _CHORD_GRID)
+            tokens += _chord_tokens(c, end - position)
             position = end
         if position < total:
-            tokens += ["s" + d for d in split_duration(total - position)]
+            tokens += skips(total - position)
         lines.append(f"  {' '.join(tokens)} |  % m. {m.number or m.index + 1}")
     return lines
+
+
+_CHORD_GRID = Fraction(1, 32)  # quarters: a 128th note
+
+
+def _snap(offset: Fraction) -> Fraction:
+    return Fraction(math.floor(offset / _CHORD_GRID)) * _CHORD_GRID
 
 
 def _chord_tokens(c: ChordSymbol, length: Fraction) -> list[str]:
@@ -578,10 +608,12 @@ def _part_file(
     line_map: dict[tuple[str, int], tuple[str, int, str]],
     grace_leads: dict[int, list[str]],
     grid: dict[int, Fraction],
+    staff_notes: dict[tuple[str, int], list[str]] | None = None,
 ) -> str:
     out = [f'\\version "{LILYPOND_VERSION}"', ""]
     for staff, sv in zip(pv.part.staves, pv.staves, strict=True):
         out.append(f"{sv.music} = {{")
+        out += [f"  {note}" for note in (staff_notes or {}).get((pv.part.id, staff.number), [])]
         if pv.part.transpose_semitones:
             out.append(f"  \\transposition {transposition_pitch(pv.part.transpose_semitones)}")
         body, numbers = _staff_music(pv.part.id, staff.number, staff.measures, grace_leads, grid)
@@ -682,7 +714,7 @@ def generate_project(score: Score) -> LyProject:
     line_map: dict[tuple[str, int], tuple[str, int, str]] = {}
     for pv in plans:
         rel = f"parts/{pv.slug}.ly"
-        files[rel] = _part_file(pv, rel, line_map, leads, grid)
+        files[rel] = _part_file(pv, rel, line_map, leads, grid, _staff_notes(score))
 
     chord_lines = _chord_lines(score, leads, grid)
     if chord_lines:

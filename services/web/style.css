@@ -160,6 +160,9 @@ table.jobs { width: 100%; border-collapse: collapse; }
 .review li:hover { background: var(--bg); }
 .review li.sel { background: rgba(45, 108, 223, 0.15); }
 .review .kind { font-weight: 600; }
+.repairs { font-size: 12px; margin: 6px 0; }
+.repairs ul { margin: 2px 0 0; padding-left: 18px; }
+.repairs .kind { font-weight: 600; }
 
 @media (max-width: 900px) {
   .panes { grid-template-columns: 1fr; }

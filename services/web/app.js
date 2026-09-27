@@ -139,6 +139,7 @@ const STAGES = {
   upload: "Queued",
   engine: "Recognizing the music (Audiveris, about 30 s per page)",
   import: "Reading the engine's result",
+  repair: "Repairing parts, clefs, and rhythm",
   lilypond: "Engraving with LilyPond and running checks",
   recompile: "Recompiling your edits",
 };
@@ -197,6 +198,7 @@ async function loadReview() {
   renderBadges(review.qa);
   renderDownloads();
   renderSource(review);
+  renderRepairs(review);
   renderReviewList(review);
   await Promise.all([renderScore(review), loadFiles(review)]);
   if (state.selected && state.byId.has(state.selected)) select(state.selected);
@@ -414,8 +416,19 @@ const LABELS = {
   "bar-check": "bar check",
   rhythm: "rhythm",
   range: "range",
+  repaired: "repaired",
   "low-confidence": "low confidence",
 };
+
+// Staff-wide repairs (merged parts, octave clefs) are listed once, above the review list.
+function renderRepairs(review) {
+  const repairs = review.repairs || [];
+  $("repairs").hidden = !repairs.length;
+  $("repairs").replaceChildren(
+    el("strong", {}, `Repaired automatically (${repairs.length})`),
+    el("ul", {}, ...repairs.map((r) => el("li", {}, el("span", { class: "kind" }, r.rule), ` · ${r.detail}`))),
+  );
+}
 
 function renderReviewList(review) {
   $("review-count").textContent = `${review.review.length} measure(s)`;

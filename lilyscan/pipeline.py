@@ -1,4 +1,4 @@
-"""Stages 3 and 6-8 for one job: engine output -> IR -> LilyPond project -> QA report."""
+"""Stages 3 and 5-8 for one job: engine output -> IR -> repairs -> LilyPond -> QA report."""
 
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ from lilyscan.ir.ops import counts, merge_scores
 from lilyscan.lilypond.compile import compile_ly
 from lilyscan.lilypond.generate import LOW_CONFIDENCE, LyProject, scan_measure_lines, write_project
 from lilyscan.qa.checks import CheckResult, QaReport, compile_checks, run_checks
+from lilyscan.repair import apply_repairs
+from lilyscan.repair.confidence import calibrate_confidence
 from lilyscan.review import build_review
 from lilyscan.runtime.config import Settings
 from lilyscan.runtime.device import get_device
@@ -29,7 +31,7 @@ def import_engine_output(root: Path, engine: dict[str, Any]) -> tuple[Score, dic
     """Stage 3: the engine's MusicXML as IR, with ``.omr`` boxes and confidence attached.
 
     Returns the score and a geometry report (None when the run saved no ``.omr``).
-    Overlays are written to ``root/overlays`` when the ``vision`` extra is installed.
+    Page overlays are drawn later, by ``repair_engine_output``.
     """
     score = import_musicxml_files([root / p for p in engine["mxl_files"]], "audiveris")
     omr_files = engine.get("omr_files") or []
@@ -41,14 +43,6 @@ def import_engine_output(root: Path, engine: dict[str, Any]) -> tuple[Score, dic
     except OmrError as exc:
         return score, {"source": omr_files[0], "error": str(exc)}
     stats = attach_geometry(score, book)
-    low = sum(
-        1
-        for _, s in score.staves()
-        for m in s.measures
-        for v in m.voices
-        for e in v.events
-        if e.confidence is not None and e.confidence < LOW_CONFIDENCE
-    )
     geometry: dict[str, Any] = {
         "source": omr_files[0],
         "audiveris": book.software_version,
@@ -64,16 +58,45 @@ def import_engine_output(root: Path, engine: dict[str, Any]) -> tuple[Score, dic
         "measures": stats.measures,
         "located_measures": stats.measures_located,
         "unmapped_staves": stats.unmapped_staves,
-        "low_confidence_events": low,
+        "confidence": "audiveris",
+        "low_confidence_events": _low_confidence(score),
         "overlays": [],
     }
+    return score, geometry
+
+
+def _low_confidence(score: Score) -> int:
+    return sum(
+        1
+        for _, s in score.staves()
+        for m in s.measures
+        for v in m.voices
+        for e in v.events
+        if e.confidence is not None and e.confidence < LOW_CONFIDENCE
+    )
+
+
+def repair_engine_output(
+    score: Score, root: Path, geometry: dict[str, Any] | None
+) -> list[dict[str, Any]]:
+    """Stage 5: the repair rules, then Lilyscan's calibrated confidence; returns the
+    repair log. Then draws the page overlays (``root/overlays``, needs the ``vision``
+    extra), so their colours show the final confidence.
+    """
+    repairs = [r.to_dict() for r in apply_repairs(score)]
+    calibrated = calibrate_confidence(score)
+    if geometry is None or "error" in geometry:
+        return repairs
+    geometry["confidence"] = "lilyscan" if calibrated else "audiveris"
+    geometry["low_confidence_events"] = _low_confidence(score)
     try:
         from lilyscan.overlay import render_overlays
     except ImportError:  # vision extra not installed
-        return score, geometry
-    written = render_overlays(score, book, omr_path, root / "overlays")
+        return repairs
+    omr_path = root / geometry["source"]
+    written = render_overlays(score, read_omr(omr_path), omr_path, root / "overlays")
     geometry["overlays"] = [p.relative_to(root).as_posix() for p in written]
-    return score, geometry
+    return repairs
 
 
 def produce(score: Score, root: Path, settings: Settings | None = None) -> dict[str, Any]:
