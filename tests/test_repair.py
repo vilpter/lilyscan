@@ -451,3 +451,22 @@ def test_pickup_is_not_filled() -> None:
         [line("quarter", "quarter"), line(*FULL), line(*FULL)],
     )
     assert repair_rhythm(score) == []
+
+
+def test_review_shows_what_a_repair_changed_in_a_measure() -> None:
+    score = rhythm_score(
+        [
+            line(*FULL),
+            line("eighth", "eighth", "eighth", "quarter", "quarter", "quarter"),
+            line(*FULL),
+        ]
+    )
+    repair_rhythm(score)
+    review = build_review(score, generate_project(score), QaReport(checks=[]))
+    second = review["measures"][1]
+    assert [(r["rule"], r["offset"], r["detail"]) for r in second["repairs"]] == [
+        ("rhythm", "0", "was eighth"),
+        ("rhythm", "1/3", "was eighth"),
+        ("rhythm", "2/3", "was eighth"),
+    ]
+    assert review["measures"][0]["repairs"] == []

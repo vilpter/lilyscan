@@ -247,7 +247,9 @@ async function pollJob() {
     showError(err.message);
     return;
   }
+  state.job = job;
   $("job-title").textContent = jobLabel(job);
+  $("rerun-btn").hidden = !job.inputs.length;
   const status = $("job-status");
   status.className = `pill ${job.status}`;
   status.textContent = job.status;
@@ -306,8 +308,38 @@ function renderDownloads() {
     el("a", { href: `${base}/pdf` }, "PDF"),
     el("a", { href: `${base}/midi` }, "MIDI"),
     el("a", { href: `${base}/musicxml`, title: "The engine's MusicXML, before your edits" }, "MusicXML"),
+    el("a", { href: `${base}/omr`, title: "The Audiveris project, to open in the Audiveris application" }, ".omr"),
   );
 }
+
+// Re-run: the same uploads, other settings, as a new job.
+$("rerun-btn").addEventListener("click", () => {
+  const job = state.job || {};
+  $("rerun").hidden = !$("rerun").hidden;
+  $("rerun-ocr").value = (job.options && job.options.ocr_languages) || "";
+  $("rerun-straighten").checked = !(job.options && job.options.prepare === false);
+  $("rerun-msg").textContent = "";
+});
+
+$("rerun-start").addEventListener("click", async () => {
+  $("rerun-start").disabled = true;
+  $("rerun-msg").textContent = "Starting...";
+  try {
+    const languages = $("rerun-ocr").value.trim();
+    const response = await api(`/api/jobs/${state.id}/rerun`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ocr_languages: languages || null, straighten: $("rerun-straighten").checked }),
+    });
+    const job = await response.json();
+    $("rerun").hidden = true;
+    location.hash = `#/job/${job.id}`;
+  } catch (err) {
+    $("rerun-msg").textContent = `Could not start: ${err.message}`;
+  } finally {
+    $("rerun-start").disabled = false;
+  }
+});
 
 // Source pane: the page images the engine analysed, with measure and event boxes.
 function confidenceClass(c) {
@@ -584,7 +616,25 @@ function select(id, origin) {
 
   const problems = m.issues.map((i) => `${LABELS[i.kind] || i.kind}: ${i.detail}`).join(" · ");
   const confidence = m.min_confidence === null ? "" : ` · lowest confidence ${m.min_confidence}`;
-  $("selection").textContent = `${m.part_name}${m.staff > 1 ? ` staff ${m.staff}` : ""}, measure ${m.number}${confidence}${problems ? ` · ${problems}` : ""}`;
+  // Group the same change on several notes: "rhythm (was eighth) at beats 1, 1.33, 1.67".
+  const grouped = new Map();
+  for (const r of m.repairs || []) {
+    const key = `${r.rule}${r.detail ? ` (${r.detail})` : ""}`;
+    grouped.set(key, [...(grouped.get(key) || []), beat(r.offset)]);
+  }
+  const fixes = [...grouped]
+    .map(([key, beats]) => `${key} at beat${beats.length > 1 ? "s" : ""} ${beats.join(", ")}`)
+    .join("; ");
+  $("selection").textContent =
+    `${m.part_name}${m.staff > 1 ? ` staff ${m.staff}` : ""}, measure ${m.number}${confidence}` +
+    `${problems ? ` · ${problems}` : ""}${fixes ? ` · changed by Lilyscan: ${fixes}` : ""}`;
+}
+
+// "3/2" quarters from the barline -> "2.5" (beats counted from 1).
+function beat(offset) {
+  const [n, d] = offset.split("/").map(Number);
+  const value = 1 + (d ? n / d : n);
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0$/, "");
 }
 
 route();

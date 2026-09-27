@@ -60,6 +60,16 @@
       <span id="qa-badges"></span>
       <span class="spacer"></span>
       <span id="downloads"></span>
+      <button id="rerun-btn" type="button" title="Transcribe the same pages again with other settings">Re-run…</button>
+    </div>
+    <div id="rerun" class="card rerun" hidden>
+      <label class="field">OCR languages for lyrics and text
+        <input id="rerun-ocr" placeholder="keep this job's">
+      </label>
+      <label class="check"><input id="rerun-straighten" type="checkbox" checked>
+        Prepare pages for the engine (render PDFs sharply; straighten photos and scans)</label>
+      <button id="rerun-start" type="button">Start new job</button>
+      <span id="rerun-msg" class="muted"></span>
     </div>
     <div id="job-error" class="error" hidden></div>
     <div id="job-notes" class="notes" hidden></div>

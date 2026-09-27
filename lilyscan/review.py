@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from lilyscan.ir.models import Score
+from lilyscan.ir.models import Measure, Provenance, Score
 from lilyscan.lilypond.generate import LOW_CONFIDENCE, STAFF_REPAIRS, LyProject
 from lilyscan.qa.checks import QaReport
 
@@ -20,6 +20,33 @@ WEIGHTS = {
     "repaired": 1.0,  # a Stage 5 repair changed events in this measure
     "low-confidence": 1.0,  # per event below LOW_CONFIDENCE
 }
+
+
+def _describe(p: Provenance) -> str:
+    """What a repair changed, in words, from the values it recorded."""
+    before = p.before or {}
+    if "lyrics" in before:
+        was = " / ".join(str(text) for _, text in before["lyrics"]) or "none"
+        return f"lyrics were: {was}"
+    if "note_type" in before or "duration" in before:
+        kind = before.get("note_type") or f"{before.get('duration')} beats"
+        return f"was {kind}{'.' * int(before.get('dots') or 0)}"
+    if "pitches" in before:
+        return f"was {' '.join(before['pitches']) or 'no notes'}"
+    return ""
+
+
+def measure_repairs(m: Measure) -> list[dict[str, str]]:
+    """Event-level repairs in a measure (staff-wide ones are listed for the whole score)."""
+    out = []
+    for v in m.voices:
+        for e in v.events:
+            for p in e.provenance:
+                if p.stage in ("repair", "vector-oracle") and p.rule not in STAFF_REPAIRS:
+                    out.append(
+                        {"rule": p.rule or p.stage, "offset": str(e.offset), "detail": _describe(p)}
+                    )
+    return out
 
 
 def _bbox(b: Any) -> dict[str, float] | None:
@@ -139,6 +166,7 @@ def build_review(score: Score, project: LyProject, qa: QaReport) -> dict[str, An
                     "events": events,
                     "issues": found,
                     "min_confidence": round(min(confidences), 3) if confidences else None,
+                    "repairs": measure_repairs(m),
                     "priority": round(priority, 3),
                 }
             )
