@@ -78,3 +78,22 @@ def test_build_corpus_one_piece(tmp_path: Path) -> None:
     assert items[0].complete()
     assert [i.spec for i in load_corpus(tmp_path / "corpus")] == [SPECS[0]]
     assert all(items[0].input(v).stat().st_size > 0 for v in VARIANTS)
+
+
+def test_repertoire_spec_round_trips() -> None:
+    specs = load_spec(Path(__file__).parents[1] / "eval" / "corpus" / "repertoire.json")
+    assert {s.category for s in specs} >= {"satb", "piano", "quartet", "leadsheet", "song"}
+    for s in specs:
+        assert s.work and s.engraver == "lilyscan"
+        again = PieceSpec(**{k: v for k, v in s.to_dict().items()})  # type: ignore[arg-type]
+        assert again == s
+
+
+@pytest.mark.lilypond
+def test_lilyscan_engraver_writes_one_page(tmp_path: Path) -> None:
+    from lilyscan.synth.engrave import engrave
+
+    fixture = Path(__file__).parent / "fixtures" / "features.musicxml"
+    result = engrave(fixture, tmp_path, engraver="lilyscan")
+    assert (result.pdf.name, result.png.name) == ("score.pdf", "score.png")
+    assert (tmp_path / "ly" / "main.ly").is_file()
