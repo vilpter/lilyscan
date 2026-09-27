@@ -348,6 +348,17 @@ project/
 | Q7 | Engine agreement (optional) | Run a second engine (oemer, or a transformer OMR model if its license is approved) and compare IRs measure by measure | Disagreement heat map |
 | Q8 | Audio spot-check | Generate MIDI via `\midi {}`; playback in the UI | For human review (not automated) |
 
+*M8 finding: Q6 measured and not shipped.* On the scan corpus (1,017 measures, 157 wrong against the ground truth), re-reading the engraved output with Audiveris flagged the wrong measures less well than the review list already does. The review list flags measures with low calibrated confidence, a failing rhythm or range check, or a repair.
+
+| Flags | Recall | Precision | Measures flagged |
+|---|---|---|---|
+| Review list | 80.9% | 39.7% | 31.5% |
+| Q6 alone | 72.6% | 20.8% | 53.9% |
+| Review list or Q6 | 91.1% | 21.2% | 66.2% |
+| Review list and Q6 | 62.4% | 50.3% | 19.2% |
+
+Audiveris misreads even clean engravings of our output often enough that Q6 alone is noisy, and it costs a second engine run per job. The M8 exit criterion (at least 80% of wrong measures flagged on scans) is met by the review list. Ranked by confidence, the top 10% of measures hold 62% of the wrong ones. On photos the review list flags 74%.
+
 - **Job report:** each job produces a report with an overall score, the Audiveris version and options used, failed sheets, applied repairs, and a **ranked list of measures to review**.
 - **UI coloring:** flagged and repaired measures are colored in both the source image and the rendered output.
 
@@ -375,6 +386,8 @@ Build nothing in this stage by default. Enter it only when the eval harness show
 7. **Score combiner:**
    - Select parts or excerpts from multiple completed jobs.
    - Generate a new `main.ly` that `\include`s the parts, with transposition and key normalization where requested.
+
+*Done (M9):* `lilyscan/combine.py` builds the combined score from each part's own LilyPond source, so review-UI edits carry over. The generator plans the new score from the parts' IR (variable names, staff layout), and each part's file is copied from its job with its variables renamed. Transposition is LilyPond's `\transpose` in the layout, so copied sources stay as written; the combined IR is transposed for the checks (`lilyscan/ir/transpose.py`, spelled by interval, with key signatures and chord symbols). A transposing part can be taken at concert pitch (D3), which drops its `\transposition`. Parts must have the same measures. API: `GET /api/jobs/{id}/parts`, `POST /api/scores`; UI: a "Combine parts" panel. Key normalization to a target key is left to per-part transposition.
 8. Job history and re-run with different settings (e.g. different Audiveris options, force a key mode, skip the vector oracle).
 
 ## 8. Risks (wrap-and-extend specific)
@@ -543,3 +556,5 @@ lilyscan/
 | 2026-09-27 | M5 | In progress. Stage 5 rules `part-merge`, `octave-clef`, `rhythm` (triplets, dots, flags), `lyric-text` and `lyric-verse` (page text, stray marks, chord names read as lyrics, verse numbering), `lyric-split` (syllables read as one word), and Lilyscan's calibrated confidence. Repairs are logged in the job report, listed in the review UI, and noted in the LilyPond source (`% fix:`). Results in `eval/results/m5-repair` and `eval/results/m5-repertoire`.<br>• Exact measures, seed: 40.6% → 64.7% (scans 44.7% → 72.5%); repertoire: 58.8% → 66.8% (scans 67.4% → 83.1%). First exit criterion (beat raw Audiveris on scans) met.<br>• Confidence: out-of-fold ECE 0.0086 (seed), 0.0388 (repertoire); target < 0.05 met.<br>• Lyrics, seed 43.0% → 64.8% (scans 75.4%); chords 29.5% → 31.2%. Second exit criterion (correct lyrics and chords on SATB and lead sheets) not yet met. Next: the engine's harmony output, lyric OCR misreads, key mode and accidentals. |
 | 2026-09-27 | M6 | Stage 1 front-end: page detection and perspective, light flattening, staff-line dewarping, scale, and a quality gate; a job step before the engine and a `--prepare` harness mode. Scans are transcribed prepared and as uploaded, keeping the run expected to be better.<br>• Photos, exact measures: seed 12.4% → 73.5%, repertoire 12.8% → 72.4%. Scans: seed 72.5% → 83.4%, repertoire 83.1% → 83.1%.<br>• Exit criterion (gated photos within 10 points of scans): seed 9.9 points, repertoire 10.8 points. The gate passes every simulated photo; its thresholds need real photos (#11). |
 | 2026-09-27 | M7 | Stage 0 renders born-digital PDFs at 400 DPI (PyMuPDF) for the engine. Stage 4 reads glyph names, italic digits and staves from the PDF, and applies its printed tuplet numbers; correcting noteheads from glyphs was tried and dropped.<br>• PDF exact measures: seed 85.3% → 89.0%, repertoire 88.4% → 91.9%. Overall: seed 82.7% → 83.6%, repertoire 81.7% → 82.6%.<br>• Exit criterion (≥ 95% on born-digital PDFs) not met. The remaining errors are rhythm the engine lost entirely, which a vector-native reading of those measures would be needed to fix. |
+| 2026-09-27 | M8 | Measured, not built: Q6 (re-reading the engraved output with Audiveris) flags wrong scan measures with 72.6% recall and 20.8% precision, while the review list already reaches 80.9% recall at 39.7% precision (the exit criterion). Q6 would also cost a second engine run per job. Q7 (second engine) not started. |
+| 2026-09-27 | M9 | **Done.** Score combiner (parts of finished jobs as one score, edits carried over, per-part transposition, concert pitch for transposing parts) with API and UI. Exit criterion met: parts from two jobs combine into one compiling score (tests; checked in the UI with a Bach chorale's soprano and bass, the bass up an octave). Also: every job's pages now go to the engine as one book, and scanned PDFs get Stage 1 (#41). |
