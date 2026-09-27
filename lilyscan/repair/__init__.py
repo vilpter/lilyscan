@@ -32,13 +32,16 @@ Rule = Callable[[Score], list[Repair]]
 def apply_repairs(score: Score, rules: list[Rule] | None = None) -> list[Repair]:
     """Run the repair rules in order; returns everything they changed.
 
-    Parts are merged first, so later rules see each part's whole line.
+    Parts are merged first, so later rules see each part's whole line; lyrics are cleaned
+    last, so chord names read as lyrics land on the repaired onsets.
     """
     from lilyscan.repair.clefs import octave_clefs
     from lilyscan.repair.lyrics import clean_lyrics
     from lilyscan.repair.parts import merge_split_parts
+    from lilyscan.repair.rhythm import repair_rhythm
 
+    default = [merge_split_parts, octave_clefs, repair_rhythm, clean_lyrics]
     log: list[Repair] = []
-    for rule in rules if rules is not None else [merge_split_parts, octave_clefs, clean_lyrics]:
+    for rule in rules if rules is not None else default:
         log += rule(score)
     return log

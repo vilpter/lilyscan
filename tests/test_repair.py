@@ -29,6 +29,8 @@ from lilyscan.repair.chords import parse_chord_name
 from lilyscan.repair.clefs import octave_clefs
 from lilyscan.repair.lyrics import clean_lyrics
 from lilyscan.repair.parts import merge_split_parts, names_compatible
+from lilyscan.repair.rhythm import TYPES as RHYTHM_TYPES
+from lilyscan.repair.rhythm import repair_rhythm
 from lilyscan.review import build_review
 from lilyscan.runtime.config import AUDIVERIS_VERSION
 
@@ -324,3 +326,116 @@ def test_verses_are_renumbered_per_system() -> None:
         m.bbox = BBox(page=0, x=100.0 + 200 * (i % 2), y=100.0 + 300 * (i // 2), w=150, h=80)
     clean_lyrics(score)
     assert lyrics_of(score) == {1: ["la", "la", "lo", "lo"]}
+
+
+def ev(note_type: str, offset: Fraction, dots: int = 0, pitch: tuple[str, int] = ("C", 5)) -> Event:
+    base = RHYTHM_TYPES[note_type]
+    return Event(
+        kind="note",
+        offset=offset,
+        duration=base * (2 - Fraction(1, 2**dots)),
+        note_type=note_type,
+        dots=dots,
+        notes=[NoteHead(pitch=Pitch(step=pitch[0], octave=pitch[1]))],  # type: ignore[arg-type]
+    )
+
+
+def line(*types: str) -> list[Event]:
+    """Sequential events from type names ("quarter", "eighth", "quarter." for dotted)."""
+    out, pos = [], Fraction(0)
+    for t in types:
+        e = ev(t.rstrip("."), pos, dots=len(t) - len(t.rstrip(".")))
+        out.append(e)
+        pos += e.duration
+    return out
+
+
+def rhythm_score(*staves: list[list[Event]], beats: int = 4) -> Score:
+    """One part per staff; each staff is a list of measures (events of one voice)."""
+    parts = []
+    for k, measures in enumerate(staves):
+        ms = [
+            Measure(
+                index=i,
+                number=str(i + 1),
+                time=TimeSignature(beats=beats, beat_type=4) if i == 0 else None,
+                voices=[Voice(number=1, events=events)],
+            )
+            for i, events in enumerate(measures)
+        ]
+        parts.append(
+            Part(id=f"P{k + 1}", name=f"Part {k + 1}", staves=[Staff(number=1, measures=ms)])
+        )
+    return Score(parts=parts)
+
+
+FULL = ["quarter"] * 4
+
+
+def test_missed_triplet_is_restored() -> None:
+    # The middle measure: a triplet read as three plain eighths overfills 4/4.
+    score = rhythm_score(
+        [
+            line(*FULL),
+            line("eighth", "eighth", "eighth", "quarter", "quarter", "quarter"),
+            line(*FULL),
+        ]
+    )
+    repairs = repair_rhythm(score)
+    events = score.parts[0].staves[0].measures[1].voices[0].events
+    assert [e.tuplet for e in events] == [(3, 2)] * 3 + [None] * 3
+    assert [e.offset for e in events] == [0, Fraction(1, 3), Fraction(2, 3), 1, 2, 3]
+    assert events[0].provenance[-1].before == {
+        "duration": "1/2",
+        "note_type": "eighth",
+        "dots": 0,
+        "tuplet": None,
+    }
+    assert [(r.rule, r.detail, r.measures) for r in repairs] == [
+        ("rhythm", "Part 1: triplet to fill the measure", ["2"])
+    ]
+    assert "\\tuplet 3/2" in generate_project(score).files["parts/part-1.ly"]
+
+
+def test_missed_dot_is_restored_when_another_staff_confirms_it() -> None:
+    # Upper staff read as q e q q (3.5 beats); the lower staff has q. e h.
+    upper = [line(*FULL), line("quarter", "eighth", "quarter", "quarter"), line(*FULL)]
+    lower = [line(*FULL), line("quarter.", "eighth", "half"), line(*FULL)]
+    score = rhythm_score(upper, lower)
+    repair_rhythm(score)
+    # Only a dot on the first quarter lines the upper staff up with the lower one.
+    events = score.parts[0].staves[0].measures[1].voices[0].events
+    assert [e.dots for e in events] == [1, 0, 0, 0]
+    assert [e.offset for e in events] == [0, Fraction(3, 2), 2, 3]
+
+
+def test_tied_candidates_are_not_applied() -> None:
+    # One eighth short, and a dot on the second quarter or a longer last note fit equally.
+    upper = [line(*FULL), line("quarter", "quarter", "quarter", "eighth"), line(*FULL)]
+    lower = [line(*FULL), line("quarter", "quarter.", "eighth", "quarter"), line(*FULL)]
+    assert repair_rhythm(rhythm_score(upper, lower)) == []
+
+
+def test_unconfirmed_single_edit_is_left_flagged() -> None:
+    # A solo line one eighth short: a dot fits on any of the three quarters.
+    score = rhythm_score(
+        [line(*FULL), line("quarter", "quarter", "quarter", "eighth"), line(*FULL)]
+    )
+    assert repair_rhythm(score) == []
+
+
+def test_short_measure_in_every_voice_is_left_alone() -> None:
+    # A phrase-end measure two beats long in every staff is meant to be short.
+    short = line("half")
+    score = rhythm_score(
+        [line(*FULL), short, line(*FULL)], [line(*FULL), line("quarter", "quarter"), line(*FULL)]
+    )
+    assert repair_rhythm(score) == []
+
+
+def test_pickup_is_not_filled() -> None:
+    score = rhythm_score(
+        [line("half"), line(*FULL), line(*FULL)],
+        [line("quarter", "quarter"), line(*FULL), line(*FULL)],
+    )
+    assert repair_rhythm(score) == []
