@@ -31,6 +31,20 @@ _OCR_SPEC = re.compile(r"^[a-z]{3}(?:_[a-z]+)?(?:\+[a-z]{3}(?:_[a-z]+)?)*$")
 # covered by a behavioural test against the pinned release.
 AUDIVERIS_OCR_LANGUAGES_KEY = "org.audiveris.omr.text.Language.defaultSpecification"
 
+# Stage 1 (input preparation). Lengths are in staff spaces (interlines) unless noted.
+# Target interline in pixels for the page given to Audiveris; pages outside the range
+# are rescaled to the middle of it.
+PREPARE_INTERLINE_RANGE = (16.0, 32.0)
+# Below this interline (pixels, after rescaling is ruled out) a page is too coarse to read.
+PREPARE_MIN_INTERLINE = 9.0
+# Staff lines left curved after dewarping (RMS deviation from straight): warn above this.
+PREPARE_MAX_CURVATURE = 0.2
+# Horizontal line segments at least this long (as a share of the page width) are
+# candidate staff lines for dewarping.
+PREPARE_LINE_MIN_WIDTH = 0.25
+# The page must cover at least this share of a photo for perspective correction.
+PREPARE_MIN_PAGE_AREA = 0.3
+
 
 def parse_ocr_languages(spec: str) -> str:
     """Normalize and validate an OCR language spec such as ``eng+lat+deu``."""

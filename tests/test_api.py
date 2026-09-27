@@ -70,8 +70,14 @@ def test_rejects_unsupported_type(client: TestClient, dispatcher: RecordingDispa
 def test_per_job_ocr_languages(client: TestClient) -> None:
     pdf = [("files", ("a.pdf", b"x", "application/pdf"))]
     job = client.post("/api/jobs", files=pdf, data={"ocr_languages": "ENG+ita"}).json()
-    assert job["options"] == {"ocr_languages": "eng+ita"}
-    assert client.post("/api/jobs", files=pdf).json()["options"] == {}
+    assert job["options"] == {"ocr_languages": "eng+ita", "prepare": True}
+    assert client.post("/api/jobs", files=pdf).json()["options"] == {"prepare": True}
+
+
+def test_straightening_can_be_turned_off(client: TestClient) -> None:
+    png = [("files", ("a.png", b"\x89PNG", "image/png"))]
+    job = client.post("/api/jobs", files=png, data={"straighten": "false"}).json()
+    assert job["options"] == {"prepare": False}
 
 
 def test_rejects_bad_ocr_languages(client: TestClient, dispatcher: RecordingDispatcher) -> None:

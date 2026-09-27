@@ -1,6 +1,7 @@
 """Queue tasks. Referenced by dotted name so each worker image imports only what it runs.
 
 Job flow (one RQ job per step, chained with ``depends_on``):
+    pipeline queue: prepare_inputs     (Stage 1, pipeline worker)
     engine queue:   engine_transcribe  (Stage 2, Audiveris worker)
     pipeline queue: pipeline_finish    (Stages 3+, pipeline worker)
 """
@@ -33,6 +34,51 @@ def _write_json(path: Path, data: Any) -> None:
     )
 
 
+# Raster pages Stage 1 prepares; PDFs and TIFFs (possibly multi-page) go to the engine as
+# they are.
+PREPARED_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
+
+
+def _prepared(root: Path, name: str) -> Path:
+    return root / "prepared" / f"{Path(name).stem}.png"
+
+
+def prepare_inputs(job_id: str) -> dict[str, Any]:
+    """Stage 1: find, straighten and clean each photo or scan before the engine sees it.
+
+    A page that cannot be prepared goes to the engine as uploaded; the report says why.
+    """
+    settings = Settings.from_env()
+    store = _store(settings)
+    try:
+        job = store.get(job_id)
+        if job is None:
+            raise LookupError(f"unknown job {job_id}")
+        store.update(job_id, status=JobStatus.RUNNING, stage="prepare")
+        root = job_dir(settings.data_dir, job_id)
+        pages: list[dict[str, Any]] = []
+        if job.options.get("prepare", True):
+            from lilyscan.prepare import prepare_image  # needs the vision extra
+
+            for name in job.inputs:
+                if Path(name).suffix.lower() not in PREPARED_SUFFIXES:
+                    continue
+                try:
+                    report = prepare_image(root / "input" / name, _prepared(root, name))
+                    pages.append({"input": name, **report.to_dict()})
+                except Exception as exc:  # the raw page is still worth transcribing
+                    log.warning("prepare %s/%s failed: %s", job_id, name, exc)
+                    pages.append({"input": name, "error": str(exc), "passed": False})
+        _write_json(root / "prepared" / "report.json", pages)
+        return {"pages": pages}
+    except Exception as exc:
+        store.update(job_id, status=JobStatus.FAILED, error=f"prepare: {exc}")
+        log.error("prepare_inputs %s failed:\n%s", job_id, traceback.format_exc())
+        raise
+    finally:
+        store.close()
+
+
 def engine_transcribe(job_id: str) -> dict[str, Any]:
     """Stage 2: run Audiveris on the job's inputs."""
     settings = Settings.from_env()
@@ -43,7 +89,11 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
             raise LookupError(f"unknown job {job_id}")
         store.update(job_id, status=JobStatus.RUNNING, stage="engine")
         root = job_dir(settings.data_dir, job_id)
-        inputs = [root / "input" / name for name in job.inputs]
+        # Stage 1's version of a page when there is one.
+        inputs = [
+            _prepared(root, name) if _prepared(root, name).is_file() else root / "input" / name
+            for name in job.inputs
+        ]
         constants = {str(k): str(v) for k, v in job.options.get("audiveris_constants", {}).items()}
         run = run_audiveris(
             inputs,
@@ -101,7 +151,11 @@ def pipeline_finish(job_id: str) -> dict[str, Any]:
         store.update(job_id, stage="repair")
         repairs = repair_engine_output(score, root, geometry)
         store.update(job_id, stage="lilypond")
+        prepared = root / "prepared" / "report.json"
         report = {
+            "prepare": json.loads(prepared.read_text(encoding="utf-8"))
+            if prepared.is_file()
+            else [],
             "engine": engine,
             "geometry": geometry,
             "repairs": repairs,

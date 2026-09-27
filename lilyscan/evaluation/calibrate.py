@@ -86,7 +86,7 @@ def collect(
     for item in items:
         gt = load_musicxml(item.ground_truth, "ground-truth")
         for variant in variants:
-            pred, _, _, _ = _engine_output(item, variant, work, s, reuse=True)
+            pred, *_ = _engine_output(item, variant, work, s, reuse=True)
             if pred is None:
                 continue
             omr = next(iter(sorted((work / item.spec.id / variant).glob("*.omr"))), None)

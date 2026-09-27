@@ -35,8 +35,14 @@ class RqDispatcher:
         self._engine_timeout = int(settings.audiveris_timeout_s) + 120
 
     def submit(self, job_id: str) -> None:
+        prepare_job = self._pipeline.enqueue(
+            "lilyscan_app.tasks.prepare_inputs", job_id, job_timeout=600
+        )
         engine_job = self._engine.enqueue(
-            "lilyscan_app.tasks.engine_transcribe", job_id, job_timeout=self._engine_timeout
+            "lilyscan_app.tasks.engine_transcribe",
+            job_id,
+            depends_on=prepare_job,
+            job_timeout=self._engine_timeout,
         )
         self._pipeline.enqueue(
             "lilyscan_app.tasks.pipeline_finish", job_id, depends_on=engine_job, job_timeout=1800
@@ -66,7 +72,9 @@ class InlineDispatcher:
     def submit(self, job_id: str) -> None:
         from . import tasks
 
-        self._run(tasks.engine_transcribe, tasks.pipeline_finish, job_id=job_id)
+        self._run(
+            tasks.prepare_inputs, tasks.engine_transcribe, tasks.pipeline_finish, job_id=job_id
+        )
 
     def recompile(self, job_id: str) -> None:
         from . import tasks

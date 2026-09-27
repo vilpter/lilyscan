@@ -35,6 +35,15 @@ def test_step_errors_are_distinct_messages() -> None:
     assert step_errors(log) == ["No system found"]
 
 
+def test_step_crashes_are_reported() -> None:
+    log = (
+        "WARN  [p] Book 2044 | Error processing stub java.lang.NullPointerException: ...\n"
+        "WARN  [p] CLI 956  | Exception occurred java.lang.Exception: Error in reaching step PAGE\n"
+        "java.lang.Exception: Error in reaching step PAGE\n"
+    )
+    assert step_errors(log) == ["Error in reaching step PAGE"]
+
+
 class _Captured:
     cmd: list[str]
 

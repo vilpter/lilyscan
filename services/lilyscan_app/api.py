@@ -72,8 +72,9 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
         jobs: Store,
         dispatch: Disp,
         ocr_languages: Annotated[str | None, Form()] = None,
+        straighten: Annotated[bool, Form()] = True,
     ) -> dict[str, Any]:
-        options: dict[str, Any] = {}
+        options: dict[str, Any] = {"prepare": straighten}
         if ocr_languages:
             try:
                 options["ocr_languages"] = parse_ocr_languages(ocr_languages)

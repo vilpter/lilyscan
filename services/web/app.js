@@ -108,6 +108,7 @@ $("upload-form").addEventListener("submit", async (e) => {
   for (const f of fileInput.files) form.append("files", f);
   const languages = $("ocr").value.trim();
   if (languages) form.append("ocr_languages", languages);
+  form.append("straighten", $("straighten").checked ? "true" : "false");
   $("upload-btn").disabled = true;
   $("upload-msg").textContent = "Uploading...";
   try {
@@ -137,6 +138,7 @@ const state = {
 
 const STAGES = {
   upload: "Queued",
+  prepare: "Straightening the pages",
   engine: "Recognizing the music (Audiveris, about 30 s per page)",
   import: "Reading the engine's result",
   repair: "Repairing parts, clefs, and rhythm",

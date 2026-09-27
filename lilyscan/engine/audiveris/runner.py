@@ -23,7 +23,11 @@ _OCR_PROBLEMS = (
     # A requested language has no traineddata installed.
     "Missing support for",
 )
-_STEP_ERROR = re.compile(r"StepException: (.+)$")
+# A step that gave up ("StepException: No system found") or crashed ("Error in reaching
+# step PAGE", after an internal exception).
+_STEP_ERROR = re.compile(
+    r"StepException: (.+)$|java\.lang\.Exception: (Error in reaching step \w+)"
+)
 
 
 def ocr_problems(log: str) -> list[str]:
@@ -33,7 +37,7 @@ def ocr_problems(log: str) -> list[str]:
 
 def step_errors(log: str) -> list[str]:
     """Distinct Audiveris step failure messages, e.g. ``No system found``."""
-    found = (m[1].strip() for line in log.splitlines() if (m := _STEP_ERROR.search(line)))
+    found = ((m[1] or m[2]).strip() for line in log.splitlines() if (m := _STEP_ERROR.search(line)))
     return list(dict.fromkeys(found))
 
 

@@ -67,6 +67,8 @@ main { flex: 1; min-height: 0; padding: 16px; }
 .drop input { display: none; }
 .field { display: block; margin: 12px 0; }
 .field input { display: block; width: 100%; max-width: 320px; margin-top: 4px; }
+.check { display: block; margin: 0 0 12px; font-size: 14px; }
+.check input { margin-right: 6px; }
 input, button, textarea {
   font: inherit; color: inherit; background: var(--panel);
   border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px;
