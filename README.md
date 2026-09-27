@@ -28,8 +28,8 @@ Open the app in a browser (port 8000 by default) to upload a PDF, scans, or phon
 follow the job, and review the result in three panes. Pages are prepared for the engine
 first (unless you untick the option). Born-digital PDFs are rendered sharply at 400 DPI, and
 the triplets they print are used to check the rhythm. Photos and scans are straightened: the
-page is found and seen head-on, uneven light is evened out, and curled or skewed staff
-lines are made straight. A scan is also transcribed as uploaded, and Lilyscan keeps
+page is found and seen head-on, uneven light is evened out, sideways or upside-down pages
+are turned upright, and curled or skewed staff lines are made straight. A scan is also transcribed as uploaded, and Lilyscan keeps
 whichever result it expects to be better.
 
 - **Source:** the page as the engine read it, every note boxed by confidence and measures

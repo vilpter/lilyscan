@@ -3,10 +3,12 @@
 1. Find the page in a photo and correct the perspective (a scan fills the frame and
    is left as it is).
 2. Flatten uneven lighting.
-3. Measure the staff line thickness and interline; rescale when the interline is
+3. Turn the page so its staff lines run across it.
+4. Measure the staff line thickness and interline; rescale when the interline is
    outside the range Audiveris reads well.
-4. Straighten curled or skewed staff lines (see ``staff``).
-5. Quality gate: warn when the page is too coarse or the lines stay curved.
+5. Straighten curled or skewed staff lines (see ``staff``), then turn the page right
+   way up if it is upside down.
+6. Quality gate: warn when the page is too coarse or the lines stay curved.
 
 Needs the ``vision`` extra (OpenCV, numpy).
 """
