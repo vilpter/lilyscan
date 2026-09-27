@@ -160,17 +160,22 @@ def _markers(e: Event) -> list[str]:
     return out
 
 
+def _full_rest(length: Fraction) -> str:
+    """A whole-measure rest lasting ``length`` quarters."""
+    token = single_duration(length)
+    return f"R{token}" if token else f"R1*{length / 4}"
+
+
 def _measure_rest(e: Event, length: Fraction | None) -> str:
     if length is not None:
-        token = single_duration(length)
-        if token is not None:
-            return "R" + token
-        return f"R1*{length / 4}"
+        return _full_rest(length)
     return "R" + written_duration(e.note_type, e.dots, e.duration, None)
 
 
 def _voice_tokens(
-    events: Sequence[Event], length: Fraction | None, clefs: Sequence[Clef] = ()
+    events: Sequence[Event],
+    length: Fraction | None,
+    clefs: Sequence[Clef] = (),
 ) -> list[str]:
     """Tokens for one voice; ``clefs`` are mid-measure clef changes to interleave.
 
@@ -235,12 +240,13 @@ def _measure_music(m: Measure, length: Fraction | None) -> str:
     voices = [v for v in m.voices if v.events]
     mid_clefs = [c for c in m.clefs if c.offset > 0]
     if not voices:
-        return f"R{single_duration(length) or '1'}" if length else "s1"
+        return _full_rest(length) if length else "s1"
     if len(voices) == 1:
         return " ".join(_voice_tokens(voices[0].events, length, mid_clefs))
     parts = []
     for k, v in enumerate(voices[:4]):
-        body = " ".join(_voice_tokens(v.events, length, mid_clefs if k == 0 else ()))
+        clefs = mid_clefs if k == 0 else ()
+        body = " ".join(_voice_tokens(v.events, length, clefs))
         command = _VOICE_COMMANDS[k]
         parts.append(f"{{ {command} {body} }}" if k == 0 else f"\\new Voice {{ {command} {body} }}")
     return "<< " + " ".join(parts) + " >> \\oneVoice"
@@ -295,17 +301,55 @@ def _opens_with_grace(m: Measure) -> bool:
     return any(v.events and v.events[0].grace and v.events[0].offset == 0 for v in m.voices)
 
 
+def _measure_grid(score: Score) -> dict[int, Fraction]:
+    """Per measure index, the length every staff gives that measure.
+
+    It is the longest voice present in any staff. Engine output often has measures
+    whose notes do not add up to the time signature; LilyPond would carry that error
+    into every later measure, misplacing barlines and whole-measure rests and letting
+    staves drift apart. Giving each source measure one length across all staves keeps
+    every barline where the source had it. Measures empty in every staff are absent.
+    """
+    grid: dict[int, Fraction] = {}
+    for _, staff in score.staves():
+        for m in staff.measures:
+            actual = max((v.duration() for v in m.voices), default=Fraction(0))
+            if actual > grid.get(m.index, Fraction(0)):
+                grid[m.index] = actual
+    return grid
+
+
+def _measure_length(length: Fraction) -> str:
+    """``Timing.measureLength`` value: a rational in whole notes (LilyPond 2.26 syntax;
+    2.24 used ``ly:make-moment``)."""
+    whole = length / 4
+    return (
+        f"#{whole.numerator}"
+        if whole.denominator == 1
+        else f"#{whole.numerator}/{whole.denominator}"
+    )
+
+
 def _staff_music(
     part_id: str,
     staff_no: int,
     measures: list[Measure],
     grace_leads: dict[int, list[str]] | None = None,
+    grid: dict[int, Fraction] | None = None,
 ) -> tuple[list[str], list[str]]:
-    """Lines of the staff's music variable body and the measure number for each line."""
+    """Lines of the staff's music variable body and the measure number for each line.
+
+    Where ``grid`` gives a measure a length other than its time signature's, the
+    measure gets a ``Timing.measureLength`` override (restored afterwards) and a
+    ``%{ ?? rhythm %}`` marker; staves with less music are padded with spacers.
+    """
     leads = grace_leads or {}
+    lengths = grid or {}
     lines: list[str] = []
     numbers: list[str] = []
     length: Fraction | None = None
+    overridden = False
+    pickup = Fraction(0)
     for m in measures:
         prefix: list[str] = []
         if m.left_barline is not None:
@@ -324,15 +368,33 @@ def _staff_music(
             elif m.time.symbol in ("common", "cut"):
                 prefix.append("\\defaultTimeSignature")
             prefix.append(time_command(m.time))
-        if m.implicit and m.index == 0:
-            actual = max((v.duration() for v in m.voices), default=Fraction(0))
-            if length is not None and 0 < actual < length:
-                partial = single_duration(actual)
-                prefix.append(f"\\partial {partial}" if partial else "")
+        own = max((v.duration() for v in m.voices), default=Fraction(0))
+        is_pickup = False
+        if m.implicit and m.index == 0 and length is not None and 0 < own < length:
+            is_pickup = True
+            pickup = own
+            partial = single_duration(own)
+            prefix.append(f"\\partial {partial}" if partial else "")
+        target = length
+        if not is_pickup and length is not None:
+            target = lengths.get(m.index) or length
+            if target != length:
+                prefix.append(f"\\set Timing.measureLength = {_measure_length(target)}")
+                completes_pickup = m is measures[-1] and pickup and target + pickup == length
+                if not completes_pickup:
+                    prefix.append(f"%{{ ?? rhythm: {target / 4} of {length / 4} %}}")
+                overridden = True
+            elif overridden and m.time is None:
+                prefix.append(f"\\set Timing.measureLength = {_measure_length(length)}")
+                overridden = False
+            else:
+                overridden = False
         label = m.number or str(m.index + 1)
         lines.append(f"  % m. {label}")
         numbers.append(label)
-        body = _measure_music(m, length)
+        body = _measure_music(m, target)
+        if target is not None and 0 < own < target and not is_pickup:
+            body += " " + " ".join("s" + d for d in split_duration(target - own))
         if m.index in leads and not _opens_with_grace(m):
             body = f"{_grace_skip(leads[m.index])} {body}"
         suffix = _barline_command(m.right_barline, left=False)
@@ -399,8 +461,13 @@ def _verses(measures: list[Measure]) -> list[int]:
 # --- chords --------------------------------------------------------------------
 
 
-def _chord_lines(score: Score, grace_leads: dict[int, list[str]]) -> list[str] | None:
-    """One chordmode line per measure, from the first staff that has chord symbols."""
+def _chord_lines(
+    score: Score, grace_leads: dict[int, list[str]], grid: dict[int, Fraction]
+) -> list[str] | None:
+    """One chordmode line per measure, from the first staff that has chord symbols.
+
+    Measures follow the same grid as the staves (see ``_measure_grid``).
+    """
     staff = next((s for _, s in score.staves() if any(m.chord_symbols for m in s.measures)), None)
     if staff is None:
         return None
@@ -411,11 +478,10 @@ def _chord_lines(score: Score, grace_leads: dict[int, list[str]]) -> list[str] |
             length = m.time.measure_length
         actual = max((v.duration() for v in m.voices), default=Fraction(0))
         # A pickup measure only lasts as long as its notes.
-        total = (
-            actual
-            if (m.implicit and m.index == 0 and actual)
-            else (length or actual or Fraction(4))
-        )
+        if m.implicit and m.index == 0 and actual:
+            total = actual
+        else:
+            total = grid.get(m.index) or length or actual or Fraction(4)
         chords = sorted(m.chord_symbols, key=lambda c: c.offset)
         tokens: list[str] = [_grace_skip(grace_leads[m.index])] if m.index in grace_leads else []
         position = Fraction(0)
@@ -471,13 +537,14 @@ def _part_file(
     rel: str,
     line_map: dict[tuple[str, int], tuple[str, int, str]],
     grace_leads: dict[int, list[str]],
+    grid: dict[int, Fraction],
 ) -> str:
     out = [f'\\version "{LILYPOND_VERSION}"', ""]
     for staff, sv in zip(pv.part.staves, pv.staves, strict=True):
         out.append(f"{sv.music} = {{")
         if pv.part.transpose_semitones:
             out.append(f"  \\transposition {transposition_pitch(pv.part.transpose_semitones)}")
-        body, numbers = _staff_music(pv.part.id, staff.number, staff.measures, grace_leads)
+        body, numbers = _staff_music(pv.part.id, staff.number, staff.measures, grace_leads, grid)
         for text, number in zip(body, numbers, strict=True):
             out.append(text)
             if not text.lstrip().startswith("%"):
@@ -570,13 +637,14 @@ def _part_layout(pv: PartVars, has_chords: bool) -> str:
 def generate_project(score: Score) -> LyProject:
     plans = _plan(score)
     leads = _grace_leads(score)
+    grid = _measure_grid(score)
     files: dict[str, str] = {}
     line_map: dict[tuple[str, int], tuple[str, int, str]] = {}
     for pv in plans:
         rel = f"parts/{pv.slug}.ly"
-        files[rel] = _part_file(pv, rel, line_map, leads)
+        files[rel] = _part_file(pv, rel, line_map, leads, grid)
 
-    chord_lines = _chord_lines(score, leads)
+    chord_lines = _chord_lines(score, leads, grid)
     if chord_lines:
         files["chords.ly"] = "\n".join(
             [

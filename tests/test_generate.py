@@ -103,3 +103,53 @@ def test_voice_entering_mid_measure_keeps_its_onset() -> None:
     m.voices[1] = Voice(number=2, events=[late])
     text = generate_project(score).files["parts/piano.ly"]
     assert r"\voiceTwo s2 c'2" in text
+
+
+def _shorten_voice_measure_one(score):  # type: ignore[no-untyped-def]
+    """Drop the last quarter note of the voice's measure 1, as a misread engine would."""
+    voice = score.parts[0].staves[0].measures[1].voices[0]
+    voice.events.pop()
+    return score
+
+
+def test_short_measure_gets_one_length_in_every_staff() -> None:
+    score = _shorten_voice_measure_one(load_musicxml(FIXTURE))
+    files = generate_project(score).files
+    # The piano still fills 4/4, so the grid keeps measure 1 at a whole note: the voice
+    # is padded with a spacer instead of shortening the measure.
+    voice_m1 = next(line for line in files["parts/voice.ly"].splitlines() if "g'2" in line)
+    assert voice_m1.rstrip().endswith("s4 |")
+    assert "measureLength" not in files["parts/voice.ly"]
+
+
+def test_measure_everyone_misreads_gets_override_and_marker() -> None:
+    from fractions import Fraction
+
+    score = load_musicxml(FIXTURE)
+    # Every staff comes out a quarter short in measure 1 (3/4 in a 4/4 bar).
+    score.parts[0].staves[0].measures[1].voices[0].events.pop()  # voice: drop d''4
+    upper, lower = score.parts[1].staves
+    chord = upper.measures[1].voices[0].events[0]  # whole-note chord -> dotted half
+    chord.duration, chord.note_type, chord.dots = Fraction(3), "half", 1
+    inner = upper.measures[1].voices[1].events[1]  # fis'2 -> fis'4
+    inner.duration, inner.note_type = Fraction(1), "quarter"
+    bass = lower.measures[1].voices[0].events[1]  # b2 -> b4
+    bass.duration, bass.note_type = Fraction(1), "quarter"
+
+    files = generate_project(score).files
+    override = r"\set Timing.measureLength = #3/4 %{ ?? rhythm: 3/4 of 1 %}"
+    for name in ("parts/voice.ly", "parts/piano.ly"):
+        text = files[name]
+        assert text.count(override) == (1 if name == "parts/voice.ly" else 2), name
+        # Measure 2 changes time signature, which resets the length by itself.
+        assert r"\set Timing.measureLength = #1" not in text
+    assert "  g2 d4:7 |  % m. 1" in files["chords.ly"]
+
+
+@pytest.mark.lilypond
+def test_misread_measure_still_compiles_cleanly(tmp_path: Path) -> None:
+    score = _shorten_voice_measure_one(load_musicxml(FIXTURE))
+    project = write_project(score, tmp_path)
+    report = run_checks(score, tmp_path, project)
+    assert report.check("Q1").passed and report.check("Q2").passed
+    assert not report.check("Q3").passed  # the rhythm problem is still reported

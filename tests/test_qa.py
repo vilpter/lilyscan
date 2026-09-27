@@ -92,9 +92,11 @@ def test_alignment_reports_count_and_barline_mismatches() -> None:
 @pytest.mark.lilypond
 def test_bar_check_failures_map_to_measures(tmp_path: Path) -> None:
     score = load_musicxml(Path(__file__).parent / "fixtures" / "features.musicxml")
-    # Corrupt one duration so LilyPond's bar check fails in voice measure 1.
+    # An engine can report a notated type that disagrees with the duration. The IR
+    # (and so the measure grid) keeps the half note, but LilyPond engraves a whole
+    # note, so its bar check fails in voice measure 1.
     event = score.parts[0].staves[0].measures[1].voices[0].events[0]
-    event.note_type, event.duration = "whole", Fraction(4)
+    event.note_type = "whole"
     project = write_project(score, tmp_path)
     q1, q2, _ = compile_checks(tmp_path, project)
     assert q1.passed and not q2.passed

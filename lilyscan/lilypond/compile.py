@@ -34,7 +34,17 @@ class Diagnostic:
 
     @property
     def is_error(self) -> bool:
-        return self.severity != "warning"
+        """Errors stop LilyPond or leave the output incomplete.
+
+        A "programming error" is an internal consistency complaint after which
+        LilyPond continues ("cross fingers") and still writes its output; it is
+        reported as a warning.
+        """
+        return self.severity in ("error", "fatal error")
+
+    @property
+    def is_internal(self) -> bool:
+        return self.severity == "programming error"
 
     @property
     def is_barcheck(self) -> bool:
