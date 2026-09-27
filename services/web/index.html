@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lilyscan</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/">Lilyscan</a>
+    <span class="tagline">sheet music to LilyPond</span>
+    <span id="versions" class="muted"></span>
+  </header>
+
+  <main id="home" hidden>
+    <section class="card upload">
+      <h2>New scan</h2>
+      <form id="upload-form">
+        <label id="drop" class="drop">
+          <input id="files" type="file" name="files" multiple
+                 accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,image/*">
+          <span>Drop a PDF or page images here, or tap to choose (on a phone this can open the camera).</span>
+        </label>
+        <div id="chosen" class="muted"></div>
+        <label class="field">OCR languages for lyrics and text
+          <input id="ocr" name="ocr_languages" placeholder="default">
+        </label>
+        <button id="upload-btn" type="submit" disabled>Transcribe</button>
+        <span id="upload-msg" class="muted"></span>
+      </form>
+    </section>
+    <section class="card">
+      <h2>Jobs</h2>
+      <table class="jobs">
+        <thead><tr><th>Job</th><th>Input</th><th>Status</th><th>Created</th></tr></thead>
+        <tbody id="job-rows"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <main id="job" hidden>
+    <div class="jobbar">
+      <a href="#/">&larr; Jobs</a>
+      <strong id="job-title"></strong>
+      <span id="job-status" class="pill"></span>
+      <span id="qa-badges"></span>
+      <span class="spacer"></span>
+      <span id="downloads"></span>
+    </div>
+    <div id="job-error" class="error" hidden></div>
+    <div id="job-wait" class="card wait" hidden>
+      <div class="spinner"></div>
+      <div id="job-wait-text">Working...</div>
+    </div>
+    <div id="panes" class="panes" hidden>
+      <section class="pane">
+        <h3>Source <span class="legend"><i class="c-high"></i>&ge;0.8 <i class="c-mid"></i>0.5-0.8 <i class="c-low"></i>&lt;0.5 <i class="c-issue"></i>needs review</span></h3>
+        <div id="source" class="scroll"></div>
+      </section>
+      <section class="pane">
+        <h3>Engraved</h3>
+        <div id="score" class="scroll"></div>
+      </section>
+      <section class="pane editor-pane">
+        <h3>LilyPond
+          <span class="spacer"></span>
+          <button id="save-btn" disabled title="Save all edited files and recompile">Save &amp; recompile</button>
+        </h3>
+        <div id="tabs" class="tabs"></div>
+        <div class="editor">
+          <pre id="gutter" class="gutter" aria-hidden="true"></pre>
+          <textarea id="code" spellcheck="false" wrap="off"></textarea>
+        </div>
+        <div id="selection" class="muted selection"></div>
+        <h3>Review <span id="review-count" class="muted"></span></h3>
+        <ol id="review" class="review scroll"></ol>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -68,12 +68,52 @@ class LyProject:
     files: dict[str, str]
     # (relative file, 1-based line) -> (part id, staff number, measure number)
     measure_lines: dict[tuple[str, int], tuple[str, int, str]]
+    # music variable name -> (part id, staff number); lets the measure map be rebuilt
+    # from edited files (see ``scan_measure_lines``).
+    staff_vars: dict[str, tuple[str, int]] = field(default_factory=dict)
 
     def write(self, root: Path) -> None:
         for rel, text in self.files.items():
             path = root / rel
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text, encoding="utf-8", newline="\n")
+
+
+_MUSIC_VAR = re.compile(r"^(\w+)\s*=\s*\{")
+_MEASURE_COMMENT = re.compile(r"^\s*% m\. (\S+)\s*$")
+
+
+def scan_measure_lines(
+    files: dict[str, str], staff_vars: dict[str, tuple[str, int]]
+) -> dict[tuple[str, int], tuple[str, int, str]]:
+    """Rebuild the measure map from (possibly hand-edited) part files.
+
+    Each measure's music is the first non-comment line after its ``% m. N`` comment,
+    inside the ``<name>Music = {`` block of a known staff variable.
+    """
+    found: dict[tuple[str, int], tuple[str, int, str]] = {}
+    for rel, text in files.items():
+        if not rel.startswith("parts/"):
+            continue
+        staff: tuple[str, int] | None = None
+        pending: str | None = None
+        for n, line in enumerate(text.splitlines(), 1):
+            if m := _MUSIC_VAR.match(line):
+                staff = staff_vars.get(m.group(1))
+                pending = None
+                continue
+            if staff is None:
+                continue
+            if line.strip() == "}":
+                staff = None
+                continue
+            if c := _MEASURE_COMMENT.match(line):
+                pending = c.group(1)
+                continue
+            if pending is not None and line.strip() and not line.lstrip().startswith("%"):
+                found[(rel, n)] = (staff[0], staff[1], pending)
+                pending = None
+    return found
 
 
 def _identifier(text: str) -> str:
@@ -672,7 +712,14 @@ def generate_project(score: Score) -> LyProject:
         main.append('\\include "chords.ly"')
     main += ['\\include "layout/score.ly"', ""]
     files["main.ly"] = "\n".join(main)
-    return LyProject(files=dict(sorted(files.items())), measure_lines=line_map)
+    staff_vars = {
+        sv.music: (pv.part.id, staff.number)
+        for pv in plans
+        for staff, sv in zip(pv.part.staves, pv.staves, strict=True)
+    }
+    return LyProject(
+        files=dict(sorted(files.items())), measure_lines=line_map, staff_vars=staff_vars
+    )
 
 
 def write_project(score: Score, root: Path) -> LyProject:

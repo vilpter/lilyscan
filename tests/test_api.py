@@ -14,9 +14,13 @@ from lilyscan_app.api import create_app
 class RecordingDispatcher:
     def __init__(self) -> None:
         self.submitted: list[str] = []
+        self.recompiled: list[str] = []
 
     def submit(self, job_id: str) -> None:
         self.submitted.append(job_id)
+
+    def recompile(self, job_id: str) -> None:
+        self.recompiled.append(job_id)
 
 
 @pytest.fixture
@@ -103,3 +107,96 @@ def test_file_download_blocks_traversal(client: TestClient) -> None:
 
 def test_unknown_job(client: TestClient) -> None:
     assert client.get("/api/jobs/nope").status_code == 404
+
+
+# --- review UI endpoints (M4) --------------------------------------------------------
+
+OMR = Path(__file__).parents[1] / "eval" / "fixtures" / "omr" / "5.11.0" / "piano-two-voices"
+
+
+@pytest.fixture
+def finished_job(client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+    """A job carried through the real pipeline, with an Audiveris run standing in."""
+    import json
+    import shutil
+
+    from lilyscan_app import tasks
+    from lilyscan_app.jobs import job_dir
+
+    monkeypatch.setenv("LILYSCAN_DATA_DIR", str(tmp_path))
+    job = client.post("/api/jobs", files=[("files", ("p.png", b"x", "image/png"))]).json()
+    root = job_dir(tmp_path, job["id"])
+    (root / "engine").mkdir()
+    shutil.copy(OMR / "output.mxl", root / "engine" / "score.mxl")
+    shutil.copy(OMR / "book.omr", root / "engine" / "score.omr")
+    (root / "engine" / "run.json").write_text(
+        json.dumps({"mxl_files": ["engine/score.mxl"], "omr_files": ["engine/score.omr"]}),
+        encoding="utf-8",
+    )
+    tasks.pipeline_finish(job["id"])
+    return str(job["id"])
+
+
+@pytest.mark.lilypond
+def test_review_and_page_images(client: TestClient, finished_job: str) -> None:
+    review = client.get(f"/api/jobs/{finished_job}/review").json()
+    assert review["measures"] and review["pages"][0]["width"] == 2480
+    assert review["lilypond"]["svg"] and {c["id"] for c in review["qa"]["checks"]} >= {"Q1", "Q5"}
+    page = client.get(f"/api/jobs/{finished_job}/pages/1.png")
+    assert page.status_code == 200 and page.content.startswith(b"\x89PNG")
+    assert client.get(f"/api/jobs/{finished_job}/pages/2.png").status_code == 404
+
+
+@pytest.mark.lilypond
+def test_read_and_write_lilypond_sources(client: TestClient, finished_job: str) -> None:
+    url = f"/api/jobs/{finished_job}/ly/parts/piano.ly"
+    original = client.get(url).text
+    assert "pianoUpperMusic" in original
+    assert client.put(url, content="% edited\n" + original).status_code == 204
+    assert client.get(url).text.startswith("% edited")
+    report = client.get(f"/api/jobs/{finished_job}/files/report.json").content
+    for bad in ("../report.json", "svg/main.svg", "parts/../../report.json", "lilyscan-map.json"):
+        # 404 from the editor route, or 405 when the client normalizes ".." away first.
+        status = client.put(f"/api/jobs/{finished_job}/ly/{bad}", content="x").status_code
+        assert status in (404, 405), bad
+    assert client.get(f"/api/jobs/{finished_job}/files/report.json").content == report
+    assert client.put(url, content=b"\xff\xfe").status_code == 422
+
+
+@pytest.mark.lilypond
+def test_edits_and_recompile_wait_for_a_busy_job(
+    client: TestClient, finished_job: str, tmp_path: Path, dispatcher: RecordingDispatcher
+) -> None:
+    from lilyscan_app.jobs import JobStatus, JobStore
+
+    store = JobStore(tmp_path)
+    store.update(finished_job, status=JobStatus.RUNNING)
+    assert client.put(f"/api/jobs/{finished_job}/ly/main.ly", content="x").status_code == 409
+    assert client.post(f"/api/jobs/{finished_job}/recompile").status_code == 409
+    store.update(finished_job, status=JobStatus.DONE)
+    store.close()
+
+    response = client.post(f"/api/jobs/{finished_job}/recompile")
+    assert response.status_code == 202 and response.json()["stage"] == "recompile"
+    assert dispatcher.recompiled == [finished_job]
+
+
+@pytest.mark.lilypond
+def test_downloads(client: TestClient, finished_job: str) -> None:
+    import io
+    import zipfile
+
+    base = f"/api/jobs/{finished_job}/download"
+    archive = client.get(f"{base}/ly")
+    assert archive.status_code == 200
+    names = zipfile.ZipFile(io.BytesIO(archive.content)).namelist()
+    assert f"lilyscan-{finished_job}/main.ly" in names
+    assert not [n for n in names if "/svg/" in n or n.endswith("lilyscan-map.json")]
+    for kind in ("pdf", "midi", "musicxml"):
+        assert client.get(f"{base}/{kind}").status_code == 200, kind
+    assert client.get(f"{base}/nope").status_code == 404
+
+
+def test_web_app_is_served(client: TestClient) -> None:
+    page = client.get("/")
+    assert page.status_code == 200 and "<title>Lilyscan</title>" in page.text
