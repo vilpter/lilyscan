@@ -47,6 +47,16 @@ def test_compile_hello_world(tmp_path: Path) -> None:
 
 
 @pytest.mark.lilypond
+def test_compile_with_relative_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    Path("src").mkdir()
+    Path("src/hello.ly").write_text(HELLO_WORLD, encoding="utf-8")
+    result = compile_ly(Path("src/hello.ly"), Path("build/out"))
+    assert result.ok, result.log
+    assert (tmp_path / "build" / "out" / "hello.pdf").is_file()
+
+
+@pytest.mark.lilypond
 def test_compile_reports_barcheck(tmp_path: Path) -> None:
     src = tmp_path / "bad.ly"
     src.write_text(

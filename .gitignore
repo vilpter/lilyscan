@@ -9,6 +9,8 @@ build/
 *.egg-info/
 /data/
 eval/corpus/**/private/
+# Built corpora are regenerated from their spec (lilyscan corpus build).
+eval/corpus/*/
 eval/work/
 *.log
 

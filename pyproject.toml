@@ -24,6 +24,8 @@ api = [
 ]
 # CPU inference for project-owned models. The CUDA image swaps in onnxruntime-gpu and torch.
 ml = ["onnxruntime>=1.18"]
+# Image processing: synthetic degradation (eval) and the photo front-end (Stage 1).
+vision = ["opencv-python-headless>=4.10", "numpy>=2.0"]
 
 [project.scripts]
 lilyscan = "lilyscan.cli:main"
@@ -64,6 +66,12 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = ["music21.*", "rq.*", "fakeredis.*", "onnxruntime.*", "torch.*"]
 ignore_missing_imports = true
+
+# music21 is only partly annotated; allow calling its untyped functions in the one
+# module that builds scores with it.
+[[tool.mypy.overrides]]
+module = ["lilyscan.synth.generate"]
+disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

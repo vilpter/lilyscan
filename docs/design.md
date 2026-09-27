@@ -217,6 +217,11 @@ Audiveris expects clean, flat, scan-like pages. This stage turns every raster in
   - Confidence, taken from the Audiveris grade (normalized and calibrated against the corpus).
   - Staff, system and measure geometry, for the overlay and click-to-sync.
 - **Join strategy:** match MusicXML events to `.omr` interpretations by page, system, measure, staff, and onset order. Anything that cannot be joined gets a bbox from its measure and a confidence penalty.
+- **What the 5.11.0 format provides** (inspected at M1 on the seed corpus):
+  - `book.xml`: software version and build, the sheet list, each system's part names, and the *logical parts* the score was built from (which is where a split part such as `Flute`/`F1.` shows up).
+  - `sheet#N/sheet#N.xml`: the scale (interline, line thickness, the music font Audiveris matched), and per system the *stacks* (measures), each with *slots* giving the x-offset of every time offset. It also has the staves with their line polylines, and the interpretation graph (`sig`).
+  - Interpretations carry `shape`, `grade` (intrinsic confidence), `ctx-grade` (confidence in context), `staff`, and `bounds` in page pixels. Noteheads also carry a staff-relative `pitch` step. `head-chord` elements contain their heads through `containment` relations; `head-stem`, `beam-stem`, `alter-head`, `augmentation`, `slur-head` and `chord-tuplet` relations link the rest.
+  - **Join plan:** MusicXML measure *i* is the *i*-th stack in page/system order. Within a stack, an event's onset selects a slot (and so an x-position). The head-chord on that staff nearest that x, whose heads' staff steps match the event's pitches under the active clef, supplies the bbox (the union of its heads) and the confidence (the minimum `ctx-grade` of the chord and its heads).
 - **Format risk:** `.omr` is an internal format, not a stable API. The reader is versioned against the pinned Audiveris release. It is guarded by golden-file tests built from saved `.omr` files, and it degrades to MusicXML-only import (with a warning) if parsing fails. Verify the exact schema against the pinned release's schema docs at M3. If the Python reader proves too fragile, switch to option D (§5.2): a small JVM tool that exports the model to project-owned JSON.
 
 ### Stage 4 — Born-Digital Vector Oracle
@@ -245,6 +250,11 @@ Pure functions over the IR, with heavy unit testing. This is where this project 
 8. **Structure.** Normalize repeats and voltas into `\repeat volta N { } \alternative { }`, and multi-measure rests into `R1*N`.
 
 Each repair records its provenance and before/after values in the IR, so the UI can show what changed and why.
+
+**Concrete targets found by the M1 baseline** (Audiveris 5.11.0 on the seed corpus; see `eval/results/m1-baseline`):
+- **Octave clefs are read as plain clefs.** The small 8 under a tenor's treble clef is ignored, so every note comes out an octave high. Q4 (pitch range) flags it. Repair: when a part named or ranged like a tenor (or guitar) sits consistently an octave above its range under a G clef, set `octave_change=-1` and transpose.
+- **One part split in two by its abbreviation.** The short name on later systems (`Fl.`, read as `F1.`) becomes a second part, each half-empty. Q5 (alignment) flags it. Repair: merge parts whose names are abbreviation variants of each other and whose measures are complementary (one has only rests where the other has notes). This is a special case of part mapping (item 4).
+- **Page text read as lyrics.** The engraved footer was OCR'd as syllables under the lowest staff. Repair: drop lyric text that sits outside the vertical band of its staff's lyric lines, or that matches known non-lyric patterns (version strings, page numbers). The generator already quotes any non-word syllable, so such text can never break compilation.
 
 ### Stage 6 — Internal Score Model (IR)
 Keep a **project-owned IR**, a typed pydantic model. Don't generate LilyPond directly from engine output.
@@ -350,10 +360,11 @@ Build nothing in this stage by default. Enter it only when the eval harness show
   - String quartet
   - Orchestral score with hidden staves
 - Each piece exists as a born-digital PDF, a scan, and a phone photo, **with ground truth** in MusicXML or LilyPond.
-- **Seed corpus (M1, synthetic).** Start with pieces from music21's bundled corpus, whose MusicXML is the ground truth. The pipeline for each piece:
-  1. MusicXML → `musicxml2ly` → LilyPond 2.26.0 → PDF (born-digital input) and 300 DPI PNG.
-  2. Apply the §9.3 degradations to simulate scans and photos.
-  3. Check the license of each corpus file before including it, and record it in the corpus manifest. Composers being public domain does not make every encoding free to use.
+- **Seed corpus (M1, generated).** music21's bundled corpus was considered and rejected for now. Its licence file says some encodings restrict commercial use and many files state no licence, which needs owner approval under §13. The seed corpus is therefore **generated**. It is license-clean, exact and reproducible, and it is AGPL project content; lyric texts are short public-domain liturgical and folk lines.
+  - `eval/corpus/seed.json` lists 30 pieces: 6 solo lines, 6 piano (with occasional second voices), 8 SATB (lyrics in Latin, German, French, English), 4 lead sheets (lyrics and chord symbols), 6 string quartets.
+  - Each piece is seeded random-but-valid music written as MusicXML ground truth (music21). It is engraved with `musicxml2ly` and LilyPond 2.26.0 into a born-digital PDF and a 300 DPI PNG, then degraded into a simulated scan and a simulated phone photo (§9.3). Rebuilding from the spec is byte-identical.
+  - Build with `lilyscan corpus build`; built corpora are not committed.
+  - Using real repertoire (music21's corpus, Mutopia) is an open decision for the owner.
 - **Real inputs** (the owner's own scans and phone photos, with hand-checked ground truth) go into the same layout as they become available. They replace synthetic items as the headline numbers. Metrics are always reported separately for synthetic and real inputs.
 
 ### 9.2 Metrics
@@ -423,18 +434,23 @@ lilyscan/
       audiveris/          # Stage 2 runner (CLI, options) + Stage 3 .omr reader (versioned)
     vector/               # Stage 4 born-digital oracle, font glyph tables
     repair/               # Stage 5 repair + enrichment rules
-    ir/                   # Stage 6 models + MusicXML IO
-    lilypond/             # Stage 7 generator
+    ir/                   # Stage 6 models, MusicXML reader, whole-score operations
+    lilypond/             # Stage 7 generator (notation.py, generate.py) + compile/diagnostics
     qa/                   # Stage 8 checks
     custom/               # Stage 9 (empty until justified by metrics)
     runtime/              # device.py, config (all thresholds, in staff-space units)
-    cli.py
+    synth/                # synthetic ground truth: generator, engraver, degradations, corpus builder
+    evaluation/           # measure-aligned comparison and the corpus harness
+    pipeline.py           # engine output -> IR -> LilyPond project -> QA report (one job)
+    cli.py                # lilyscan convert | corpus build | eval run | selftest | device | versions
   eval/
-    corpus/               # inputs + ground truth (large files via git-lfs or external)
-    fixtures/omr/         # golden .omr files per pinned Audiveris version
-    synth/                # synthetic data generator
-    results/
+    corpus/seed.json      # seed corpus spec (committed); built corpora (eval/corpus/*/) are ignored
+    fixtures/omr/         # golden .omr files per pinned Audiveris version (M3)
+    results/<label>/      # summary.md + results.json per recorded run (committed)
+    work/                 # engine output cache (ignored)
   tests/
+    fixtures/             # hand-written MusicXML covering generator features
+    golden/               # expected generator output (LILYSCAN_UPDATE_GOLDEN=1 to refresh)
 ```
 
 ## 12. Dependencies (verify versions and licenses at build time)

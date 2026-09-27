@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from lilyscan.engine.audiveris.runner import run_audiveris
+from lilyscan.pipeline import import_musicxml_files, produce
 from lilyscan.runtime.config import Settings
 
 from .jobs import JobStatus, JobStore, job_dir
@@ -84,14 +85,20 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
 
 
 def pipeline_finish(job_id: str) -> dict[str, Any]:
-    """Stages 3+: import engine output and produce LilyPond. Filled in by later milestones."""
+    """Stages 3 and 6-8: import the engine's MusicXML, generate LilyPond, run QA.
+
+    QA findings do not fail the job; they are the review list for the user.
+    """
     settings = Settings.from_env()
     store = _store(settings)
     try:
         store.update(job_id, status=JobStatus.RUNNING, stage="import")
         root = job_dir(settings.data_dir, job_id)
         engine = json.loads((root / "engine" / "run.json").read_text(encoding="utf-8"))
-        report = {"engine": engine}
+        score = import_musicxml_files([root / p for p in engine["mxl_files"]], "audiveris")
+        store.update(job_id, stage="lilypond")
+        report = {"engine": engine, **produce(score, root, settings)}
+        _write_json(root / "report.json", report)
         store.update(job_id, status=JobStatus.DONE, stage="done", report=report)
         return report
     except Exception as exc:
