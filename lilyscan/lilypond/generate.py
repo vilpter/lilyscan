@@ -172,16 +172,26 @@ def _measure_rest(e: Event, length: Fraction | None) -> str:
 def _voice_tokens(
     events: Sequence[Event], length: Fraction | None, clefs: Sequence[Clef] = ()
 ) -> list[str]:
-    """Tokens for one voice; ``clefs`` are mid-measure clef changes to interleave."""
+    """Tokens for one voice; ``clefs`` are mid-measure clef changes to interleave.
+
+    A voice need not start on the downbeat or be contiguous (inner voices often
+    enter mid-measure); gaps become invisible spacer rests so every event keeps its
+    onset.
+    """
     tokens: list[str] = []
     pending = sorted(clefs, key=lambda c: c.offset)
+    position = Fraction(0)
     i = 0
     while i < len(events):
         e = events[i]
+        if e.offset > position:
+            tokens += ["s" + d for d in split_duration(e.offset - position)]
+            position = e.offset
         while pending and pending[0].offset <= e.offset:
             tokens.append(clef_command(pending.pop(0)))
         if e.measure_rest and len(events) == 1:
             tokens.append(_measure_rest(e, length))
+            position += length or e.duration
             i += 1
             continue
         if e.grace:
@@ -205,9 +215,11 @@ def _voice_tokens(
             span = _tuplet_span(group_events[0], ratio)
             span_token = f" {span}" if span else ""
             tokens.append(f"\\tuplet {ratio[0]}/{ratio[1]}{span_token} {{ {inner} }}")
+            position += sum((x.duration for x in group_events), Fraction(0))
             continue
         tokens.append(_event_body(e))
         tokens += _markers(e)
+        position += e.duration
         i += 1
     tokens += [clef_command(c) for c in pending]  # a clef change right before the barline
     return tokens

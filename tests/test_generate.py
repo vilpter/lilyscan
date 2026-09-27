@@ -85,3 +85,21 @@ def test_generated_project_passes_all_checks(tmp_path: Path) -> None:
     report = run_checks(score, tmp_path, project)
     assert report.passed, report.to_dict()
     assert "main.pdf" in report.outputs
+
+
+def test_voice_entering_mid_measure_keeps_its_onset() -> None:
+    from fractions import Fraction
+
+    from lilyscan.ir.models import Event, NoteHead, Pitch, Voice
+
+    score = load_musicxml(FIXTURE)
+    m = score.parts[1].staves[0].measures[1]  # piano upper, two voices
+    late = Event(
+        kind="note",
+        offset=Fraction(2),
+        duration=Fraction(2),
+        notes=[NoteHead(pitch=Pitch(step="C", octave=4))],
+    )
+    m.voices[1] = Voice(number=2, events=[late])
+    text = generate_project(score).files["parts/piano.ly"]
+    assert r"\voiceTwo s2 c'2" in text
