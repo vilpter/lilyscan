@@ -21,10 +21,12 @@ Changing a pin is its own change: update both places, then re-run the eval harne
 ## Review UI
 
 Open the app in a browser (port 8000 by default) to upload a PDF, scans, or phone photos,
-follow the job, and review the result in three panes. Photos and scans are straightened
-first (unless you untick the option): the page is found and seen head-on, uneven light is
-evened out, and curled or skewed staff lines are made straight. A scan is also transcribed
-as uploaded, and Lilyscan keeps whichever result it expects to be better.
+follow the job, and review the result in three panes. Pages are prepared for the engine
+first (unless you untick the option). Born-digital PDFs are rendered sharply at 400 DPI, and
+the triplets they print are used to check the rhythm. Photos and scans are straightened: the
+page is found and seen head-on, uneven light is evened out, and curled or skewed staff
+lines are made straight. A scan is also transcribed as uploaded, and Lilyscan keeps
+whichever result it expects to be better.
 
 - **Source:** the page as the engine read it, every note boxed by confidence and measures
   that need attention outlined.

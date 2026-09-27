@@ -77,16 +77,25 @@ def _low_confidence(score: Score) -> int:
 
 
 def repair_engine_output(
-    score: Score, root: Path, geometry: dict[str, Any] | None
+    score: Score, root: Path, geometry: dict[str, Any] | None, pdf: Path | None = None
 ) -> list[dict[str, Any]]:
-    """Stage 5: the repair rules, then Lilyscan's calibrated confidence; returns the
-    repair log. Then draws the page overlays (``root/overlays``, needs the ``vision``
-    extra), so their colours show the final confidence.
+    """Stages 4 and 5: corrections from the born-digital ``pdf`` the pages came from (if
+    any), the repair rules, then Lilyscan's calibrated confidence; returns the repair
+    log. Then draws the page overlays (``root/overlays``, needs the ``vision`` extra), so
+    their colours show the final confidence.
     """
     ok = geometry is not None and "error" not in geometry
     omr_path = root / geometry["source"] if geometry is not None and ok else None
     book = read_omr(omr_path) if omr_path is not None else None
-    repairs = [r.to_dict() for r in apply_repairs(score, book=book)]
+    repairs: list[dict[str, Any]] = []
+    if pdf is not None and book is not None:
+        try:
+            from lilyscan.vector import apply_vector_oracle  # needs the vector extra
+
+            repairs += [r.to_dict() for r in apply_vector_oracle(score, pdf, book)]
+        except ImportError:
+            pass
+    repairs += [r.to_dict() for r in apply_repairs(score, book=book)]
     calibrated = calibrate_confidence(score)
     if geometry is None or omr_path is None or book is None:
         return repairs

@@ -26,6 +26,9 @@ api = [
 ml = ["onnxruntime>=1.18"]
 # Image processing: synthetic degradation (eval) and the photo front-end (Stage 1).
 vision = ["opencv-python-headless>=4.10", "numpy>=2.0"]
+# Born-digital PDFs (Stage 4): PyMuPDF (AGPL-3.0, approved in D2) reads glyphs, text and
+# vector lines; fontTools (MIT) reads glyph names from embedded music fonts.
+vector = ["pymupdf>=1.24", "fonttools>=4.50"]
 
 [project.scripts]
 lilyscan = "lilyscan.cli:main"
@@ -64,13 +67,18 @@ packages = ["lilyscan", "lilyscan_app"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["music21.*", "rq.*", "fakeredis.*", "onnxruntime.*", "torch.*"]
+module = ["music21.*", "rq.*", "fakeredis.*", "onnxruntime.*", "torch.*", "fontTools.*"]
 ignore_missing_imports = true
 
 # music21 is only partly annotated; allow calling its untyped functions in the one
 # module that builds scores with it.
 [[tool.mypy.overrides]]
 module = ["lilyscan.synth.generate"]
+disallow_untyped_calls = false
+
+# PyMuPDF's Document constructor is unannotated.
+[[tool.mypy.overrides]]
+module = ["lilyscan.ingest.pdf", "lilyscan.vector.extract"]
 disallow_untyped_calls = false
 
 [tool.pytest.ini_options]

@@ -187,6 +187,9 @@ Each stage has typed input and output, an artifact, a debug visualization where 
   - Raster PDF / scan → Stage 1 (light) → Stage 2.
   - Photo → Stage 1 (full) → Stage 2.
 
+*Done (M7), in `lilyscan/ingest/pdf.py`:* each PDF page is classified: raster when one image covers at least 80% of it, vector when it has drawings or text. Born-digital PDFs are rendered with PyMuPDF at 400 DPI, in grayscale, into one multi-page TIFF (one engine book). Scanned PDFs still go to the engine as uploaded; giving their page images to Stage 1 is left for later.
+- **Measured (A/B on both corpora, same pieces):** Audiveris rendering the PDF itself (PDFBox, 300 DPI) gave 87.4% exact measures. Our 400 DPI rendering gave 90.5% (16 pieces better, 4 worse). Audiveris's own rendering at 400 DPI (`ImageLoading.pdfResolution`) gave 81.6%, so the renderer matters, not only the resolution.
+
 ### Stage 1 — Input Preparation (front-end for Audiveris)
 Audiveris expects clean, flat, scan-like pages. This stage turns every raster into one.
 - **Photos (full):**
@@ -248,6 +251,12 @@ Audiveris expects clean, flat, scan-like pages. This stage turns every raster in
 - **Use the vector data as a correction oracle**, not as a separate recognition path. Where it disagrees with Audiveris on notehead count or position, accidentals, flags or beams, dots, rests, or clefs, correct the IR event, record provenance `vector-oracle`, and set a high confidence.
 - Skip this stage when fonts are unmapped or outlined to paths; the raster result stands.
 - Only if M7 shows the oracle cannot reach its target should a full vector-native semantic path be considered.
+
+*Done (M7), in `lilyscan/vector/`:* glyphs are identified by name from the embedded font program (fontTools), because music fonts in PDFs carry no Unicode mapping. Staves come from groups of five evenly spaced vector lines. Italic digits in text fonts are tuplet numbers (LilyPond also sets an octave clef's 8 this way).
+- **Tuplets (kept):** for each printed 3, the run of plain notes under it in the nearest voice becomes a triplet, when that makes the voice fill its measure. Measures with several missed triplets are handled together.
+- **Noteheads (measured and dropped):** Audiveris's noteheads on PDF input already agree with the PDF's glyphs 99.5% of the time (5,341 of 5,367). Correcting from glyphs mostly added other voices' heads and grace notes, and lowered exact measures.
+- **Remaining PDF errors** are rhythm the engine lost entirely (missed notes and rests inside tuplets). Rebuilding those from the vector symbols is the vector-native path this design defers.
+- **Result** (`eval/results/m7-vector`, `eval/results/m7-repertoire`, with Stages 0, 4 and 5): PDF exact measures 85.3% → 89.0% (seed) and 88.4% → 91.9% (repertoire). The M7 target of 95% is not reached.
 
 ### Stage 5 — Semantic Repair and Enrichment
 Pure functions over the IR, with heavy unit testing. This is where this project adds most of its accuracy on top of Audiveris.
@@ -499,6 +508,7 @@ lilyscan/
 | Browser rendering (optional) | Verovio | LGPL-3.0; active. Renders MusicXML to SVG in the browser (WebAssembly) to preview raw Audiveris output or show an instant preview while LilyPond compiles. Cannot read `.ly` |
 | Rejected | Abjad | MIT and active, but each release follows LilyPond closely (currently ≥ 2.25.26), and its object model would duplicate the IR. The generator is a small in-house serializer instead |
 | PDF | PyMuPDF | AGPL/commercial dual license; acceptable for private use. Alternative: pypdfium2 |
+| Font programs | fontTools | MIT; reads glyph names from music fonts embedded in PDFs (Stage 4) |
 | CV | OpenCV, scikit-image | Stage 1 front-end, Stage 4 matching |
 | ML (optional) | ONNX Runtime; PyTorch only for training or the CUDA variant | Needed for the dewarping model and any Stage 9 work |
 | Music model | music21 | BSD-3; very active. MusicXML IO and analysis helpers. Don't use its LilyPond export (old and weak) |
@@ -532,3 +542,4 @@ lilyscan/
 | 2026-09-26 | M4 | Web review UI: a build-free single-page app served by the API (upload including phone camera, job list, three-pane review with click-to-sync, ranked review list, editor with save and recompile, downloads). Backend adds `review.json`, point-and-click SVG, page images from the engine project, and recompiling edited sources (measure map rebuilt from `% m. N` comments). `lilyscan serve` runs everything on one machine (`LILYSCAN_DISPATCH=inline`).<br>• Exit criterion met on the dev laptop with a scanned Bach chorale: select a flagged measure, fix it in the editor, save and recompile (about 10 s), download. Well under a minute.<br>• Not yet: Q3-Q5 are not re-run on edited sources (they describe the IR; LilyPond cannot export MusicXML to rebuild it); MusicXML download is the engine's, not the edited score. |
 | 2026-09-27 | M5 | In progress. Stage 5 rules `part-merge`, `octave-clef`, `rhythm` (triplets, dots, flags), `lyric-text` and `lyric-verse` (page text, stray marks, chord names read as lyrics, verse numbering), `lyric-split` (syllables read as one word), and Lilyscan's calibrated confidence. Repairs are logged in the job report, listed in the review UI, and noted in the LilyPond source (`% fix:`). Results in `eval/results/m5-repair` and `eval/results/m5-repertoire`.<br>• Exact measures, seed: 40.6% → 64.7% (scans 44.7% → 72.5%); repertoire: 58.8% → 66.8% (scans 67.4% → 83.1%). First exit criterion (beat raw Audiveris on scans) met.<br>• Confidence: out-of-fold ECE 0.0086 (seed), 0.0388 (repertoire); target < 0.05 met.<br>• Lyrics, seed 43.0% → 64.8% (scans 75.4%); chords 29.5% → 31.2%. Second exit criterion (correct lyrics and chords on SATB and lead sheets) not yet met. Next: the engine's harmony output, lyric OCR misreads, key mode and accidentals. |
 | 2026-09-27 | M6 | Stage 1 front-end: page detection and perspective, light flattening, staff-line dewarping, scale, and a quality gate; a job step before the engine and a `--prepare` harness mode. Scans are transcribed prepared and as uploaded, keeping the run expected to be better.<br>• Photos, exact measures: seed 12.4% → 73.5%, repertoire 12.8% → 72.4%. Scans: seed 72.5% → 83.4%, repertoire 83.1% → 83.1%.<br>• Exit criterion (gated photos within 10 points of scans): seed 9.9 points, repertoire 10.8 points. The gate passes every simulated photo; its thresholds need real photos (#11). |
+| 2026-09-27 | M7 | Stage 0 renders born-digital PDFs at 400 DPI (PyMuPDF) for the engine. Stage 4 reads glyph names, italic digits and staves from the PDF, and applies its printed tuplet numbers; correcting noteheads from glyphs was tried and dropped.<br>• PDF exact measures: seed 85.3% → 89.0%, repertoire 88.4% → 91.9%. Overall: seed 82.7% → 83.6%, repertoire 81.7% → 82.6%.<br>• Exit criterion (≥ 95% on born-digital PDFs) not met. The remaining errors are rhythm the engine lost entirely, which a vector-native reading of those measures would be needed to fix. |

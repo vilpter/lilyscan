@@ -31,6 +31,13 @@ _OCR_SPEC = re.compile(r"^[a-z]{3}(?:_[a-z]+)?(?:\+[a-z]{3}(?:_[a-z]+)?)*$")
 # covered by a behavioural test against the pinned release.
 AUDIVERIS_OCR_LANGUAGES_KEY = "org.audiveris.omr.text.Language.defaultSpecification"
 
+# Stage 0: born-digital PDF pages are rendered at this resolution (PyMuPDF) for the engine.
+# On both corpora this beat giving Audiveris the PDF (it renders at 300 DPI; exact
+# measures 87.4% -> 90.5%) and Audiveris's own 400 DPI rendering (81.6%).
+PDF_RENDER_DPI = 400
+# A PDF page is a scan when one image covers at least this share of it.
+PDF_RASTER_COVER = 0.8
+
 # Stage 1 (input preparation). Lengths are in staff spaces (interlines) unless noted.
 # Target interline in pixels for the page given to Audiveris; pages outside the range
 # are rescaled to the middle of it.
