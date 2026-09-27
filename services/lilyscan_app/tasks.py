@@ -40,19 +40,39 @@ def _write_json(path: Path, data: Any) -> None:
     )
 
 
-# Raster pages Stage 1 prepares; PDFs and TIFFs (possibly multi-page) go to the engine as
-# they are.
-PREPARED_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
+# Inputs prepared before the engine: raster pages (Stage 1) and PDFs (Stage 0). TIFFs,
+# possibly multi-page, go to the engine as they are.
+PREPARED_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".pdf"}
 
 
 def _prepared(root: Path, name: str) -> Path:
-    return root / "prepared" / f"{Path(name).stem}.png"
+    """Where Stage 0/1 put its version of an input: a page image, or a born-digital PDF
+    rendered to a multi-page TIFF."""
+    stem = root / "prepared" / Path(name).stem
+    tif = stem.with_suffix(".tif")
+    return tif if tif.is_file() else stem.with_suffix(".png")
+
+
+def _prepare_one(root: Path, name: str) -> dict[str, Any]:
+    src = root / "input" / name
+    if src.suffix.lower() == ".pdf":
+        from lilyscan.ingest.pdf import inspect_pdf, render_pdf  # vector and vision extras
+
+        info = inspect_pdf(src)
+        if not info.born_digital:
+            return info.to_dict()  # scanned pages: the engine renders them as they are
+        target = root / "prepared" / f"{Path(name).stem}.tif"
+        return render_pdf(src, target).to_dict()
+    from lilyscan.prepare import prepare_image  # needs the vision extra
+
+    return prepare_image(src, _prepared(root, name)).to_dict()
 
 
 def prepare_inputs(job_id: str) -> dict[str, Any]:
-    """Stage 1: find, straighten and clean each photo or scan before the engine sees it.
+    """Stages 0 and 1: render born-digital PDFs for the engine, and find, straighten and
+    clean each photo or scan.
 
-    A page that cannot be prepared goes to the engine as uploaded; the report says why.
+    An input that cannot be prepared goes to the engine as uploaded; the report says why.
     """
     settings = Settings.from_env()
     store = _store(settings)
@@ -64,14 +84,11 @@ def prepare_inputs(job_id: str) -> dict[str, Any]:
         root = job_dir(settings.data_dir, job_id)
         pages: list[dict[str, Any]] = []
         if job.options.get("prepare", True):
-            from lilyscan.prepare import prepare_image  # needs the vision extra
-
             for name in job.inputs:
                 if Path(name).suffix.lower() not in PREPARED_SUFFIXES:
                     continue
                 try:
-                    report = prepare_image(root / "input" / name, _prepared(root, name))
-                    pages.append({"input": name, **report.to_dict()})
+                    pages.append({"input": name, **_prepare_one(root, name)})
                 except Exception as exc:  # the raw page is still worth transcribing
                     log.warning("prepare %s/%s failed: %s", job_id, name, exc)
                     pages.append({"input": name, "error": str(exc), "passed": False})
@@ -183,6 +200,20 @@ def _choose(
     return best[1], chosen
 
 
+def _born_digital_pdf(root: Path, engine: dict[str, Any]) -> Path | None:
+    """The job's one born-digital PDF, when the kept engine run read its rendered pages."""
+    report = root / "prepared" / "report.json"
+    # One book only: geometry, and so the oracle's page mapping, come from the first one.
+    if not report.is_file() or engine.get("pages") != "prepared" or len(engine["omr_files"]) != 1:
+        return None
+    pdfs = [
+        p["input"]
+        for p in json.loads(report.read_text(encoding="utf-8"))
+        if p.get("born_digital") and p.get("rendered_dpi")
+    ]
+    return root / "input" / pdfs[0] if len(pdfs) == 1 else None
+
+
 def pipeline_finish(job_id: str) -> dict[str, Any]:
     """Stages 3 and 5-8: import the engine's output, repair it, generate LilyPond, run QA.
 
@@ -196,7 +227,7 @@ def pipeline_finish(job_id: str) -> dict[str, Any]:
         engine = json.loads((root / "engine" / "run.json").read_text(encoding="utf-8"))
         score, geometry = import_engine_output(root, engine)
         store.update(job_id, stage="repair")
-        repairs = repair_engine_output(score, root, geometry)
+        repairs = repair_engine_output(score, root, geometry, _born_digital_pdf(root, engine))
         store.update(job_id, stage="lilypond")
         prepared = root / "prepared" / "report.json"
         report = {

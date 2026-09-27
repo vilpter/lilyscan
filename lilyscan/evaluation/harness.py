@@ -68,8 +68,9 @@ class ItemResult:
         }
 
 
-# Input variants that go through Stage 1 with ``prepare=True`` (rasters of paper).
-PREPARED_VARIANTS = ("scan", "photo")
+# Input variants prepared before the engine with ``prepare=True``: rasters of paper go
+# through Stage 1, born-digital PDFs are rendered (Stage 0).
+PREPARED_VARIANTS = ("pdf", "scan", "photo")
 
 
 def engine_dir(work: Path, item: CorpusItem, variant: Variant, prepare: bool = False) -> Path:
@@ -78,11 +79,21 @@ def engine_dir(work: Path, item: CorpusItem, variant: Variant, prepare: bool = F
     return work / item.spec.id / (f"{variant}-prepared" if prepared else variant)
 
 
-def _prepared_input(item: CorpusItem, variant: Variant, out_dir: Path) -> dict[str, Any]:
-    from lilyscan.prepare import prepare_image  # needs the vision extra
+def _prepared_source(out_dir: Path, variant: Variant) -> Path:
+    return out_dir / ("prepared.tif" if variant == "pdf" else "prepared.png")
 
+
+def _prepared_input(item: CorpusItem, variant: Variant, out_dir: Path) -> dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
-    report = prepare_image(item.input(variant), out_dir / "prepared.png").to_dict()
+    report: dict[str, Any]
+    if variant == "pdf":
+        from lilyscan.ingest.pdf import render_pdf  # needs the vector and vision extras
+
+        report = render_pdf(item.input(variant), _prepared_source(out_dir, variant)).to_dict()
+    else:
+        from lilyscan.prepare import prepare_image  # needs the vision extra
+
+        report = prepare_image(item.input(variant), _prepared_source(out_dir, variant)).to_dict()
     (out_dir / "prepare.json").write_text(
         json.dumps(report, indent=2), encoding="utf-8", newline="\n"
     )
@@ -111,7 +122,7 @@ def _engine_output(
     if cached:
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
     else:
-        source = out_dir / "prepared.png" if prepared else item.input(variant)
+        source = _prepared_source(out_dir, variant) if prepared else item.input(variant)
         run = run_audiveris([source], out_dir, settings=settings)
         summary = {
             "ok": run.ok,
@@ -145,7 +156,13 @@ class _Processed:
     repairs: list[dict[str, Any]] = field(default_factory=list)
 
 
-def _process(pred: Score | None, out_dir: Path, repair: bool, errors: list[str]) -> _Processed:
+def _process(
+    pred: Score | None,
+    out_dir: Path,
+    repair: bool,
+    errors: list[str],
+    pdf: Path | None = None,
+) -> _Processed:
     omr = next(iter(sorted(out_dir.glob("*.omr"))), None)
     done = _Processed(pred, out_dir, omr)
     book = None
@@ -157,7 +174,11 @@ def _process(pred: Score | None, out_dir: Path, repair: bool, errors: list[str])
         except OmrError as exc:
             errors.append(f"cannot read .omr: {exc}")
     if repair and pred is not None:
-        done.repairs = [r.to_dict() for r in apply_repairs(pred, book=book)]
+        if pdf is not None and book is not None:
+            from lilyscan.vector import apply_vector_oracle  # needs the vector extra
+
+            done.repairs += [r.to_dict() for r in apply_vector_oracle(pred, pdf, book)]
+        done.repairs += [r.to_dict() for r in apply_repairs(pred, book=book)]
         calibrate_confidence(pred)
     return done
 
@@ -176,7 +197,9 @@ def evaluate_item(
     pred, wall_s, errors, cached, prepared = _engine_output(
         item, variant, work, settings, reuse, prepare
     )
-    done = _process(pred, engine_dir(work, item, variant, prepare), repair, errors)
+    # Stage 4 reads the born-digital PDF the engine's pages came from.
+    pdf = item.input(variant) if prepare and variant == "pdf" else None
+    done = _process(pred, engine_dir(work, item, variant, prepare), repair, errors, pdf)
     # As in a job: when Stage 1 found no page edges (a scan), the page as uploaded is
     # transcribed too, and the run Lilyscan expects to have more right is kept.
     if repair and prepared is not None and prepared.get("page_found") is False:

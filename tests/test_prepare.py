@@ -96,25 +96,45 @@ def test_blank_page_warns(tmp_path: Path) -> None:
     assert dst.is_file()
 
 
-def test_job_task_prepares_raster_pages_only(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def born_digital_pdf(path: Path) -> None:
+    """A one-page PDF drawn with vector staff lines and text, like an engraver's output."""
+    pymupdf = pytest.importorskip("pymupdf")
+    doc = pymupdf.open()
+    pg = doc.new_page(width=595, height=842)
+    for staff in range(4):
+        for line in range(5):
+            y = 100 + staff * 80 + line * 5
+            pg.draw_line((60, y), (535, y), width=0.5)
+    pg.insert_text((250, 60), "Title", fontsize=16)
+    doc.save(path)
+
+
+def test_job_task_prepares_photos_and_pdfs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from lilyscan_app import tasks
     from lilyscan_app.jobs import JobStore, job_dir
 
     monkeypatch.setenv("LILYSCAN_DATA_DIR", str(tmp_path))
     store = JobStore(tmp_path)
-    job = store.create(["00-photo.png", "01-score.pdf"], {"prepare": True})
+    names = ["00-photo.png", "01-score.pdf", "02-broken.pdf", "03-scan.tif"]
+    job = store.create(names, {"prepare": True})
     root = job_dir(tmp_path, job.id)
     (root / "input").mkdir(parents=True)
     save_png(photo(page(), seed=3), root / "input" / "00-photo.png")
-    (root / "input" / "01-score.pdf").write_bytes(b"%PDF-1.4")
+    born_digital_pdf(root / "input" / "01-score.pdf")
+    (root / "input" / "02-broken.pdf").write_bytes(b"%PDF-1.4")
+    (root / "input" / "03-scan.tif").write_bytes(b"II*")
 
     result = tasks.prepare_inputs(job.id)
 
-    assert [p["input"] for p in result["pages"]] == ["00-photo.png"]
-    assert result["pages"][0]["page_found"] and result["pages"][0]["passed"]
-    assert (root / "prepared" / "00-photo.png").is_file()
+    pages = {p["input"]: p for p in result["pages"]}
+    assert set(pages) == {"00-photo.png", "01-score.pdf", "02-broken.pdf"}  # TIFFs pass
+    assert pages["00-photo.png"]["page_found"] and pages["00-photo.png"]["passed"]
+    assert pages["01-score.pdf"]["born_digital"] and pages["01-score.pdf"]["rendered_dpi"] == 400
+    assert "error" in pages["02-broken.pdf"] and not pages["02-broken.pdf"]["passed"]
+    assert tasks._prepared(root, "00-photo.png").name == "00-photo.png"
+    assert tasks._prepared(root, "01-score.pdf").name == "01-score.tif"
+    ok, rendered = cv2.imreadmulti(str(root / "prepared" / "01-score.tif"))
+    assert ok and len(rendered) == 1 and rendered[0].shape[1] == round(595 * 400 / 72)
     assert (root / "prepared" / "report.json").is_file()
     store.close()
 

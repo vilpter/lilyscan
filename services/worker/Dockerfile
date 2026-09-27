@@ -41,10 +41,10 @@ COPY --from=lilypond /opt/lilypond /opt/lilypond
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --frozen --no-dev --no-install-project --python python3.12 \
-      --extra worker --extra musicxml --extra ml --extra vision
+      --extra worker --extra musicxml --extra ml --extra vision --extra vector
 COPY lilyscan ./lilyscan
 COPY services/lilyscan_app ./services/lilyscan_app
-RUN uv sync --frozen --no-dev --python python3.12 --extra worker --extra musicxml --extra ml --extra vision
+RUN uv sync --frozen --no-dev --python python3.12 --extra worker --extra musicxml --extra ml --extra vision --extra vector
 
 # CUDA variant: swap in GPU inference wheels. The wheels bundle the CUDA runtime;
 # the host needs only the NVIDIA driver and the NVIDIA Container Toolkit.
