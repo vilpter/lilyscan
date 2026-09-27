@@ -89,3 +89,46 @@ def test_rejects_non_omr(tmp_path: Path) -> None:
     bad.write_bytes(b"not a zip")
     with pytest.raises(OmrError):
         read_omr(bad)
+
+
+def test_import_engine_output_attaches_geometry_and_overlays(tmp_path: Path) -> None:
+    import shutil
+
+    from lilyscan.pipeline import import_engine_output
+
+    src = FIXTURES / "piano-two-voices"
+    shutil.copy(src / "output.mxl", tmp_path / "score.mxl")
+    shutil.copy(src / "book.omr", tmp_path / "score.omr")
+    score, geometry = import_engine_output(
+        tmp_path, {"mxl_files": ["score.mxl"], "omr_files": ["score.omr"]}
+    )
+    assert geometry is not None and geometry["audiveris"] == AUDIVERIS_VERSION
+    assert geometry["located_rate"] >= 0.98
+    assert geometry["pages"][0]["width"] == 2480
+    assert geometry["overlays"] == ["overlays/page-1.png"]
+    assert (tmp_path / "overlays" / "page-1.png").stat().st_size > 0
+    assert any(
+        e.bbox for _, s in score.staves() for m in s.measures for v in m.voices for e in v.events
+    )
+
+
+def test_import_engine_output_without_omr(tmp_path: Path) -> None:
+    import shutil
+
+    from lilyscan.pipeline import import_engine_output
+
+    shutil.copy(FIXTURES / "piano-two-voices" / "output.mxl", tmp_path / "score.mxl")
+    score, geometry = import_engine_output(tmp_path, {"mxl_files": ["score.mxl"]})
+    assert geometry is None and score.parts
+
+
+def test_confidence_colours() -> None:
+    from lilyscan.overlay import HIGH, LOW, MID, UNKNOWN, confidence_colour
+
+    assert [confidence_colour(c) for c in (0.95, 0.8, 0.6, 0.2, None)] == [
+        HIGH,
+        HIGH,
+        MID,
+        LOW,
+        UNKNOWN,
+    ]
