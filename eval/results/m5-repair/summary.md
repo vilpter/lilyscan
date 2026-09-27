@@ -2,20 +2,20 @@
 
 Audiveris 5.11.0, LilyPond 2.26.0, lilyscan 0.1.0, Windows-11-10.0.26200-SP0.
 
-Stage 5 (part-merge, octave-clef, rhythm, lyric-text, lyric-verse, lyric-split, calibrated confidence) on the same cached Audiveris 5.11.0 output as m1-baseline. ECE here is in-sample: the confidence model was fitted on this corpus and the repertoire; its piece-grouped out-of-fold ECE is 0.012 (seed) and 0.038 (repertoire), see lilyscan/repair/confidence.json. Same laptop and contention caveats as m1-baseline.
+Stage 5 (part-merge, octave-clef, rhythm, lyric-text, lyric-verse, lyric-split, calibrated confidence) on the same cached Audiveris 5.11.0 output as m1-baseline. ECE here is in-sample: the confidence model was fitted on this corpus and the repertoire; its piece-grouped out-of-fold ECE is 0.009 (seed) and 0.039 (repertoire), see lilyscan/repair/confidence.json. Same laptop and contention caveats as m1-baseline.
 
 | Group | Items | Engine OK | Exact measures | Edit rate | Note F1 | Onset F1 | Lyrics | Chords | s/page | Compiles (Q1) | Bar checks (Q2) | Boxes | ECE |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| all | 120 | 109 | 64.7% | 34.9% | 72.1% | 73.9% | 64.8% | 31.2% | 57.1 | 100.0% | 76.1% | 95.8% | 0.007 |
+| all | 120 | 109 | 64.7% | 34.9% | 72.1% | 73.9% | 64.8% | 31.2% | 57.1 | 100.0% | 76.1% | 95.8% | 0.006 |
 | category:leadsheet | 16 | 14 | 71.4% | 27.6% | 74.3% | 75.8% | 77.3% | 31.2% | 51.6 | 100.0% | 100.0% | 100.0% | 0.053 |
-| category:piano | 24 | 23 | 60.4% | 35.0% | 71.2% | 74.4% | - | - | 44.3 | 100.0% | 34.8% | 99.7% | 0.029 |
+| category:piano | 24 | 23 | 60.4% | 35.0% | 71.2% | 74.4% | - | - | 44.3 | 100.0% | 34.8% | 99.7% | 0.033 |
 | category:quartet | 24 | 23 | 69.7% | 27.7% | 76.7% | 78.5% | - | - | 60.5 | 100.0% | 78.3% | 93.6% | 0.025 |
 | category:satb | 32 | 27 | 60.1% | 42.0% | 67.2% | 68.3% | 58.6% | - | 81.1 | 100.0% | 81.5% | 94.0% | 0.029 |
 | category:solo | 24 | 22 | 70.0% | 32.4% | 73.2% | 75.2% | - | - | 38.2 | 100.0% | 95.5% | 98.3% | 0.021 |
 | variant:pdf | 30 | 29 | 85.3% | 13.9% | 90.7% | 91.8% | 81.4% | 35.2% | 44.6 | 100.0% | 89.7% | 97.6% | 0.015 |
-| variant:photo | 30 | 22 | 12.4% | 93.6% | 22.0% | 26.0% | 23.3% | 12.2% | 72.4 | 100.0% | 40.9% | 84.3% | 0.091 |
-| variant:png | 30 | 29 | 88.4% | 10.6% | 93.0% | 93.7% | 79.3% | 40.8% | 49.8 | 100.0% | 89.7% | 99.0% | 0.015 |
-| variant:scan | 30 | 29 | 72.5% | 21.5% | 82.6% | 84.3% | 75.4% | 36.7% | 61.6 | 100.0% | 75.9% | 97.2% | 0.016 |
+| variant:photo | 30 | 22 | 12.4% | 93.6% | 22.0% | 26.0% | 23.3% | 12.2% | 72.4 | 100.0% | 40.9% | 84.3% | 0.089 |
+| variant:png | 30 | 29 | 88.4% | 10.6% | 93.0% | 93.7% | 79.3% | 40.8% | 49.8 | 100.0% | 89.7% | 99.0% | 0.016 |
+| variant:scan | 30 | 29 | 72.5% | 21.5% | 82.6% | 84.3% | 75.4% | 36.7% | 61.6 | 100.0% | 75.9% | 97.2% | 0.018 |
 
 Exact measures: share of ground-truth measures reproduced exactly (pitch, duration, voices). Edit rate: event edits per ground-truth event (lower is better). Onset F1 ignores durations. Boxes: engine events located on the page from the .omr (Stage 3). ECE: expected calibration error of the event confidence, the engine's grades or, with repairs, Lilyscan's calibrated confidence (lower is better).
 
@@ -435,8 +435,8 @@ Exact measures: share of ground-truth measures reproduced exactly (pitch, durati
 
 | Confidence | Events | Accuracy | Mean confidence |
 |---|---|---|---|
-| 0.0-0.5 | 1692 | 23.9% | 24.1% |
-| 0.5-0.7 | 1123 | 58.6% | 60.1% |
-| 0.7-0.8 | 350 | 68.3% | 74.6% |
-| 0.8-0.9 | 1402 | 83.5% | 85.8% |
-| 0.9-1.0 | 10002 | 97.2% | 97.0% |
+| 0.0-0.5 | 1721 | 24.4% | 24.5% |
+| 0.5-0.7 | 1109 | 58.4% | 59.0% |
+| 0.7-0.8 | 229 | 65.9% | 75.1% |
+| 0.8-0.9 | 1439 | 82.3% | 84.7% |
+| 0.9-1.0 | 10071 | 97.2% | 96.9% |
