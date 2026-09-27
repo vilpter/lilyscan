@@ -616,7 +616,25 @@ function select(id, origin) {
 
   const problems = m.issues.map((i) => `${LABELS[i.kind] || i.kind}: ${i.detail}`).join(" · ");
   const confidence = m.min_confidence === null ? "" : ` · lowest confidence ${m.min_confidence}`;
-  $("selection").textContent = `${m.part_name}${m.staff > 1 ? ` staff ${m.staff}` : ""}, measure ${m.number}${confidence}${problems ? ` · ${problems}` : ""}`;
+  // Group the same change on several notes: "rhythm (was eighth) at beats 1, 1.33, 1.67".
+  const grouped = new Map();
+  for (const r of m.repairs || []) {
+    const key = `${r.rule}${r.detail ? ` (${r.detail})` : ""}`;
+    grouped.set(key, [...(grouped.get(key) || []), beat(r.offset)]);
+  }
+  const fixes = [...grouped]
+    .map(([key, beats]) => `${key} at beat${beats.length > 1 ? "s" : ""} ${beats.join(", ")}`)
+    .join("; ");
+  $("selection").textContent =
+    `${m.part_name}${m.staff > 1 ? ` staff ${m.staff}` : ""}, measure ${m.number}${confidence}` +
+    `${problems ? ` · ${problems}` : ""}${fixes ? ` · changed by Lilyscan: ${fixes}` : ""}`;
+}
+
+// "3/2" quarters from the barline -> "2.5" (beats counted from 1).
+function beat(offset) {
+  const [n, d] = offset.split("/").map(Number);
+  const value = 1 + (d ? n / d : n);
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0$/, "");
 }
 
 route();
