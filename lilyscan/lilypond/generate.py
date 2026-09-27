@@ -195,9 +195,27 @@ def _markers(e: Event) -> list[str]:
             where = f" bbox=p{e.bbox.page + 1}:({round(e.bbox.x)},{round(e.bbox.y)})"
         out.append(f"%{{ ?? conf={e.confidence:.2f}{where} %}}")
     for prov in e.provenance:
-        if prov.stage == "repair":
+        if prov.stage == "repair" and prov.rule not in STAFF_REPAIRS:
             out.append(f"%{{ fix: {prov.rule or 'repair'} %}}")
     return out
+
+
+# Repairs that change a whole staff are noted once, at the top of the staff's music,
+# instead of on every event they touched.
+STAFF_REPAIRS = frozenset({"octave-clef", "part-merge"})
+
+
+def _staff_notes(score: Score) -> dict[tuple[str, int], list[str]]:
+    notes: dict[tuple[str, int], list[str]] = {}
+    for prov in score.provenance:
+        before = prov.before or {}
+        if prov.stage == "repair" and "part" in before and "staff" in before:
+            key = (str(before["part"]), int(before["staff"]))
+            detail = before.get("detail")
+            notes.setdefault(key, []).append(
+                f"% fix: {prov.rule}" + (f": {detail}" if detail else "")
+            )
+    return notes
 
 
 def _full_rest(length: Fraction) -> str:
@@ -578,10 +596,12 @@ def _part_file(
     line_map: dict[tuple[str, int], tuple[str, int, str]],
     grace_leads: dict[int, list[str]],
     grid: dict[int, Fraction],
+    staff_notes: dict[tuple[str, int], list[str]] | None = None,
 ) -> str:
     out = [f'\\version "{LILYPOND_VERSION}"', ""]
     for staff, sv in zip(pv.part.staves, pv.staves, strict=True):
         out.append(f"{sv.music} = {{")
+        out += [f"  {note}" for note in (staff_notes or {}).get((pv.part.id, staff.number), [])]
         if pv.part.transpose_semitones:
             out.append(f"  \\transposition {transposition_pitch(pv.part.transpose_semitones)}")
         body, numbers = _staff_music(pv.part.id, staff.number, staff.measures, grace_leads, grid)
@@ -682,7 +702,7 @@ def generate_project(score: Score) -> LyProject:
     line_map: dict[tuple[str, int], tuple[str, int, str]] = {}
     for pv in plans:
         rel = f"parts/{pv.slug}.ly"
-        files[rel] = _part_file(pv, rel, line_map, leads, grid)
+        files[rel] = _part_file(pv, rel, line_map, leads, grid, _staff_notes(score))
 
     chord_lines = _chord_lines(score, leads, grid)
     if chord_lines:

@@ -4,7 +4,9 @@ Sheet music (PDF, scans, phone photos) to editable, well-structured LilyPond, bu
 around the [Audiveris](https://github.com/Audiveris/audiveris) OMR engine.
 The design is in [docs/design.md](docs/design.md).
 
-**Status:** early development (milestone M0: infrastructure). Not yet usable end to end.
+**Status:** early development. Milestones M0-M4 are done (engine wrapper, evaluation
+harness, LilyPond generator and checks, page geometry, review UI) and it runs end to end on
+one machine; M5 (repairing the engine's output) is in progress.
 
 ## Pinned toolchain
 
@@ -28,6 +30,8 @@ follow the job, and review the result in three panes:
 
 Clicking a measure in any pane (or putting the caret on its line) highlights it in the other
 two. Edit the source, press **Save & recompile**, then download the `.ly` project, PDF, or MIDI.
+Fixes Lilyscan made on its own (parts the engine split between systems, tenor clefs read
+without their 8) are listed above the review list and noted in the source as `% fix:` comments.
 
 To try it on one machine without Docker or Redis (jobs run inside the server process):
 
@@ -117,7 +121,9 @@ Results go to `eval/results/<label>/` (`summary.md`, `results.json`); engine out
 in `eval/work/`. The summary reports exact-measure accuracy, edit rate, note F1, lyric and
 chord accuracy, how many engine events were located on the page, and how well the engine's
 confidence is calibrated. `--lilypond` also runs the full pipeline on each engine output and
-reports how often it compiles (Q1) and passes bar checks (Q2).
+reports how often it compiles (Q1) and passes bar checks (Q2). `--repair` applies the Stage 5
+repair rules before scoring, so a rule can be measured against the same cached engine output;
+the summary lists every repair made.
 
 A second corpus holds real repertoire: excerpts of public-domain works from music21's bundled
 corpus (`eval/corpus/repertoire.json`). The encodings are not committed; the build fetches them
@@ -136,7 +142,7 @@ uv run lilyscan eval run --corpus eval/corpus/repertoire --label my-repertoire-r
 
 A finished job's folder holds `ir/score.json` (the internal model, with page boxes and
 confidence per event), the LilyPond project in `ly/` (`main.ly`, `parts/`, `layout/`, plus the
-compiled PDF and MIDI), `report.json` (engine run, geometry, QA checks Q1-Q5), and
+compiled PDF and MIDI), `report.json` (engine run, geometry, repairs, QA checks Q1-Q5), and
 `overlays/page-N.png`: each page as the engine saw it, with every note boxed in green, amber,
 or red by confidence. Low-confidence notes are also marked in the LilyPond source as
 `%{ ?? conf=... %}`, so `grep "??"` lists them.

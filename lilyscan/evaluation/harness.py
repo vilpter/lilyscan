@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import platform
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -23,6 +23,7 @@ from lilyscan.ir.musicxml import MusicXMLError, load_musicxml
 from lilyscan.ir.ops import merge_scores
 from lilyscan.lilypond.compile import lilypond_version
 from lilyscan.pipeline import produce
+from lilyscan.repair import apply_repairs
 from lilyscan.runtime.config import Settings
 from lilyscan.synth.corpus import VARIANTS, CorpusItem, Variant
 
@@ -44,6 +45,8 @@ class ItemResult:
     mappable: int = 0
     # (confidence, correct) per engine event, for calibration; not serialized per item.
     correctness: list[tuple[float | None, bool]] = field(default_factory=list)
+    # Stage 5 repairs applied to the engine output (only with ``repair=True``).
+    repairs: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -56,6 +59,7 @@ class ItemResult:
             "qa": self.qa,
             "located_events": self.located,
             "mappable_events": self.mappable,
+            "repairs": self.repairs,
             **self.comparison.to_dict(),
         }
 
@@ -97,20 +101,26 @@ def evaluate_item(
     settings: Settings,
     reuse: bool,
     lilypond: bool = False,
+    repair: bool = False,
 ) -> ItemResult:
     gt = load_musicxml(item.ground_truth, "ground-truth")
     pred, wall_s, errors, cached = _engine_output(item, variant, work, settings, reuse)
-    result = ItemResult(item, variant, compare(gt, pred), wall_s, errors, cached)
+    located = mappable = 0
     omr = next(iter(sorted((work / item.spec.id / variant).glob("*.omr"))), None)
     if pred is not None and omr is not None:
         try:
             stats = attach_geometry(pred, read_omr(omr))
-            result.located, result.mappable = stats.located, stats.mappable
+            located, mappable = stats.located, stats.mappable
         except OmrError as exc:
-            result.engine_errors.append(f"cannot read .omr: {exc}")
+            errors.append(f"cannot read .omr: {exc}")
+    repairs = [r.to_dict() for r in apply_repairs(pred)] if repair and pred is not None else []
+    result = ItemResult(item, variant, compare(gt, pred), wall_s, errors, cached)
+    result.located, result.mappable, result.repairs = located, mappable, repairs
+    if pred is not None and omr is not None:
         result.correctness = event_correctness(gt, pred)
     if lilypond and pred is not None:
-        report = produce(pred, work / item.spec.id / variant / "lilyscan", settings)
+        out = "lilyscan-repaired" if repair else "lilyscan"
+        report = produce(pred, work / item.spec.id / variant / out, settings)
         result.qa = {c["id"]: c["passed"] for c in report["qa"]["checks"]}
     log.info(
         "%s/%s: measures %.0f%%, note F1 %.2f%s",
@@ -131,13 +141,16 @@ def run_evaluation(
     reuse: bool = True,
     settings: Settings | None = None,
     lilypond: bool = False,
+    repair: bool = False,
 ) -> list[ItemResult]:
-    """Evaluate every item/variant; ``lilypond`` also runs the pipeline and checks Q1-Q5."""
+    """Evaluate every item/variant; ``lilypond`` also runs the pipeline and checks Q1-Q5,
+    ``repair`` applies the Stage 5 rules to the engine output before scoring it."""
     s = settings or Settings.from_env()
     tasks = [(item, v) for item in items for v in variants]
     with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
         futures = [
-            pool.submit(evaluate_item, item, v, work, s, reuse, lilypond) for item, v in tasks
+            pool.submit(evaluate_item, item, v, work, s, reuse, lilypond, repair)
+            for item, v in tasks
         ]
         return [f.result() for f in futures]
 
@@ -178,6 +191,7 @@ def summarize(results: list[ItemResult]) -> dict[str, dict[str, Any]]:
             if (mappable := sum(r.mappable for r in rs))
             else None,
             "calibration": calibration([pair for r in rs for pair in r.correctness]),
+            "repairs": dict(sorted(Counter(x["rule"] for r in rs for x in r.repairs).items())),
         }
     return out
 
@@ -250,6 +264,13 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
         "(Stage 3). ECE: expected calibration error of the engine's confidence (lower is better).",
         "",
     ]
+    repaired = [r for r in results if r.repairs]
+    if repaired:
+        lines += ["## Repairs", "", "| Item | Rule | Detail |", "|---|---|---|"]
+        for r in repaired:
+            for rep in r.repairs:
+                lines.append(f"| {r.item.spec.id}/{r.variant} | {rep['rule']} | {rep['detail']} |")
+        lines.append("")
     bands = summary.get("all", {}).get("calibration", {}).get("bands", [])
     if any(b["events"] for b in bands):
         lines += [

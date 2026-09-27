@@ -74,3 +74,30 @@ def test_pipeline_finish_with_omr_reports_geometry(
     ir = json.loads((root / "ir" / "score.json").read_text(encoding="utf-8"))
     assert '"bbox"' in json.dumps(ir) and '"confidence"' in json.dumps(ir)
     store.close()
+
+
+def test_pipeline_finish_repairs_engine_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LILYSCAN_DATA_DIR", str(tmp_path))
+    store = JobStore(tmp_path)
+    job = store.create(["00-score.png"])
+    root = job_dir(tmp_path, job.id)
+    (root / "engine").mkdir(parents=True)
+    run = OMR_FIXTURE / "split-flute"
+    shutil.copy(run / "output.mxl", root / "engine" / "score.mxl")
+    shutil.copy(run / "book.omr", root / "engine" / "score.omr")
+    (root / "engine" / "run.json").write_text(
+        json.dumps({"mxl_files": ["engine/score.mxl"], "omr_files": ["engine/score.omr"]}),
+        encoding="utf-8",
+    )
+
+    report = tasks.pipeline_finish(job.id)
+
+    assert [r["rule"] for r in report["repairs"]] == ["part-merge"]
+    assert report["counts"]["parts"] == 1
+    review = json.loads((root / "review.json").read_text(encoding="utf-8"))
+    assert review["repairs"][0]["detail"] == "merged P1 (F1.) into P2 (Flute)"
+    # Moved measures keep the boxes the engine gave them on the later systems.
+    assert all(m["bbox"] is not None for m in review["measures"])
+    store.close()

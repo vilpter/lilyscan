@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 from lilyscan.ir.models import Score
-from lilyscan.lilypond.generate import LOW_CONFIDENCE, LyProject
+from lilyscan.lilypond.generate import LOW_CONFIDENCE, STAFF_REPAIRS, LyProject
 from lilyscan.qa.checks import QaReport
 
 # How much each kind of problem pushes a measure up the review list.
@@ -17,6 +17,7 @@ WEIGHTS = {
     "bar-check": 3.0,  # Q2
     "rhythm": 3.0,  # Q3
     "range": 2.0,  # Q4
+    "repaired": 1.0,  # a Stage 5 repair changed events in this measure
     "low-confidence": 1.0,  # per event below LOW_CONFIDENCE
 }
 
@@ -89,8 +90,14 @@ def build_review(score: Score, project: LyProject, qa: QaReport) -> dict[str, An
             events = []
             low = 0
             confidences = []
+            fixed: set[str] = set()
             for v in m.voices:
                 for e in v.events:
+                    fixed.update(
+                        p.rule or "repair"
+                        for p in e.provenance
+                        if p.stage == "repair" and p.rule not in STAFF_REPAIRS
+                    )
                     if e.confidence is not None:
                         confidences.append(e.confidence)
                         if e.confidence < LOW_CONFIDENCE:
@@ -105,6 +112,8 @@ def build_review(score: Score, project: LyProject, qa: QaReport) -> dict[str, An
                         }
                     )
             found = list(issues.get(key, []))
+            if fixed:
+                found.append({"kind": "repaired", "detail": ", ".join(sorted(fixed))})
             if low:
                 found.append(
                     {"kind": "low-confidence", "detail": f"{low} event(s) below {LOW_CONFIDENCE}"}
@@ -136,4 +145,21 @@ def build_review(score: Score, project: LyProject, qa: QaReport) -> dict[str, An
     ranked = sorted(
         (m for m in measures if m["issues"]), key=lambda m: (-m["priority"], m["index"])
     )
-    return {"measures": measures, "review": [m["id"] for m in ranked]}
+    return {"measures": measures, "review": [m["id"] for m in ranked], "repairs": _repairs(score)}
+
+
+def _repairs(score: Score) -> list[dict[str, Any]]:
+    """Staff-wide repairs (merged parts, octave clefs), which are not tied to a measure."""
+    out = []
+    for p in score.provenance:
+        before = p.before or {}
+        if p.stage == "repair":
+            out.append(
+                {
+                    "rule": p.rule,
+                    "part": before.get("part"),
+                    "staff": before.get("staff"),
+                    "detail": before.get("detail", ""),
+                }
+            )
+    return out
