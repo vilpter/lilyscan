@@ -78,7 +78,7 @@ disallow_untyped_calls = false
 
 # PyMuPDF's Document constructor is unannotated.
 [[tool.mypy.overrides]]
-module = ["lilyscan.ingest.pdf", "lilyscan.vector.extract"]
+module = ["lilyscan.ingest.pdf", "lilyscan.ingest.book", "lilyscan.vector.extract"]
 disallow_untyped_calls = false
 
 [tool.pytest.ini_options]

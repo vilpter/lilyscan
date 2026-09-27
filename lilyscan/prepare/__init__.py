@@ -20,6 +20,7 @@ from typing import Any
 import cv2
 
 from lilyscan.prepare.image import (
+    Image,
     binarize,
     f32,
     find_page,
@@ -79,15 +80,30 @@ def prepare_image(
 ) -> PrepareReport:
     """Write the prepared page for ``src`` to ``dst`` (PNG) and report what was done.
 
+    See ``prepare_page`` for the options.
+    """
+    gray, report = prepare_page(load_gray(src), src.name, light, straighten, clean)
+    save_png(gray, dst)
+    return report
+
+
+def prepare_page(
+    gray: Image,
+    source: str,
+    light: bool = True,
+    straighten: bool = True,
+    clean: str | None = "auto",
+) -> tuple[Image, PrepareReport]:
+    """Prepare one page (grayscale, 0 = black) and report what was done.
+
     ``light`` and ``straighten`` switch the light flattening and the dewarping.
     ``clean`` is ``"sharpen"`` (denoise and sharpen), ``"binarize"`` (denoise, then a
     local threshold), None, or ``"auto"``: sharpen photos (pages found in the frame),
     which helped Audiveris on 23 of 30 seed photos and hurt 4, and leave scans as they are.
     """
-    gray = load_gray(src)
     h, w = gray.shape
     corners = find_page(gray)
-    report = PrepareReport(source=src.name, page_found=corners is not None, input_size=(w, h))
+    report = PrepareReport(source=source, page_found=corners is not None, input_size=(w, h))
     if corners is not None:
         gray = warp_page(gray, corners)
     if light:
@@ -97,7 +113,7 @@ def prepare_image(
     scale = measure_scale(mask)
     if scale is None:
         report.warnings.append("no staff lines found")
-        return _finish(report, gray, dst)
+        return _finish(report, gray)
     interline = scale.interline
     low, high = PREPARE_INTERLINE_RANGE
     if not low <= interline <= high:
@@ -138,10 +154,9 @@ def prepare_image(
         report.warnings.append(
             f"staff lines still curved by {after:.2f} staff spaces; flatten the page and reshoot"
         )
-    return _finish(report, gray, dst)
+    return _finish(report, gray)
 
 
-def _finish(report: PrepareReport, gray: Any, dst: Path) -> PrepareReport:
-    save_png(gray, dst)
+def _finish(report: PrepareReport, gray: Image) -> tuple[Image, PrepareReport]:
     report.output_size = (int(gray.shape[1]), int(gray.shape[0]))
-    return report
+    return gray, report
