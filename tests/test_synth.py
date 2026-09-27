@@ -17,6 +17,7 @@ SPECS = [
     PieceSpec("satb", "satb", 7, 6, "lat"),
     PieceSpec("lead", "leadsheet", 7, 6, "fra"),
     PieceSpec("quartet", "quartet", 7, 6),
+    PieceSpec("accompaniment", "accompaniment", 7, 6),
 ]
 
 
@@ -97,3 +98,20 @@ def test_lilyscan_engraver_writes_one_page(tmp_path: Path) -> None:
     result = engrave(fixture, tmp_path, engraver="lilyscan")
     assert (result.pdf.name, result.png.name) == ("score.pdf", "score.png")
     assert (tmp_path / "ly" / "main.ly").is_file()
+
+
+def test_accompaniment_spec_is_valid() -> None:
+    specs = load_spec(Path(__file__).parents[1] / "eval" / "corpus" / "accompaniment.json")
+    assert len(specs) >= 8 and {s.category for s in specs} == {"accompaniment"}
+
+
+@pytest.mark.lilypond
+def test_solo_line_above_the_piano_is_engraved_small(tmp_path: Path) -> None:
+    spec = tmp_path / "spec.json"
+    piece = PieceSpec("acc", "accompaniment", 7, 6)
+    spec.write_text(json.dumps({"pieces": [piece.to_dict()]}), encoding="utf-8")
+    items = build_corpus(spec, tmp_path / "corpus")
+    score = load_musicxml(items[0].ground_truth)
+    assert [len(p.staves) for p in score.parts] == [1, 2]
+    ly = (items[0].root / "score.ly").read_text(encoding="utf-8")
+    assert ly.count("magnifyStaff") == 1

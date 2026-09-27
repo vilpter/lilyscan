@@ -28,7 +28,7 @@ from music21 import (
     tie,
 )
 
-Category = Literal["solo", "piano", "satb", "leadsheet", "quartet", "song"]
+Category = Literal["solo", "piano", "satb", "leadsheet", "quartet", "song", "accompaniment"]
 Syllabic = Literal["single", "begin", "middle", "end"]
 
 LYRICS: dict[str, list[str]] = {
@@ -314,21 +314,46 @@ def build_score(spec: PieceSpec) -> stream.Score:
         score.insert(0, p)
 
     elif spec.category == "piano":
-        # music21 derives MusicXML part ids from object ids unless set explicitly,
-        # which would make the ground truth differ between runs.
-        rh = stream.PartStaff(id="P1")
-        lh = stream.PartStaff(id="P1-lower")
-        rh.partName = "Piano"
-        rh.partAbbreviation = "Pno."
-        rh.insert(0, instrument.Piano())
-        lh.insert(0, instrument.Piano())
-        _fill_line(rng, rh, spec.measures, ts, k, mode, clef.TrebleClef(), "rh")
-        _add_inner_voice(rng, rh, k, ts, probability=0.3)
-        _fill_bass_chords(rng, lh, spec.measures, ts, k, mode)
-        score.insert(0, rh)
-        score.insert(0, lh)
-        score.insert(0, layout.StaffGroup([rh, lh], name="Piano", symbol="brace"))
+        _add_piano(rng, score, "P1", spec.measures, ts, k, mode)
+
+    elif spec.category == "accompaniment":
+        # A piano part with the solo line printed small above it, as in the piano
+        # books of instrumental methods (see SMALL_PARTS).
+        solo = _new_part("P1", instrument.Violin(), "Violin", "Vln.")
+        _fill_line(rng, solo, spec.measures, ts, k, mode, clef.TrebleClef(), "violin")
+        score.insert(0, solo)
+        _add_piano(rng, score, "P2", spec.measures, ts, k, mode)
     return score
+
+
+# Parts engraved on a smaller staff, by category.
+SMALL_PARTS: dict[str, tuple[str, ...]] = {"accompaniment": ("P1",)}
+
+
+def _add_piano(
+    rng: random.Random,
+    score: stream.Score,
+    pid: str,
+    measures: int,
+    ts: tuple[int, int],
+    k: _KeyCtx,
+    mode: str,
+) -> None:
+    """A two-staff piano part: a melody with an occasional inner voice over bass chords."""
+    # music21 derives MusicXML part ids from object ids unless set explicitly,
+    # which would make the ground truth differ between runs.
+    rh = stream.PartStaff(id=pid)
+    lh = stream.PartStaff(id=f"{pid}-lower")
+    rh.partName = "Piano"
+    rh.partAbbreviation = "Pno."
+    rh.insert(0, instrument.Piano())
+    lh.insert(0, instrument.Piano())
+    _fill_line(rng, rh, measures, ts, k, mode, clef.TrebleClef(), "rh")
+    _add_inner_voice(rng, rh, k, ts, probability=0.3)
+    _fill_bass_chords(rng, lh, measures, ts, k, mode)
+    score.insert(0, rh)
+    score.insert(0, lh)
+    score.insert(0, layout.StaffGroup([rh, lh], name="Piano", symbol="brace"))
 
 
 def _add_inner_voice(

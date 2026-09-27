@@ -64,8 +64,13 @@ def engrave(
     out_dir: Path,
     settings: Settings | None = None,
     engraver: Engraver = "musicxml2ly",
+    small_parts: tuple[str, ...] = (),
 ) -> Engraving:
-    """Engrave into ``out_dir/score.pdf`` and ``out_dir/score.png`` (one page each)."""
+    """Engrave into ``out_dir/score.pdf`` and ``out_dir/score.png`` (one page each).
+
+    ``small_parts`` (MusicXML part ids) are printed on a staff two thirds the size, like
+    the solo line above a piano part (``musicxml2ly`` only).
+    """
     s = settings or Settings.from_env()
     out_dir.mkdir(parents=True, exist_ok=True)
     try:
@@ -76,7 +81,14 @@ def engrave(
         )
     except subprocess.TimeoutExpired as exc:
         raise EngraveError(f"{engraver} timed out on {musicxml.name}") from exc
-    ly.write_text(ly.read_text(encoding="utf-8") + _ONE_PAGE, encoding="utf-8")
+    text = ly.read_text(encoding="utf-8")
+    for part in small_parts:
+        staff = f'\\new Staff = "{part}" <<'
+        if staff not in text:
+            raise EngraveError(f"no staff for part {part} in {ly.name}")
+        small = f'\\new Staff = "{part}" \\with {{ \\magnifyStaff #2/3 }} <<'
+        text = text.replace(staff, small)
+    ly.write_text(text + _ONE_PAGE, encoding="utf-8")
 
     result = compile_ly(
         ly, out_dir, ("pdf", "png"), extra_args=[f"-dresolution={PNG_DPI}"], settings=s

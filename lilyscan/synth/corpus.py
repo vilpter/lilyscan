@@ -17,7 +17,7 @@ from lilyscan import __version__
 from lilyscan.runtime.config import LILYPOND_VERSION, Settings
 from lilyscan.synth.degrade import load_gray, photo, save_png, scan
 from lilyscan.synth.engrave import Engraver, engrave
-from lilyscan.synth.generate import PieceSpec, corpus_rights, write_ground_truth
+from lilyscan.synth.generate import SMALL_PARTS, PieceSpec, corpus_rights, write_ground_truth
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +87,13 @@ def build_corpus(
         log.info("building %s (%s)", spec.id, spec.category)
         generated = write_ground_truth(spec, item.root)
         generated.replace(item.ground_truth)
-        engraving = engrave(item.ground_truth, item.root, s, _engraver(spec.engraver))
+        engraving = engrave(
+            item.ground_truth,
+            item.root,
+            s,
+            _engraver(spec.engraver),
+            small_parts=SMALL_PARTS.get(spec.category, ()),
+        )
         clean = load_gray(engraving.png)
         save_png(scan(clean, spec.seed * 10 + 1), item.input("scan"))
         save_png(photo(clean, spec.seed * 10 + 2), item.input("photo"))

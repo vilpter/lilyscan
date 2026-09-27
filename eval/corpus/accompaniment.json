@@ -1,0 +1,53 @@
+{
+  "description": "Accompaniment corpus: generated piano parts with the violin line printed small above them, as in the piano books of instrumental methods. Audiveris 5.11.0 splits such systems on photos and scans (found on real phone photos, which are private); this corpus measures it with exact ground truth.",
+  "pieces": [
+    {
+      "id": "accompaniment-01",
+      "category": "accompaniment",
+      "seed": 701,
+      "measures": 16
+    },
+    {
+      "id": "accompaniment-02",
+      "category": "accompaniment",
+      "seed": 702,
+      "measures": 16
+    },
+    {
+      "id": "accompaniment-03",
+      "category": "accompaniment",
+      "seed": 703,
+      "measures": 16
+    },
+    {
+      "id": "accompaniment-04",
+      "category": "accompaniment",
+      "seed": 704,
+      "measures": 16
+    },
+    {
+      "id": "accompaniment-05",
+      "category": "accompaniment",
+      "seed": 705,
+      "measures": 16
+    },
+    {
+      "id": "accompaniment-06",
+      "category": "accompaniment",
+      "seed": 706,
+      "measures": 16
+    },
+    {
+      "id": "accompaniment-07",
+      "category": "accompaniment",
+      "seed": 707,
+      "measures": 16
+    },
+    {
+      "id": "accompaniment-08",
+      "category": "accompaniment",
+      "seed": 708,
+      "measures": 16
+    }
+  ]
+}
