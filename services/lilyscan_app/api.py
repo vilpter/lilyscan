@@ -44,6 +44,11 @@ class CombinePart(BaseModel):
     name: str | None = None  # a new instrument name
 
 
+class RerunRequest(BaseModel):
+    ocr_languages: str | None = None  # None: keep the job's
+    straighten: bool | None = None
+
+
 class CombineRequest(BaseModel):
     title: str | None = None
     parts: list[CombinePart]
@@ -101,6 +106,31 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
     def get_parts(job_id: str, jobs: Store) -> list[dict[str, Any]]:
         """The parts of a finished job's score, for the score combiner."""
         return _parts(_job_root(job_id, jobs))
+
+    @app.post("/api/jobs/{job_id}/rerun", status_code=201)
+    def rerun_job(job_id: str, body: RerunRequest, jobs: Store, dispatch: Disp) -> dict[str, Any]:
+        """A new job from the same uploads with different settings (the old one is kept)."""
+        root = _job_root(job_id, jobs)
+        old = jobs.get(job_id)
+        assert old is not None
+        if old.options.get("combine") or not old.inputs:
+            raise HTTPException(409, "a combined score has no uploads to transcribe again")
+        options = {k: v for k, v in old.options.items() if k != "rerun_of"}
+        if body.ocr_languages is not None:
+            try:
+                options["ocr_languages"] = parse_ocr_languages(body.ocr_languages)
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from exc
+        if body.straighten is not None:
+            options["prepare"] = body.straighten
+        options["rerun_of"] = job_id
+        job = jobs.create(list(old.inputs), options)
+        target = job_dir(s.data_dir, job.id) / "input"
+        target.mkdir(parents=True)
+        for name in old.inputs:
+            (target / name).write_bytes((root / "input" / name).read_bytes())
+        dispatch.submit(job.id)
+        return job.to_dict()
 
     @app.post("/api/scores", status_code=201)
     def create_score(body: CombineRequest, jobs: Store, dispatch: Disp) -> dict[str, Any]:
@@ -299,6 +329,8 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
             "pdf": [ly_root / "main.pdf"],
             "midi": [ly_root / "main.midi", ly_root / "main.mid"],
             "musicxml": [root / name for name in _engine_run(root).get("mxl_files", [])],
+            # The Audiveris project, to open in the Audiveris desktop application.
+            "omr": [root / name for name in _engine_run(root).get("omr_files", [])],
         }.get(kind)
         if candidates is None:
             raise HTTPException(404, f"unknown download {kind!r}")

@@ -257,3 +257,30 @@ def test_combine_needs_finished_jobs(client: TestClient) -> None:
     job = client.post("/api/jobs", files=[("files", ("p.png", b"x", "image/png"))]).json()
     body = {"parts": [{"job": job["id"], "part": "P1"}]}
     assert client.post("/api/scores", json=body).status_code == 409
+
+
+@pytest.mark.lilypond
+def test_download_omr(client: TestClient, finished_job: str) -> None:
+    r = client.get(f"/api/jobs/{finished_job}/download/omr")
+    assert r.status_code == 200 and r.content[:2] == b"PK"  # the zipped Audiveris project
+
+
+def test_rerun_with_other_settings(
+    client: TestClient, dispatcher: RecordingDispatcher, tmp_path: Path
+) -> None:
+    files = [("files", ("page.png", b"\x89PNG", "image/png"))]
+    old = client.post("/api/jobs", files=files, data={"ocr_languages": "eng"}).json()
+    r = client.post(
+        f"/api/jobs/{old['id']}/rerun", json={"ocr_languages": "ita", "straighten": False}
+    )
+    assert r.status_code == 201, r.text
+    new = r.json()
+    assert new["id"] != old["id"] and new["inputs"] == old["inputs"]
+    assert new["options"] == {"ocr_languages": "ita", "prepare": False, "rerun_of": old["id"]}
+    assert (tmp_path / "jobs" / new["id"] / "input" / "00-page.png").read_bytes() == b"\x89PNG"
+    assert dispatcher.submitted == [old["id"], new["id"]]
+    # Settings left out are kept.
+    again = client.post(f"/api/jobs/{new['id']}/rerun", json={}).json()
+    assert again["options"] == {"ocr_languages": "ita", "prepare": False, "rerun_of": new["id"]}
+    bad = client.post(f"/api/jobs/{old['id']}/rerun", json={"ocr_languages": "x y"})
+    assert bad.status_code == 422

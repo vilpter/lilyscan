@@ -247,7 +247,9 @@ async function pollJob() {
     showError(err.message);
     return;
   }
+  state.job = job;
   $("job-title").textContent = jobLabel(job);
+  $("rerun-btn").hidden = !job.inputs.length;
   const status = $("job-status");
   status.className = `pill ${job.status}`;
   status.textContent = job.status;
@@ -306,8 +308,38 @@ function renderDownloads() {
     el("a", { href: `${base}/pdf` }, "PDF"),
     el("a", { href: `${base}/midi` }, "MIDI"),
     el("a", { href: `${base}/musicxml`, title: "The engine's MusicXML, before your edits" }, "MusicXML"),
+    el("a", { href: `${base}/omr`, title: "The Audiveris project, to open in the Audiveris application" }, ".omr"),
   );
 }
+
+// Re-run: the same uploads, other settings, as a new job.
+$("rerun-btn").addEventListener("click", () => {
+  const job = state.job || {};
+  $("rerun").hidden = !$("rerun").hidden;
+  $("rerun-ocr").value = (job.options && job.options.ocr_languages) || "";
+  $("rerun-straighten").checked = !(job.options && job.options.prepare === false);
+  $("rerun-msg").textContent = "";
+});
+
+$("rerun-start").addEventListener("click", async () => {
+  $("rerun-start").disabled = true;
+  $("rerun-msg").textContent = "Starting...";
+  try {
+    const languages = $("rerun-ocr").value.trim();
+    const response = await api(`/api/jobs/${state.id}/rerun`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ocr_languages: languages || null, straighten: $("rerun-straighten").checked }),
+    });
+    const job = await response.json();
+    $("rerun").hidden = true;
+    location.hash = `#/job/${job.id}`;
+  } catch (err) {
+    $("rerun-msg").textContent = `Could not start: ${err.message}`;
+  } finally {
+    $("rerun-start").disabled = false;
+  }
+});
 
 // Source pane: the page images the engine analysed, with measure and event boxes.
 function confidenceClass(c) {
