@@ -11,6 +11,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from lilyscan.engine.audiveris.omr import OmrBook
 from lilyscan.ir.models import Score
 
 
@@ -29,11 +30,14 @@ class Repair:
 Rule = Callable[[Score], list[Repair]]
 
 
-def apply_repairs(score: Score, rules: list[Rule] | None = None) -> list[Repair]:
+def apply_repairs(
+    score: Score, rules: list[Rule] | None = None, book: OmrBook | None = None
+) -> list[Repair]:
     """Run the repair rules in order; returns everything they changed.
 
     Parts are merged first, so later rules see each part's whole line; lyrics are cleaned
-    last, so chord names read as lyrics land on the repaired onsets.
+    last, so chord names read as lyrics land on the repaired onsets. With the engine's
+    ``.omr`` (``book``), rules that need page geometry run after the others.
     """
     from lilyscan.repair.clefs import octave_clefs
     from lilyscan.repair.lyrics import clean_lyrics
@@ -44,4 +48,8 @@ def apply_repairs(score: Score, rules: list[Rule] | None = None) -> list[Repair]
     log: list[Repair] = []
     for rule in rules if rules is not None else default:
         log += rule(score)
+    if book is not None and rules is None:
+        from lilyscan.repair.syllables import split_glued_syllables
+
+        log += split_glued_syllables(score, book)
     return log
