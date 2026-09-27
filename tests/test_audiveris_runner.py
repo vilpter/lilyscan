@@ -44,6 +44,21 @@ def test_step_crashes_are_reported() -> None:
     assert step_errors(log) == ["Error in reaching step PAGE"]
 
 
+def test_a_crash_after_the_steps_is_reported() -> None:
+    # Audiveris 5.11.0 on some photos: every step passes, then assembling the scores
+    # fails and no MusicXML is written.
+    log = (
+        "WARN  [p] CLI 956  | Exception occurred java.lang.NullPointerException: Cannot invoke"
+        ' "org.audiveris.omr.sheet.Sheet.getPages()" because "sheet" is null\n'
+        "java.lang.NullPointerException: Cannot invoke ...\n"
+        "\tat org.audiveris.omr.score.Score.getPage(Score.java:485)\n"
+    )
+    assert step_errors(log) == [
+        'NullPointerException: Cannot invoke "org.audiveris.omr.sheet.Sheet.getPages()"'
+        ' because "sheet" is null'
+    ]
+
+
 class _Captured:
     cmd: list[str]
 
