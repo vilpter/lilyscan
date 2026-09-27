@@ -130,6 +130,21 @@ def _cmd_eval_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_eval_calibrate(args: argparse.Namespace) -> int:
+    from lilyscan.evaluation.calibrate import calibrate, collect
+    from lilyscan.synth.corpus import load_corpus
+
+    corpora = {Path(c).name: collect(load_corpus(Path(c)), Path(args.work)) for c in args.corpus}
+    model = calibrate(corpora, Path(args.out))
+    for row in model["trained"]["evaluation"]:
+        print(
+            f"{row['corpus']}: {row['events']} events, ECE out of fold {row['ece_out_of_fold']}"
+            f" (in sample {row['ece_in_sample']}, engine grades {row['ece_engine_grade']})"
+        )
+    print(f"model: {args.out}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="lilyscan")
     p.add_argument("-v", "--verbose", action="store_true")
@@ -189,6 +204,12 @@ def build_parser() -> argparse.ArgumentParser:
     er.add_argument("--out", help="results directory (default eval/results/<label>)")
     er.add_argument("--notes", default="", help="free text recorded with the results")
     er.set_defaults(fn=_cmd_eval_run)
+
+    ec = ev.add_parser("calibrate", help="fit Lilyscan's confidence model on cached engine output")
+    ec.add_argument("--corpus", nargs="+", default=["eval/corpus/seed", "eval/corpus/repertoire"])
+    ec.add_argument("--work", default="eval/work", help="cache of engine output")
+    ec.add_argument("--out", default="lilyscan/repair/confidence.json")
+    ec.set_defaults(fn=_cmd_eval_calibrate)
     return p
 
 

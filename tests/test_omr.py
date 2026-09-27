@@ -94,7 +94,7 @@ def test_rejects_non_omr(tmp_path: Path) -> None:
 def test_import_engine_output_attaches_geometry_and_overlays(tmp_path: Path) -> None:
     import shutil
 
-    from lilyscan.pipeline import import_engine_output
+    from lilyscan.pipeline import import_engine_output, repair_engine_output
 
     src = FIXTURES / "piano-two-voices"
     shutil.copy(src / "output.mxl", tmp_path / "score.mxl")
@@ -105,6 +105,10 @@ def test_import_engine_output_attaches_geometry_and_overlays(tmp_path: Path) -> 
     assert geometry is not None and geometry["audiveris"] == AUDIVERIS_VERSION
     assert geometry["located_rate"] >= 0.98
     assert geometry["pages"][0]["width"] == 2480
+    assert geometry["confidence"] == "audiveris" and geometry["overlays"] == []
+    # Overlays are drawn after repairs, with Lilyscan's calibrated confidence.
+    repair_engine_output(score, tmp_path, geometry)
+    assert geometry["confidence"] == "lilyscan"
     assert geometry["overlays"] == ["overlays/page-1.png"]
     assert (tmp_path / "overlays" / "page-1.png").stat().st_size > 0
     assert any(

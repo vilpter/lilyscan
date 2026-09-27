@@ -24,6 +24,7 @@ from lilyscan.ir.ops import merge_scores
 from lilyscan.lilypond.compile import lilypond_version
 from lilyscan.pipeline import produce
 from lilyscan.repair import apply_repairs
+from lilyscan.repair.confidence import calibrate_confidence
 from lilyscan.runtime.config import Settings
 from lilyscan.synth.corpus import VARIANTS, CorpusItem, Variant
 
@@ -113,7 +114,10 @@ def evaluate_item(
             located, mappable = stats.located, stats.mappable
         except OmrError as exc:
             errors.append(f"cannot read .omr: {exc}")
-    repairs = [r.to_dict() for r in apply_repairs(pred)] if repair and pred is not None else []
+    repairs: list[dict[str, Any]] = []
+    if repair and pred is not None:
+        repairs = [r.to_dict() for r in apply_repairs(pred)]
+        calibrate_confidence(pred)
     result = ItemResult(item, variant, compare(gt, pred), wall_s, errors, cached)
     result.located, result.mappable, result.repairs = located, mappable, repairs
     if pred is not None and omr is not None:
@@ -144,7 +148,7 @@ def run_evaluation(
     repair: bool = False,
 ) -> list[ItemResult]:
     """Evaluate every item/variant; ``lilypond`` also runs the pipeline and checks Q1-Q5,
-    ``repair`` applies the Stage 5 rules to the engine output before scoring it."""
+    ``repair`` applies the Stage 5 rules and Lilyscan's confidence before scoring."""
     s = settings or Settings.from_env()
     tasks = [(item, v) for item in items for v in variants]
     with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
@@ -261,7 +265,8 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
         "Exact measures: share of ground-truth measures reproduced exactly (pitch, duration, "
         "voices). Edit rate: event edits per ground-truth event (lower is better). "
         "Onset F1 ignores durations. Boxes: engine events located on the page from the .omr "
-        "(Stage 3). ECE: expected calibration error of the engine's confidence (lower is better).",
+        "(Stage 3). ECE: expected calibration error of the event confidence, the engine's grades "
+        "or, with repairs, Lilyscan's calibrated confidence (lower is better).",
         "",
     ]
     repaired = [r for r in results if r.repairs]
