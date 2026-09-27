@@ -167,6 +167,17 @@ def _cluster(score: Score) -> list[_Cluster]:
                     return clusters[j]
         return None
 
+    def alone(k: int) -> bool:
+        """No other part is present in any measure where this one is."""
+        return not any(
+            presence[n][i]
+            for n in range(len(parts))
+            if n != k
+            for i, here in enumerate(presence[k])
+            if here and i < len(presence[n])
+        )
+
+    one_line = all(alone(k) for k in range(len(parts)) if any(presence[k]))
     deferred: dict[int, list[_Cluster]] = {}
     for k in sorted(range(len(parts)), key=lambda k: (first[k], k)):
         if not any(presence[k]):
@@ -176,6 +187,16 @@ def _cluster(score: Score) -> list[_Cluster]:
             for c in clusters
             if c.accepts(parts[k], presence[k], clefs[k]) and c.named_like(parts[k])
         ]
+        # One staff group per system (a solo line or lead sheet): complementary parts with
+        # the same staves and clefs are the same part when one of the names is unreadable.
+        single = [
+            c
+            for c in clusters
+            if c.accepts(parts[k], presence[k], clefs[k])
+            and not (_readable(parts[k]) and all(_readable(p) for p in c.parts))
+        ]
+        if not fits and one_line and len(single) == 1:
+            fits = single
         if len(fits) == 1:
             join(k, fits[0])
         elif fits or (clusters and not _readable(parts[k])):

@@ -158,6 +158,18 @@ def test_a_rest_with_a_page_box_is_present() -> None:
     assert merge_split_parts(score) == []
 
 
+def test_single_line_score_merges_a_placeholder_name() -> None:
+    # A lead sheet: Audiveris named the first system's staff "Voice" (its placeholder)
+    # and read the later abbreviation as "E.Pno"; one staff per system, so one part.
+    score = Score(parts=[part("P1", "E.Pno", LATER, TREBLE), part("P2", "Voice", FIRST, TREBLE)])
+    assert [r.detail for r in merge_split_parts(score)] == ["merged P1 (E.Pno) into P2 (Voice)"]
+
+
+def test_single_line_score_keeps_differently_named_parts() -> None:
+    score = Score(parts=[part("P1", "Alto", LATER, TREBLE), part("P2", "Soprano", FIRST, TREBLE)])
+    assert merge_split_parts(score) == []
+
+
 def test_parts_first_seen_later_keep_their_place_in_the_system() -> None:
     # Clarinet only appears from the second system, between flute and bassoon.
     score = Score(
