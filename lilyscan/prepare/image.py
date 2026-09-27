@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from lilyscan.runtime.config import PREPARE_MIN_PAGE_AREA
+from lilyscan.runtime.config import PREPARE_MAX_CUT_LINES, PREPARE_MIN_PAGE_AREA
 
 Image = NDArray[np.float32]
 
@@ -56,7 +56,9 @@ def find_page(gray: Image) -> NDArray[np.float32] | None:
     """The page's corners in a photo, or None when the page fills the frame or none is found.
 
     The paper is the largest bright region: Otsu's threshold separates it from the
-    background, and its outline is simplified to four corners.
+    background, and its outline is simplified to four corners. When the paper runs off
+    the frame, a shadow or a stain can bend that outline through the music; an outline
+    that cuts staff lines is not used.
     """
     h, w = gray.shape
     scale = _DETECT_SIZE / max(h, w)
@@ -81,7 +83,22 @@ def find_page(gray: Image) -> NDArray[np.float32] | None:
             break
     if quad is None:
         quad = cv2.boxPoints(cv2.minAreaRect(hull)).astype(np.float32)
+    if _cut_lines(ink_mask(small), quad) > PREPARE_MAX_CUT_LINES:
+        return None
     return _order(quad / np.float32(scale))
+
+
+def _cut_lines(mask: NDArray[np.uint8], quad: NDArray[np.float32]) -> float:
+    """Share of the staff lines mostly inside ``quad`` that the outline cuts off."""
+    inside = np.zeros(mask.shape, dtype=np.uint8)
+    cv2.fillPoly(inside, [np.round(quad).astype(np.int32)], 1)
+    lines = (_lines(mask, horizontal=True) > 0).astype(np.uint8)
+    n, labels = cv2.connectedComponents(lines, connectivity=8)
+    total = np.bincount(labels.ravel(), minlength=n)[1:]
+    kept = np.bincount(labels.ravel(), weights=inside.ravel(), minlength=n)[1:]
+    held = kept > total / 2  # lines of this page, not of a facing page
+    whole = float(total[held].sum())
+    return float((total[held] - kept[held]).sum()) / whole if whole else 0.0
 
 
 def warp_page(gray: Image, corners: NDArray[np.float32], trim: float = 0.004) -> Image:

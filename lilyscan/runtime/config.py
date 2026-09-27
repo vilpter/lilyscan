@@ -51,6 +51,9 @@ PREPARE_MAX_CURVATURE = 0.2
 PREPARE_LINE_MIN_WIDTH = 0.25
 # The page must cover at least this share of a photo for perspective correction.
 PREPARE_MIN_PAGE_AREA = 0.3
+# A page outline that leaves more than this share of the staff lines it holds outside
+# cuts through the music (the paper runs off the frame): the photo is used uncropped.
+PREPARE_MAX_CUT_LINES = 0.02
 
 
 def parse_ocr_languages(spec: str) -> str:

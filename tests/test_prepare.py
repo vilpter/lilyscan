@@ -79,6 +79,16 @@ def test_photo_is_found_straightened_and_passes_the_gate(tmp_path: Path) -> None
     assert lines < 0.15
 
 
+def test_an_outline_through_the_music_is_not_used() -> None:
+    # The paper runs off the frame and a shadow darkens its lower left corner: the bright
+    # region's outline cuts off the start of the lower staves, so the photo stays whole.
+    img = page()
+    h, w = img.shape
+    ys, xs = np.mgrid[0:h, 0:w]
+    img[xs < 0.5 * w * (ys - 0.3 * h) / (0.7 * h)] *= 0.45
+    assert find_page(img) is None
+
+
 def test_scan_is_deskewed_without_cropping(tmp_path: Path) -> None:
     src, dst = tmp_path / "scan.png", tmp_path / "prepared.png"
     save_png(scan(page(), seed=5), src)
