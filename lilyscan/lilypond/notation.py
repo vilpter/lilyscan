@@ -67,8 +67,8 @@ def single_duration(length: Fraction, max_dots: int = 2) -> str | None:
     return None
 
 
-def split_duration(length: Fraction) -> list[str]:
-    """Greedy decomposition into dotted durations, for spacers and chord names."""
+def _greedy(length: Fraction) -> tuple[list[str], Fraction]:
+    """Greedy decomposition into dotted durations, and what is left over."""
     out: list[str] = []
     remaining = length
     while remaining > 0:
@@ -80,9 +80,23 @@ def split_duration(length: Fraction) -> list[str]:
                 out.append(token + "." * dots)
                 remaining -= dotted_value(base, dots)
                 break
-        else:  # shorter than a 128th: drop the remainder
+        else:  # shorter than a 128th
             break
-    return out
+    return out, remaining
+
+
+def split_duration(length: Fraction) -> list[str]:
+    """Greedy decomposition into dotted durations (a remainder under a 128th is dropped)."""
+    return _greedy(length)[0]
+
+
+def skips(length: Fraction) -> list[str]:
+    """Spacer rests lasting exactly ``length`` quarters. A length that dotted durations
+    cannot add up to (up to a triplet position, say) ends with a scaled skip, ``s1*1/12``."""
+    tokens, rest = _greedy(length)
+    if length > 0 and rest > 0:
+        tokens.append(f"1*{rest / 4}")
+    return ["s" + t for t in tokens]
 
 
 def written_duration(

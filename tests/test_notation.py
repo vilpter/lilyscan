@@ -12,6 +12,7 @@ from lilyscan.lilypond.notation import (
     key_command,
     pitch_name,
     single_duration,
+    skips,
     split_duration,
     transposition_pitch,
     written_duration,
@@ -62,6 +63,13 @@ def test_single_duration(length: Fraction, token: str | None) -> None:
 def test_split_duration_sums_exactly() -> None:
     assert split_duration(Fraction(5)) == ["1", "4"]
     assert split_duration(Fraction(5, 4)) == ["4", "16"]
+
+
+def test_skips_are_exact_off_the_binary_grid() -> None:
+    assert skips(Fraction(5, 4)) == ["s4", "s16"]
+    # A triplet position: two thirds of a quarter.
+    assert skips(Fraction(2, 3)) == ["s8", "s32", "s128", "s1*1/384"]  # 1/96 of a quarter
+    assert skips(Fraction(0)) == []
 
 
 def test_written_duration_prefers_notated_type() -> None:
