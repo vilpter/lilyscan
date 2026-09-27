@@ -82,6 +82,9 @@ services:
       <<: *app-env
       # JVM heap cap, written into the Audiveris launcher config at container start.
       AUDIVERIS_MAX_HEAP: "${AUDIVERIS_MAX_HEAP:-3G}"
+      # Time an engine run may take: the larger of a minimum and an allowance per page.
+      AUDIVERIS_TIMEOUT_S: "${AUDIVERIS_TIMEOUT_S:-900}"
+      AUDIVERIS_TIMEOUT_PER_PAGE_S: "${AUDIVERIS_TIMEOUT_PER_PAGE_S:-240}"
     volumes:
       - lilyscan-data:/data
       # Extra OCR models (downloaded or custom *.traineddata) persist here.

@@ -34,11 +34,13 @@ class RqDispatcher:
         conn = Redis.from_url(settings.redis_url)
         self._engine = Queue(ENGINE_QUEUE, connection=conn)
         self._pipeline = Queue(PIPELINE_QUEUE, connection=conn)
-        self._engine_timeout = int(settings.audiveris_timeout_s) + 120
+        # Queue limits are safety nets: the engine's own limit grows with the page count
+        # (and a scan is transcribed twice), so the queue allows long books.
+        self._engine_timeout = max(int(settings.audiveris_timeout_s) * 2 + 120, 6 * 3600)
 
     def submit(self, job_id: str) -> None:
         prepare_job = self._pipeline.enqueue(
-            "lilyscan_app.tasks.prepare_inputs", job_id, job_timeout=600
+            "lilyscan_app.tasks.prepare_inputs", job_id, job_timeout=3600
         )
         engine_job = self._engine.enqueue(
             "lilyscan_app.tasks.engine_transcribe",
