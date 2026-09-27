@@ -70,8 +70,14 @@ def test_rejects_unsupported_type(client: TestClient, dispatcher: RecordingDispa
 def test_per_job_ocr_languages(client: TestClient) -> None:
     pdf = [("files", ("a.pdf", b"x", "application/pdf"))]
     job = client.post("/api/jobs", files=pdf, data={"ocr_languages": "ENG+ita"}).json()
-    assert job["options"] == {"ocr_languages": "eng+ita"}
-    assert client.post("/api/jobs", files=pdf).json()["options"] == {}
+    assert job["options"] == {"ocr_languages": "eng+ita", "prepare": True}
+    assert client.post("/api/jobs", files=pdf).json()["options"] == {"prepare": True}
+
+
+def test_straightening_can_be_turned_off(client: TestClient) -> None:
+    png = [("files", ("a.png", b"\x89PNG", "image/png"))]
+    job = client.post("/api/jobs", files=png, data={"straighten": "false"}).json()
+    assert job["options"] == {"prepare": False}
 
 
 def test_rejects_bad_ocr_languages(client: TestClient, dispatcher: RecordingDispatcher) -> None:
@@ -142,6 +148,7 @@ def test_review_and_page_images(client: TestClient, finished_job: str) -> None:
     review = client.get(f"/api/jobs/{finished_job}/review").json()
     assert review["measures"] and review["pages"][0]["width"] == 2480
     assert review["lilypond"]["svg"] and {c["id"] for c in review["qa"]["checks"]} >= {"Q1", "Q5"}
+    assert review["prepare"] == [] and review["alternatives"] == []  # no Stage 1 in this job
     page = client.get(f"/api/jobs/{finished_job}/pages/1.png")
     assert page.status_code == 200 and page.content.startswith(b"\x89PNG")
     assert client.get(f"/api/jobs/{finished_job}/pages/2.png").status_code == 404

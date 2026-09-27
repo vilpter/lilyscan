@@ -101,3 +101,30 @@ def test_pipeline_finish_repairs_engine_output(
     # Moved measures keep the boxes the engine gave them on the later systems.
     assert all(m["bbox"] is not None for m in review["measures"])
     store.close()
+
+
+def test_engine_keeps_the_run_expected_to_be_better(tmp_path: Path) -> None:
+    from lilyscan.engine.audiveris.runner import AudiverisRun
+    from lilyscan.pipeline import assess_engine_run
+
+    runs = []
+    for label, fixture in (("prepared", "split-flute"), ("uploaded", "piano-two-voices")):
+        out = tmp_path / "engine" / label
+        out.mkdir(parents=True)
+        shutil.copy(OMR_FIXTURE / fixture / "output.mxl", out / "score.mxl")
+        shutil.copy(OMR_FIXTURE / fixture / "book.omr", out / "score.omr")
+        run = AudiverisRun([], 0, 1.0, "", [out / "score.omr"], [out / "score.mxl"])
+        summary = {
+            "pages": label,
+            "mxl_files": [f"engine/{label}/score.mxl"],
+            "omr_files": [f"engine/{label}/score.omr"],
+        }
+        runs.append((run, summary))
+    expected = {s["pages"]: assess_engine_run(tmp_path, s) for _, s in runs}
+
+    run, chosen = tasks._choose(tmp_path, runs)
+
+    best = max(expected, key=lambda k: expected[k])
+    assert chosen["pages"] == best and run is runs[[s["pages"] for _, s in runs].index(best)][0]
+    assert [a["chosen"] for a in chosen["alternatives"]] == [k == best for k in expected]
+    assert {a["pages"]: a["expected_right"] for a in chosen["alternatives"]} == expected

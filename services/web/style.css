@@ -67,6 +67,8 @@ main { flex: 1; min-height: 0; padding: 16px; }
 .drop input { display: none; }
 .field { display: block; margin: 12px 0; }
 .field input { display: block; width: 100%; max-width: 320px; margin-top: 4px; }
+.check { display: block; margin: 0 0 12px; font-size: 14px; }
+.check input { margin-right: 6px; }
 input, button, textarea {
   font: inherit; color: inherit; background: var(--panel);
   border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px;
@@ -161,6 +163,9 @@ table.jobs { width: 100%; border-collapse: collapse; }
 .review li.sel { background: rgba(45, 108, 223, 0.15); }
 .review .kind { font-weight: 600; }
 .repairs { font-size: 12px; margin: 6px 0; }
+.notes { margin: 8px 0; padding: 8px 12px; border-radius: 6px; font-size: 13px;
+  background: rgba(230, 160, 40, 0.12); border: 1px solid rgba(230, 160, 40, 0.5); }
+.notes ul { margin: 4px 0 0; padding-left: 18px; }
 .repairs ul { margin: 2px 0 0; padding-left: 18px; }
 .repairs .kind { font-weight: 600; }
 

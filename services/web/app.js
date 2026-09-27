@@ -108,6 +108,7 @@ $("upload-form").addEventListener("submit", async (e) => {
   for (const f of fileInput.files) form.append("files", f);
   const languages = $("ocr").value.trim();
   if (languages) form.append("ocr_languages", languages);
+  form.append("straighten", $("straighten").checked ? "true" : "false");
   $("upload-btn").disabled = true;
   $("upload-msg").textContent = "Uploading...";
   try {
@@ -137,6 +138,7 @@ const state = {
 
 const STAGES = {
   upload: "Queued",
+  prepare: "Straightening the pages",
   engine: "Recognizing the music (Audiveris, about 30 s per page)",
   import: "Reading the engine's result",
   repair: "Repairing parts, clefs, and rhythm",
@@ -198,6 +200,7 @@ async function loadReview() {
   renderBadges(review.qa);
   renderDownloads();
   renderSource(review);
+  renderNotes(review);
   renderRepairs(review);
   renderReviewList(review);
   await Promise.all([renderScore(review), loadFiles(review)]);
@@ -419,6 +422,21 @@ const LABELS = {
   repaired: "repaired",
   "low-confidence": "low confidence",
 };
+
+// Stage 1 quality warnings, and which engine run was kept for a scan.
+function renderNotes(review) {
+  const notes = [];
+  for (const page of review.prepare || []) {
+    if (page.error) notes.push(`${page.input}: could not be straightened (${page.error}); transcribed as uploaded.`);
+    for (const w of page.warnings || []) notes.push(`${page.input}: ${w}.`);
+  }
+  const kept = (review.alternatives || []).find((a) => a.chosen);
+  if (kept && kept.pages === "uploaded") {
+    notes.push("The pages as uploaded read better than the straightened ones, so those were kept.");
+  }
+  $("job-notes").hidden = !notes.length;
+  $("job-notes").replaceChildren(el("strong", {}, "Input quality"), el("ul", {}, ...notes.map((n) => el("li", {}, n))));
+}
 
 // Staff-wide repairs (merged parts, octave clefs) are listed once, above the review list.
 function renderRepairs(review) {

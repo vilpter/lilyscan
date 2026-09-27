@@ -22,7 +22,7 @@ from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import MusicXMLError, load_musicxml
 from lilyscan.ir.ops import merge_scores
 from lilyscan.lilypond.compile import lilypond_version
-from lilyscan.pipeline import produce
+from lilyscan.pipeline import expected_right, produce
 from lilyscan.repair import apply_repairs
 from lilyscan.repair.confidence import calibrate_confidence
 from lilyscan.runtime.config import Settings
@@ -48,6 +48,8 @@ class ItemResult:
     correctness: list[tuple[float | None, bool]] = field(default_factory=list)
     # Stage 5 repairs applied to the engine output (only with ``repair=True``).
     repairs: list[dict[str, Any]] = field(default_factory=list)
+    # Stage 1 report for the page given to the engine (only with ``prepare=True``).
+    prepare: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -61,20 +63,56 @@ class ItemResult:
             "located_events": self.located,
             "mappable_events": self.mappable,
             "repairs": self.repairs,
+            "prepare": self.prepare,
             **self.comparison.to_dict(),
         }
 
 
+# Input variants that go through Stage 1 with ``prepare=True`` (rasters of paper).
+PREPARED_VARIANTS = ("scan", "photo")
+
+
+def engine_dir(work: Path, item: CorpusItem, variant: Variant, prepare: bool = False) -> Path:
+    """Where the engine output for this item and variant is cached."""
+    prepared = prepare and variant in PREPARED_VARIANTS
+    return work / item.spec.id / (f"{variant}-prepared" if prepared else variant)
+
+
+def _prepared_input(item: CorpusItem, variant: Variant, out_dir: Path) -> dict[str, Any]:
+    from lilyscan.prepare import prepare_image  # needs the vision extra
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report = prepare_image(item.input(variant), out_dir / "prepared.png").to_dict()
+    (out_dir / "prepare.json").write_text(
+        json.dumps(report, indent=2), encoding="utf-8", newline="\n"
+    )
+    return report
+
+
 def _engine_output(
-    item: CorpusItem, variant: Variant, work: Path, settings: Settings, reuse: bool
-) -> tuple[Score | None, float | None, list[str], bool]:
-    engine_dir = work / item.spec.id / variant
-    summary_path = engine_dir / "run.json"
+    item: CorpusItem,
+    variant: Variant,
+    work: Path,
+    settings: Settings,
+    reuse: bool,
+    prepare: bool = False,
+) -> tuple[Score | None, float | None, list[str], bool, dict[str, Any] | None]:
+    """The engine's score for one input (cached), with the Stage 1 report if prepared."""
+    out_dir = engine_dir(work, item, variant, prepare)
+    summary_path = out_dir / "run.json"
     cached = reuse and summary_path.is_file()
+    prepared = prepare and variant in PREPARED_VARIANTS
+    report: dict[str, Any] | None = None
+    if prepared and cached and (out_dir / "prepare.json").is_file():
+        report = json.loads((out_dir / "prepare.json").read_text(encoding="utf-8"))
+    elif prepared:
+        report = _prepared_input(item, variant, out_dir)
+        cached = False
     if cached:
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
     else:
-        run = run_audiveris([item.input(variant)], engine_dir, settings=settings)
+        source = out_dir / "prepared.png" if prepared else item.input(variant)
+        run = run_audiveris([source], out_dir, settings=settings)
         summary = {
             "ok": run.ok,
             "wall_s": round(run.wall_s, 2),
@@ -88,11 +126,40 @@ def _engine_output(
     score: Score | None = None
     if summary["ok"]:
         try:
-            parts = [load_musicxml(engine_dir / name, "audiveris") for name in summary["mxl_files"]]
+            parts = [load_musicxml(out_dir / name, "audiveris") for name in summary["mxl_files"]]
             score = merge_scores(parts) if parts else None
         except (MusicXMLError, OSError) as exc:
             errors.append(f"cannot read engine MusicXML: {exc}")
-    return score, summary["wall_s"], errors, cached
+    return score, summary["wall_s"], errors, cached, report
+
+
+@dataclass
+class _Processed:
+    """An engine output after Stage 3 geometry and (optionally) Stage 5."""
+
+    pred: Score | None
+    out_dir: Path
+    omr: Path | None
+    located: int = 0
+    mappable: int = 0
+    repairs: list[dict[str, Any]] = field(default_factory=list)
+
+
+def _process(pred: Score | None, out_dir: Path, repair: bool, errors: list[str]) -> _Processed:
+    omr = next(iter(sorted(out_dir.glob("*.omr"))), None)
+    done = _Processed(pred, out_dir, omr)
+    book = None
+    if pred is not None and omr is not None:
+        try:
+            book = read_omr(omr)
+            stats = attach_geometry(pred, book)
+            done.located, done.mappable = stats.located, stats.mappable
+        except OmrError as exc:
+            errors.append(f"cannot read .omr: {exc}")
+    if repair and pred is not None:
+        done.repairs = [r.to_dict() for r in apply_repairs(pred, book=book)]
+        calibrate_confidence(pred)
+    return done
 
 
 def evaluate_item(
@@ -103,30 +170,38 @@ def evaluate_item(
     reuse: bool,
     lilypond: bool = False,
     repair: bool = False,
+    prepare: bool = False,
 ) -> ItemResult:
     gt = load_musicxml(item.ground_truth, "ground-truth")
-    pred, wall_s, errors, cached = _engine_output(item, variant, work, settings, reuse)
-    located = mappable = 0
-    book = None
-    omr = next(iter(sorted((work / item.spec.id / variant).glob("*.omr"))), None)
-    if pred is not None and omr is not None:
-        try:
-            book = read_omr(omr)
-            stats = attach_geometry(pred, book)
-            located, mappable = stats.located, stats.mappable
-        except OmrError as exc:
-            errors.append(f"cannot read .omr: {exc}")
-    repairs: list[dict[str, Any]] = []
-    if repair and pred is not None:
-        repairs = [r.to_dict() for r in apply_repairs(pred, book=book)]
-        calibrate_confidence(pred)
+    pred, wall_s, errors, cached, prepared = _engine_output(
+        item, variant, work, settings, reuse, prepare
+    )
+    done = _process(pred, engine_dir(work, item, variant, prepare), repair, errors)
+    # As in a job: when Stage 1 found no page edges (a scan), the page as uploaded is
+    # transcribed too, and the run Lilyscan expects to have more right is kept.
+    if repair and prepared is not None and prepared.get("page_found") is False:
+        alt, alt_wall, alt_errors, alt_cached, _ = _engine_output(
+            item, variant, work, settings, reuse, False
+        )
+        other = _process(alt, engine_dir(work, item, variant, False), repair, alt_errors)
+        mine = expected_right(pred) if pred is not None else -1.0
+        theirs = expected_right(alt) if alt is not None else -1.0
+        prepared = {
+            **prepared,
+            "expected_right": {"prepared": round(mine, 2), "uploaded": round(theirs, 2)},
+            "chosen": "uploaded" if theirs > mine else "prepared",
+        }
+        wall_s = (wall_s or 0.0) + (alt_wall or 0.0)
+        if theirs > mine:
+            pred, errors, cached, done = alt, alt_errors, alt_cached and cached, other
     result = ItemResult(item, variant, compare(gt, pred), wall_s, errors, cached)
-    result.located, result.mappable, result.repairs = located, mappable, repairs
-    if pred is not None and omr is not None:
+    result.located, result.mappable, result.repairs = done.located, done.mappable, done.repairs
+    result.prepare = prepared
+    if pred is not None and done.omr is not None:
         result.correctness = event_correctness(gt, pred)
     if lilypond and pred is not None:
         out = "lilyscan-repaired" if repair else "lilyscan"
-        report = produce(pred, work / item.spec.id / variant / out, settings)
+        report = produce(pred, done.out_dir / out, settings)
         result.qa = {c["id"]: c["passed"] for c in report["qa"]["checks"]}
     log.info(
         "%s/%s: measures %.0f%%, note F1 %.2f%s",
@@ -148,14 +223,16 @@ def run_evaluation(
     settings: Settings | None = None,
     lilypond: bool = False,
     repair: bool = False,
+    prepare: bool = False,
 ) -> list[ItemResult]:
     """Evaluate every item/variant; ``lilypond`` also runs the pipeline and checks Q1-Q5,
-    ``repair`` applies the Stage 5 rules and Lilyscan's confidence before scoring."""
+    ``repair`` applies the Stage 5 rules and Lilyscan's confidence before scoring, and
+    ``prepare`` gives scans and photos to the engine through Stage 1."""
     s = settings or Settings.from_env()
     tasks = [(item, v) for item in items for v in variants]
     with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
         futures = [
-            pool.submit(evaluate_item, item, v, work, s, reuse, lilypond, repair)
+            pool.submit(evaluate_item, item, v, work, s, reuse, lilypond, repair, prepare)
             for item, v in tasks
         ]
         return [f.result() for f in futures]
@@ -170,6 +247,8 @@ def summarize(results: list[ItemResult]) -> dict[str, dict[str, Any]]:
     groups: dict[str, list[ItemResult]] = defaultdict(list)
     for r in results:
         groups[f"variant:{r.variant}"].append(r)
+        if r.prepare is not None and r.prepare.get("passed"):
+            groups[f"variant:{r.variant}, gate passed"].append(r)
         groups[f"category:{r.item.spec.category}"].append(r)
         groups["all"].append(r)
     out: dict[str, dict[str, Any]] = {}

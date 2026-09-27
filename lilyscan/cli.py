@@ -123,6 +123,7 @@ def _cmd_eval_run(args: argparse.Namespace) -> int:
         reuse=not args.no_reuse,
         lilypond=args.lilypond,
         repair=args.repair,
+        prepare=args.prepare,
     )
     out = Path(args.out) if args.out else Path("eval/results") / args.label
     path = write_results(results, out, args.label, notes=args.notes)
@@ -199,6 +200,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     er.add_argument(
         "--repair", action="store_true", help="apply the Stage 5 repair rules before scoring"
+    )
+    er.add_argument(
+        "--prepare",
+        action="store_true",
+        help="give scans and photos to the engine through Stage 1 (new engine runs)",
     )
     er.add_argument("--label", default="latest")
     er.add_argument("--out", help="results directory (default eval/results/<label>)")
