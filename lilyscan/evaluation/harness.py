@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import platform
@@ -15,12 +16,11 @@ from statistics import mean
 from typing import Any
 
 from lilyscan import __version__
-from lilyscan.engine.audiveris.omr import OmrError, attach_geometry, read_omr
+from lilyscan.engine.audiveris.omr import OmrError, attach_movements, read_omr
 from lilyscan.engine.audiveris.runner import audiveris_version, run_audiveris
 from lilyscan.evaluation.compare import Comparison, calibration, compare, event_correctness
 from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import MusicXMLError, load_musicxml
-from lilyscan.ir.ops import merge_scores
 from lilyscan.lilypond.compile import lilypond_version
 from lilyscan.pipeline import expected_right, produce
 from lilyscan.repair import apply_repairs
@@ -138,9 +138,18 @@ def _engine_output(
     if summary["ok"]:
         try:
             parts = [load_musicxml(out_dir / name, "audiveris") for name in summary["mxl_files"]]
-            score = merge_scores(parts) if parts else None
         except (MusicXMLError, OSError) as exc:
             errors.append(f"cannot read engine MusicXML: {exc}")
+        else:
+            # Stage 3: page boxes and grades from the .omr, attached movement by movement.
+            omr = next(iter(sorted(out_dir.glob("*.omr"))), None)
+            book = None
+            if omr is not None:
+                try:
+                    book = read_omr(omr)
+                except OmrError as exc:
+                    errors.append(f"cannot read .omr: {exc}")
+            score = attach_movements(parts, book)[0] if parts else None
     return score, summary["wall_s"], errors, cached, report
 
 
@@ -167,12 +176,15 @@ def _process(
     done = _Processed(pred, out_dir, omr)
     book = None
     if pred is not None and omr is not None:
-        try:
+        with contextlib.suppress(OmrError):  # reported when the engine output was loaded
             book = read_omr(omr)
-            stats = attach_geometry(pred, book)
-            done.located, done.mappable = stats.located, stats.mappable
-        except OmrError as exc:
-            errors.append(f"cannot read .omr: {exc}")
+        # Boxes were attached on loading; events in a measure found on the page count.
+        for _, staff in pred.staves():
+            for m in staff.measures:
+                if m.bbox is not None:
+                    events = [e for v in m.voices for e in v.events]
+                    done.mappable += len(events)
+                    done.located += sum(e.bbox is not None for e in events)
     if repair and pred is not None:
         if pdf is not None and book is not None:
             from lilyscan.vector import apply_vector_oracle  # needs the vector extra

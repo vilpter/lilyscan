@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from lilyscan.engine.audiveris.omr import OmrError, attach_geometry, read_omr
+from lilyscan.engine.audiveris.omr import OmrError, attach_movements, read_omr
 from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import load_musicxml
 from lilyscan.ir.ops import counts, merge_scores
@@ -33,16 +33,22 @@ def import_engine_output(root: Path, engine: dict[str, Any]) -> tuple[Score, dic
     Returns the score and a geometry report (None when the run saved no ``.omr``).
     Page overlays are drawn later, by ``repair_engine_output``.
     """
-    score = import_musicxml_files([root / p for p in engine["mxl_files"]], "audiveris")
+    paths = [root / p for p in engine["mxl_files"]]
     omr_files = engine.get("omr_files") or []
     if not omr_files:
-        return score, None
+        return import_musicxml_files(paths, "audiveris"), None
     omr_path = root / omr_files[0]
     try:
         book = read_omr(omr_path)
     except OmrError as exc:
-        return score, {"source": omr_files[0], "error": str(exc)}
-    stats = attach_geometry(score, book)
+        return import_musicxml_files(paths, "audiveris"), {
+            "source": omr_files[0],
+            "error": str(exc),
+        }
+    if not paths:
+        raise ValueError("no MusicXML files to import")
+    score, stats = attach_movements([load_musicxml(p, "audiveris") for p in paths], book)
+    assert stats is not None
     geometry: dict[str, Any] = {
         "source": omr_files[0],
         "audiveris": book.software_version,

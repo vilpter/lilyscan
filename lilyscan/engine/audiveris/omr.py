@@ -20,6 +20,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from lilyscan.ir.models import BBox, Clef, Event, Pitch, Score
+from lilyscan.ir.ops import merge_scores
 
 
 class OmrError(ValueError):
@@ -82,6 +83,7 @@ class OmrSystem:
     parts: dict[int, list[OmrStaff]]  # logical part id -> staves in order
     inters: list[Inter]
     chord_of: dict[int, Inter] = field(default_factory=dict)  # head/rest id -> its chord
+    starts_movement: bool = False  # first system of a piece (Audiveris indents it)
 
     def on_staff(self, staff_id: int, kinds: tuple[str, ...]) -> list[Inter]:
         return [i for i in self.inters if i.staff == staff_id and i.kind in kinds and i.box]
@@ -134,7 +136,7 @@ def _inter(el: ET.Element) -> Inter:
     )
 
 
-def _system(el: ET.Element) -> OmrSystem:
+def _system(el: ET.Element, starts_movement: bool = False) -> OmrSystem:
     stacks = []
     for s in el.findall("stack"):
         left = float(s.get("left", 0))
@@ -165,7 +167,13 @@ def _system(el: ET.Element) -> OmrSystem:
         source = by_id.get(int(rel.get("source", "0")))
         if source is not None and source.kind in ("head-chord", "rest-chord"):
             chord_of[int(rel.get("target", "0"))] = source
-    return OmrSystem(stacks=stacks, parts=parts, inters=inters, chord_of=chord_of)
+    return OmrSystem(
+        stacks=stacks,
+        parts=parts,
+        inters=inters,
+        chord_of=chord_of,
+        starts_movement=starts_movement,
+    )
 
 
 def read_omr(path: Path) -> OmrBook:
@@ -196,7 +204,10 @@ def read_omr(path: Path) -> OmrBook:
                     width=int(picture.get("width", "0")) if picture is not None else 0,
                     height=int(picture.get("height", "0")) if picture is not None else 0,
                     interline=float(interline.get("main", "20")) if interline is not None else 20.0,
-                    systems=[_system(s) for s in sheet.findall("page/system")],
+                    systems=[
+                        _system(s, starts_movement=s.get("indented") == "true")
+                        for s in sheet.findall("page/system")
+                    ],
                 )
             )
     return OmrBook(book.get("software-version"), sheets, logical)
@@ -345,11 +356,13 @@ def _measure_rest(
     return best.box, best.confidence, True
 
 
-def attach_geometry(score: Score, book: OmrBook) -> AttachStats:
+def attach_geometry(score: Score, book: OmrBook, first_measure: int = 0) -> AttachStats:
     """Fill ``bbox`` and ``confidence`` on events and measures from the ``.omr`` book.
 
-    Pages are numbered 0-based in sheet order. Events whose pitch disagrees with the
-    notehead found at that position get their confidence halved.
+    ``score`` is one movement (one exported MusicXML file) whose measure 0 is the book's
+    measure ``first_measure``: its parts are numbered as that movement's parts are in
+    the book. Pages are numbered 0-based in sheet order. Events whose pitch disagrees
+    with the notehead found at that position get their confidence halved.
     """
     stats = AttachStats()
     # Measure index -> (page index, sheet, system, stack), in reading order.
@@ -368,9 +381,9 @@ def attach_geometry(score: Score, book: OmrBook) -> AttachStats:
                 starting = [c for c in m.clefs if c.offset == 0]
                 if starting:
                     clef = starting[-1]
-                if m.index >= len(placements):
+                if m.index + first_measure >= len(placements):
                     continue
-                page, sheet, system, stack = placements[m.index]
+                page, sheet, system, stack = placements[m.index + first_measure]
                 omr_staves = system.parts.get(part_index, [])
                 if staff.number > len(omr_staves):
                     label = f"{part.id}/{staff.number}"
@@ -414,3 +427,27 @@ def attach_geometry(score: Score, book: OmrBook) -> AttachStats:
                 if mid_clefs:
                     clef = mid_clefs[-1]
     return stats
+
+
+def attach_movements(
+    movements: list[Score], book: OmrBook | None
+) -> tuple[Score, AttachStats | None]:
+    """The engine's movements merged into one score, geometry attached to each first.
+
+    Each movement numbers its parts afresh, and the merge may place them differently, so
+    boxes are attached while every part still has its movement's numbering.
+    """
+    if book is None:
+        return merge_scores(movements), None
+    total = AttachStats()
+    first = 0
+    for movement in movements:
+        stats = attach_geometry(movement, book, first)
+        for name in ("events", "mappable", "located", "pitch_mismatch", "measures"):
+            setattr(total, name, getattr(total, name) + getattr(stats, name))
+        total.measures_located += stats.measures_located
+        total.unmapped_staves += [
+            x for x in stats.unmapped_staves if x not in total.unmapped_staves
+        ]
+        first += max((len(st.measures) for _, st in movement.staves()), default=0)
+    return merge_scores(movements), total

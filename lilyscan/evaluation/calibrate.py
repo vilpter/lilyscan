@@ -18,7 +18,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from lilyscan.engine.audiveris.omr import OmrError, attach_geometry, read_omr
+from lilyscan.engine.audiveris.omr import OmrError, read_omr
 from lilyscan.evaluation.compare import _measure_lengths, _token, align, measure_sig, staff_sigs
 from lilyscan.evaluation.harness import _engine_output
 from lilyscan.ir.models import Score
@@ -93,8 +93,7 @@ def collect(
             book = None
             if omr is not None:
                 try:
-                    book = read_omr(omr)
-                    attach_geometry(pred, book)
+                    book = read_omr(omr)  # boxes are already attached, for the repairs
                 except OmrError as exc:
                     log.warning("%s/%s: %s", item.spec.id, variant, exc)
             apply_repairs(pred, book=book)

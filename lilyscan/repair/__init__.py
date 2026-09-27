@@ -49,7 +49,9 @@ def apply_repairs(
     for rule in rules if rules is not None else default:
         log += rule(score)
     if book is not None and rules is None:
+        from lilyscan.repair.keys import consistent_keys
         from lilyscan.repair.syllables import split_glued_syllables
 
+        log += consistent_keys(score, book)
         log += split_glued_syllables(score, book)
     return log
