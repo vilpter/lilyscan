@@ -90,12 +90,14 @@ def collect(
             if pred is None:
                 continue
             omr = next(iter(sorted((work / item.spec.id / variant).glob("*.omr"))), None)
+            book = None
             if omr is not None:
                 try:
-                    attach_geometry(pred, read_omr(omr))
+                    book = read_omr(omr)
+                    attach_geometry(pred, book)
                 except OmrError as exc:
                     log.warning("%s/%s: %s", item.spec.id, variant, exc)
-            apply_repairs(pred)
+            apply_repairs(pred, book=book)
             data.add(item.spec.id, pred, gt)
     return data
 

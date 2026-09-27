@@ -54,6 +54,8 @@ class Inter:
     staff: int | None  # sheet-level staff id
     box: Box | None
     step: int | None  # heads: staff steps below the middle line
+    value: str | None = None  # text items (lyric-item, word): the text read
+    role: str | None = None  # the element's own kind, e.g. "Syllable" or "Hyphen" for lyrics
 
     @property
     def confidence(self) -> float | None:
@@ -127,6 +129,8 @@ def _inter(el: ET.Element) -> Inter:
         staff=int(staff) if staff else None,
         box=_box(el),
         step=round(float(step)) if step not in (None, "") else None,
+        value=el.get("value"),
+        role=el.get("kind"),
     )
 
 

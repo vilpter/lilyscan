@@ -107,16 +107,18 @@ def evaluate_item(
     gt = load_musicxml(item.ground_truth, "ground-truth")
     pred, wall_s, errors, cached = _engine_output(item, variant, work, settings, reuse)
     located = mappable = 0
+    book = None
     omr = next(iter(sorted((work / item.spec.id / variant).glob("*.omr"))), None)
     if pred is not None and omr is not None:
         try:
-            stats = attach_geometry(pred, read_omr(omr))
+            book = read_omr(omr)
+            stats = attach_geometry(pred, book)
             located, mappable = stats.located, stats.mappable
         except OmrError as exc:
             errors.append(f"cannot read .omr: {exc}")
     repairs: list[dict[str, Any]] = []
     if repair and pred is not None:
-        repairs = [r.to_dict() for r in apply_repairs(pred)]
+        repairs = [r.to_dict() for r in apply_repairs(pred, book=book)]
         calibrate_confidence(pred)
     result = ItemResult(item, variant, compare(gt, pred), wall_s, errors, cached)
     result.located, result.mappable, result.repairs = located, mappable, repairs

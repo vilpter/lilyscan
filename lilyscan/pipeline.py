@@ -83,9 +83,12 @@ def repair_engine_output(
     repair log. Then draws the page overlays (``root/overlays``, needs the ``vision``
     extra), so their colours show the final confidence.
     """
-    repairs = [r.to_dict() for r in apply_repairs(score)]
+    ok = geometry is not None and "error" not in geometry
+    omr_path = root / geometry["source"] if geometry is not None and ok else None
+    book = read_omr(omr_path) if omr_path is not None else None
+    repairs = [r.to_dict() for r in apply_repairs(score, book=book)]
     calibrated = calibrate_confidence(score)
-    if geometry is None or "error" in geometry:
+    if geometry is None or omr_path is None or book is None:
         return repairs
     geometry["confidence"] = "lilyscan" if calibrated else "audiveris"
     geometry["low_confidence_events"] = _low_confidence(score)
@@ -93,8 +96,7 @@ def repair_engine_output(
         from lilyscan.overlay import render_overlays
     except ImportError:  # vision extra not installed
         return repairs
-    omr_path = root / geometry["source"]
-    written = render_overlays(score, read_omr(omr_path), omr_path, root / "overlays")
+    written = render_overlays(score, book, omr_path, root / "overlays")
     geometry["overlays"] = [p.relative_to(root).as_posix() for p in written]
     return repairs
 
