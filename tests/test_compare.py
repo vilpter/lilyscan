@@ -153,3 +153,13 @@ def test_calibration_bands_and_ece() -> None:
     # ECE = 10/12 * |0.9 - 0.95| + 2/12 * |0.0 - 0.3|
     assert result["ece"] == round(10 / 12 * 0.05 + 2 / 12 * 0.3, 4)
     assert (result["scored_events"], result["unscored_accuracy"]) == (12, 1.0)
+
+
+def test_voices_with_rest_and_note_at_same_onset_compare() -> None:
+    # Voice order is canonicalized by sorting; a rest and a note sharing onset and
+    # duration used to make that sort compare None with a tuple.
+    a = [rest(0, 1), n("D", 4, 1)]
+    b = [n("C", 4, 0), n("E", 4, 1)]
+    gt = score(measure(0, a, b))
+    pred = score(measure(0, b, a))
+    assert compare(gt, pred).measure_accuracy == 1.0

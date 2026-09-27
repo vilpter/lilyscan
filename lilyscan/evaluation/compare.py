@@ -72,7 +72,10 @@ def measure_sig(m: Measure, measure_length: Fraction | None) -> MeasureSig:
         for ly in e.lyrics
         if ly.verse == 1
     )
-    return MeasureSig(tuple(sorted(voices)), events, notes, onsets, lyrics)
+    # Order voices canonically (voice numbers are ignored). Rests carry None instead of
+    # pitches, so sort on a key where they compare as empty.
+    ordered = sorted(voices, key=lambda v: [(t[0], t[1], t[2] or (), t[3]) for t in v])
+    return MeasureSig(tuple(ordered), events, notes, onsets, lyrics)
 
 
 def _measure_lengths(staff: Staff) -> list[Fraction | None]:
