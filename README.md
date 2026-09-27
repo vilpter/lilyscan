@@ -4,9 +4,13 @@ Sheet music (PDF, scans, phone photos) to editable, well-structured LilyPond, bu
 around the [Audiveris](https://github.com/Audiveris/audiveris) OMR engine.
 The design is in [docs/design.md](docs/design.md).
 
-**Status:** early development. Milestones M0-M4 are done (engine wrapper, evaluation
-harness, LilyPond generator and checks, page geometry, review UI) and it runs end to end on
-one machine; M5 (repairing the engine's output) is in progress.
+**Status:** early development, tested on generated and public-domain scores but not yet on
+real-world scans and phone photos. It runs end to end on one machine. Done: the engine
+wrapper, evaluation harness, LilyPond generator and checks, page geometry, review UI,
+repairs of the engine's output with a calibrated confidence, the photo and scan front-end,
+born-digital PDF rendering, and the score combiner. On the evaluation corpora about 83% of
+measures come out exactly right overall (PDF 89-92%, PNG 83-88%, scans 83%, photos 72-74%);
+see `eval/results/` and the status log in [docs/design.md](docs/design.md).
 
 ## Pinned toolchain
 
