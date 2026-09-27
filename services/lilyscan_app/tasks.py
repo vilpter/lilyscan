@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from lilyscan.engine.audiveris.runner import run_audiveris
-from lilyscan.pipeline import import_engine_output, produce
+from lilyscan.pipeline import import_engine_output, produce, recompile
 from lilyscan.runtime.config import Settings
 
 from .jobs import JobStatus, JobStore, job_dir
@@ -106,6 +106,23 @@ def pipeline_finish(job_id: str) -> dict[str, Any]:
     except Exception as exc:
         store.update(job_id, status=JobStatus.FAILED, error=f"pipeline: {exc}")
         log.error("pipeline_finish %s failed:\n%s", job_id, traceback.format_exc())
+        raise
+    finally:
+        store.close()
+
+
+def recompile_job(job_id: str) -> dict[str, Any]:
+    """After the user edits the LilyPond project: recompile, re-render, refresh the review."""
+    settings = Settings.from_env()
+    store = _store(settings)
+    try:
+        store.update(job_id, status=JobStatus.RUNNING, stage="recompile")
+        report = recompile(job_dir(settings.data_dir, job_id), settings)
+        store.update(job_id, status=JobStatus.DONE, stage="done", report=report)
+        return report
+    except Exception as exc:
+        store.update(job_id, status=JobStatus.FAILED, error=f"recompile: {exc}")
+        log.error("recompile_job %s failed:\n%s", job_id, traceback.format_exc())
         raise
     finally:
         store.close()

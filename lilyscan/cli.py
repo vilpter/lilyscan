@@ -54,6 +54,36 @@ def _cmd_selftest(args: argparse.Namespace) -> int:
         return 0 if result.ok else 1
 
 
+def _cmd_serve(args: argparse.Namespace) -> int:
+    """API + web UI in one process; jobs run in a background thread (no Redis needed)."""
+    import dataclasses
+    import os
+
+    import uvicorn
+
+    from lilyscan.runtime.config import Settings
+    from lilyscan_app.api import create_app
+
+    # Single-machine convenience: find a local Audiveris install and OCR models.
+    windows_audiveris = (
+        Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Audiveris" / "Audiveris.exe"
+    )
+    if "AUDIVERIS_BIN" not in os.environ and windows_audiveris.is_file():
+        os.environ["AUDIVERIS_BIN"] = str(windows_audiveris)
+    local_tessdata = (
+        Path(os.environ.get("LOCALAPPDATA", "~")).expanduser() / "lilyscan" / "tessdata"
+    )
+    if "TESSDATA_PREFIX" not in os.environ and local_tessdata.is_dir():
+        os.environ["TESSDATA_PREFIX"] = str(local_tessdata)
+
+    settings = dataclasses.replace(
+        Settings.from_env(), dispatch="inline", data_dir=Path(args.data).resolve()
+    )
+    print(f"Lilyscan at http://{args.host}:{args.port}/ (data in {settings.data_dir})")
+    uvicorn.run(create_app(settings), host=args.host, port=args.port, log_level="warning")
+    return 0
+
+
 def _cmd_convert(args: argparse.Namespace) -> int:
     from lilyscan.pipeline import convert_file
 
@@ -110,6 +140,12 @@ def build_parser() -> argparse.ArgumentParser:
     st = sub.add_parser("selftest", help="compile a hello-world score with LilyPond")
     st.add_argument("--out", help="keep the output PDF in this directory")
     st.set_defaults(fn=_cmd_selftest)
+
+    sv = sub.add_parser("serve", help="run the web UI and API on this machine (no Redis)")
+    sv.add_argument("--host", default="127.0.0.1")
+    sv.add_argument("--port", type=int, default=8000)
+    sv.add_argument("--data", default="data", help="job storage directory")
+    sv.set_defaults(fn=_cmd_serve)
 
     cv = sub.add_parser("convert", help="MusicXML -> LilyPond project + QA report")
     cv.add_argument("musicxml", help=".musicxml, .xml, or .mxl file")

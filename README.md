@@ -16,6 +16,28 @@ The design is in [docs/design.md](docs/design.md).
 
 Changing a pin is its own change: update both places, then re-run the eval harness.
 
+## Review UI
+
+Open the app in a browser (port 8000 by default) to upload a PDF, scans, or phone photos,
+follow the job, and review the result in three panes:
+
+- **Source:** the page as the engine read it, every note boxed by confidence and measures
+  that need attention outlined.
+- **Engraved:** the LilyPond output.
+- **LilyPond:** the editable source, with a review list of measures ranked by problems.
+
+Clicking a measure in any pane (or putting the caret on its line) highlights it in the other
+two. Edit the source, press **Save & recompile**, then download the `.ly` project, PDF, or MIDI.
+
+To try it on one machine without Docker or Redis (jobs run inside the server process):
+
+```bash
+uv run lilyscan serve
+```
+
+It needs LilyPond and Audiveris installed locally; on Windows it finds a standard Audiveris
+install and OCR models in `%LOCALAPPDATA%\lilyscan\tessdata`.
+
 ## Run (homelab)
 
 Images are published to GHCR from `main`:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -10,8 +11,10 @@ from lilyscan.engine.audiveris.omr import OmrError, attach_geometry, read_omr
 from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import load_musicxml
 from lilyscan.ir.ops import counts, merge_scores
-from lilyscan.lilypond.generate import LOW_CONFIDENCE, write_project
-from lilyscan.qa.checks import run_checks
+from lilyscan.lilypond.compile import compile_ly
+from lilyscan.lilypond.generate import LOW_CONFIDENCE, LyProject, scan_measure_lines, write_project
+from lilyscan.qa.checks import CheckResult, QaReport, compile_checks, run_checks
+from lilyscan.review import build_review
 from lilyscan.runtime.config import Settings
 from lilyscan.runtime.device import get_device
 
@@ -81,18 +84,82 @@ def produce(score: Score, root: Path, settings: Settings | None = None) -> dict[
 
     ly_root = root / "ly"
     project = write_project(score, ly_root)
+    (ly_root / SOURCE_MAP).write_text(
+        json.dumps({"staff_vars": project.staff_vars}, indent=1), encoding="utf-8", newline="\n"
+    )
     qa = run_checks(score, ly_root, project, settings)
     return {
         "ir": "ir/score.json",
-        "lilypond": {
-            "project": "ly",
-            "files": [f"ly/{name}" for name in project.files],
-            "outputs": [f"ly/{name}" for name in qa.outputs],
-        },
-        "qa": qa.to_dict(),
+        **_render(root, score, project, qa, settings),
         "counts": counts(score),
         "device": get_device().describe(),
     }
+
+
+# Maps music variables to (part, staff) so edited files can be re-mapped to measures.
+SOURCE_MAP = "lilyscan-map.json"
+
+
+def _render(
+    root: Path, score: Score, project: LyProject, qa: QaReport, settings: Settings | None
+) -> dict[str, Any]:
+    """Point-and-click SVG pages and the review model; the report's LilyPond/QA sections."""
+    ly_root = root / "ly"
+    svg_dir = ly_root / "svg"
+    if svg_dir.exists():
+        shutil.rmtree(svg_dir)
+    svg = compile_ly(
+        ly_root / "main.ly", svg_dir, ("svg",), point_and_click=True, settings=settings
+    )
+    review = build_review(score, project, qa)
+    (root / "review.json").write_text(json.dumps(review), encoding="utf-8", newline="\n")
+    return {
+        "lilypond": {
+            "project": "ly",
+            "files": [f"ly/{name}" for name in sorted(project.files)],
+            "outputs": [f"ly/{name}" for name in qa.outputs],
+            "svg": [f"ly/svg/{p.name}" for p in sorted(svg.outputs, key=_page_order)],
+        },
+        "qa": qa.to_dict(),
+        "review": "review.json",
+    }
+
+
+def _page_order(path: Path) -> tuple[int, str]:
+    tail = path.stem.rsplit("-", 1)
+    return (int(tail[1]) if len(tail) == 2 and tail[1].isdigit() else 0, path.name)
+
+
+def recompile(root: Path, settings: Settings | None = None) -> dict[str, Any]:
+    """After the user edits ``ly/``: recompile (Q1, Q2), re-render, refresh the review.
+
+    Q3-Q5 describe the recognized music (the IR), which editing the LilyPond source
+    does not change, so their last results are kept.
+    """
+    ly_root = root / "ly"
+    score = Score.model_validate_json((root / "ir" / "score.json").read_text(encoding="utf-8"))
+    staff_vars = {
+        name: (part, staff)
+        for name, (part, staff) in json.loads((ly_root / SOURCE_MAP).read_text(encoding="utf-8"))[
+            "staff_vars"
+        ].items()
+    }
+    files = {
+        p.relative_to(ly_root).as_posix(): p.read_text(encoding="utf-8")
+        for p in sorted(ly_root.rglob("*.ly"))
+        if "svg" not in p.relative_to(ly_root).parts
+    }
+    project = LyProject(files, scan_measure_lines(files, staff_vars), staff_vars)
+    q1, q2, compiled = compile_checks(ly_root, project, settings)
+    report_path = root / "report.json"
+    report: dict[str, Any] = json.loads(report_path.read_text(encoding="utf-8"))
+    kept = [CheckResult(**c) for c in report["qa"]["checks"] if c["id"] not in ("Q1", "Q2")]
+    outputs = [p.relative_to(ly_root.resolve()).as_posix() for p in compiled.outputs]
+    outputs += [name for name in ("main.midi", "main.mid") if (ly_root / name).is_file()]
+    qa = QaReport(checks=sorted([q1, q2, *kept], key=lambda c: c.id), outputs=outputs)
+    report.update(_render(root, score, project, qa, settings))
+    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8", newline="\n")
+    return report
 
 
 def convert_file(musicxml: Path, out_dir: Path, settings: Settings | None = None) -> dict[str, Any]:

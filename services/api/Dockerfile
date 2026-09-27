@@ -23,6 +23,7 @@ COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --frozen --no-dev --no-install-project --python python3.12 --extra api
 COPY lilyscan ./lilyscan
 COPY services/lilyscan_app ./services/lilyscan_app
+COPY services/web ./services/web
 RUN uv sync --frozen --no-dev --python python3.12 --extra api
 
 EXPOSE 8000

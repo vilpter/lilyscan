@@ -16,3 +16,6 @@ eval/work/
 
 # Local planning document; the public copy is docs/design.md.
 /omr-lilypond-scope.md
+
+# Local editor and app settings
+.claude/

@@ -41,6 +41,21 @@ def parse_ocr_languages(spec: str) -> str:
     return normalized
 
 
+def _web_dir(value: str | None) -> Path | None:
+    """LILYSCAN_WEB_DIR, else services/web next to the service package (source layout)."""
+    if value:
+        return Path(value).resolve()
+    default = Path(__file__).resolve().parents[2] / "services" / "web"
+    return default if default.is_dir() else None
+
+
+def _dispatch(value: str) -> str:
+    value = value.strip().lower() or "rq"
+    if value not in ("rq", "inline"):
+        raise ValueError(f"LILYSCAN_DISPATCH must be rq or inline, got {value!r}")
+    return value
+
+
 @dataclass(frozen=True)
 class Settings:
     data_dir: Path
@@ -50,6 +65,8 @@ class Settings:
     lilypond_timeout_s: float
     audiveris_timeout_s: float
     ocr_languages: str = DEFAULT_OCR_LANGUAGES
+    dispatch: str = "rq"  # "rq" (Redis workers) or "inline" (in the API process)
+    web_dir: Path | None = None  # the web UI's static files; None disables it
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Settings:
@@ -64,4 +81,6 @@ class Settings:
             ocr_languages=parse_ocr_languages(
                 e.get("LILYSCAN_OCR_LANGUAGES", DEFAULT_OCR_LANGUAGES)
             ),
+            dispatch=_dispatch(e.get("LILYSCAN_DISPATCH", "rq")),
+            web_dir=_web_dir(e.get("LILYSCAN_WEB_DIR")),
         )
