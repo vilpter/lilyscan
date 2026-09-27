@@ -56,6 +56,7 @@ Ingest sheet music (born-digital PDF, scanned print, phone photo) and produce **
 | D9 | Implementation stack | **Python around the Audiveris CLI (option A)**, decided 2026-09-26. Option D (a small JVM tool that exports the `.omr` model to project-owned JSON) is the fallback if the Python `.omr` reader proves too fragile at M3. The analysis is in §5.2. |
 | D10 | OCR languages | Lyrics and text are recognized in **English, Latin, German, and French by default** (`eng+lat+deu+fra`).<br>• `LILYSCAN_OCR_LANGUAGES` (Tesseract codes joined with `+`) sets the deployment default. The Audiveris container downloads any listed language it doesn't have at startup, from the same pinned `tessdata` commit, into a persistent cache volume. Custom `*.traineddata` models dropped into that volume are picked up too.<br>• A job can override the languages at upload (`ocr_languages` form field). A requested language that isn't installed fails the job with a clear message.<br>• More languages slow OCR down somewhat, so the default stays at four. |
 | D11 | Real repertoire in the evaluation corpus | **Approved** by the owner (2026-09-26): music21's bundled corpus and Mutopia sources may be used as evaluation material.<br>• Each piece's source and licence are recorded in the corpus spec and manifest.<br>• Encodings are fetched or generated at build time and never committed (built corpora are git-ignored), so the public repository does not redistribute them.<br>• Results for real repertoire are reported separately from generated pieces. |
+| D12 | Model and data licenses | **Decided by the owner (2026-09-27):** everything Lilyscan ships, bundles, depends on or trains on must be AGPL-compatible, so the project's license stays consistent with Audiveris's.<br>• Allowed: MIT, BSD, Apache-2.0, LGPL, GPL and AGPL for code and weights; CC BY, CC0 and public domain for data and weights (with attribution where required).<br>• Not allowed: non-commercial (NC), research-only, no-derivatives (ND), custom or unstated terms.<br>• Exception: **oemer as an opt-in extra** for the Q7 second engine. Its code is MIT, but it downloads its own pretrained weights on first use, and its first model is trained on CVC-MUSCIMA (CC BY-NC-SA 4.0, non-commercial research only). It is never installed by default, and the caveat is shown where it is enabled.<br>• DeepScoresV2 (CC BY 4.0) may be used to train Stage 9 models, with attribution. |
 
 ## 5. System Architecture
 
@@ -348,7 +349,7 @@ project/
 | Q4 | Pitch sanity | Per-instrument range table; flag notes outside the practical range | Suspect notes |
 | Q5 | Cross-part alignment | Measure counts equal across all parts; same barline structure | Mismatch report |
 | Q6 | Visual round-trip | Render the generated `.ly` to PNG, **run Audiveris on the rendering**, import it to IR, and diff per measure against the job IR. Engraved LilyPond output is near-ideal input, so a disagreement usually points to a real source error rather than an engine error | Per-measure diff score |
-| Q7 | Engine agreement (optional) | Run a second engine (oemer, or a transformer OMR model if its license is approved) and compare IRs measure by measure | Disagreement heat map |
+| Q7 | Engine agreement (optional) | Run a second engine (oemer, an opt-in extra under D12, or a transformer OMR model whose license meets D12) and compare IRs measure by measure | Disagreement heat map |
 | Q8 | Audio spot-check | Generate MIDI via `\midi {}`; playback in the UI | For human review (not automated) |
 
 *M8 finding: Q6 measured and not shipped.* On the scan corpus (1,017 measures, 157 wrong against the ground truth), re-reading the engraved output with Audiveris flagged the wrong measures less well than the review list already does. The review list flags measures with low calibrated confidence, a failing rhythm or range check, or a repair.
@@ -528,8 +529,8 @@ lilyscan/
 | CV | OpenCV, scikit-image | Stage 1 front-end, Stage 4 matching |
 | ML (optional) | ONNX Runtime; PyTorch only for training or the CUDA variant | Needed for the dewarping model and any Stage 9 work |
 | Music model | music21 | BSD-3; very active. MusicXML IO and analysis helpers. Don't use its LilyPond export (old and weak) |
-| Second engine (optional) | oemer | Q7 only. Check the license of the pretrained weights |
-| Datasets | Mutopia sources; DeepScoresV2 and OLiMPiC/GrandStaff only if Stage 9 is entered | Check each license |
+| Second engine (optional) | oemer | Q7 only, opt-in extra (D12): MIT code; its first model's weights are trained on non-commercial data (CVC-MUSCIMA, CC BY-NC-SA 4.0) |
+| Datasets | Mutopia sources; DeepScoresV2 (CC BY 4.0) and OLiMPiC/GrandStaff (licenses not yet checked) only if Stage 9 is entered | Must meet D12 |
 
 ## 13. Contributor Guidelines
 
@@ -538,8 +539,8 @@ lilyscan/
 - **Do not modify, patch, or vendor Audiveris source** (D6). Use only its CLI, options, and exported and saved files. If a problem can only be fixed inside Audiveris, write a minimal repro and get maintainer approval before any workaround.
 - Pin the Audiveris version. An upgrade is its own change, with a full eval run attached (D7).
 - Before adding any third-party model, dataset, or library, **report its license**.
-  - MIT, BSD, Apache, LGPL, GPL, and AGPL are approved (D2).
-  - **Get maintainer approval first** if the license is non-commercial, research-only, custom, or unstated. This applies especially to datasets and pretrained weights.
+  - It must be AGPL-compatible (D2, D12): MIT, BSD, Apache, LGPL, GPL or AGPL for code and weights; CC BY, CC0 or public domain for data and weights.
+  - Non-commercial, research-only, no-derivatives, custom or unstated terms are not used. This applies especially to datasets and pretrained weights. The only exception is the opt-in oemer extra (D12); any other exception needs the maintainer's approval first.
 - Never add a hard GPU dependency. Every model path must run on CPU (§5.1).
 - Prefer root-cause fixes over threshold tweaking. When a metric regresses, identify the failing stage from the per-stage artifacts (including the raw Audiveris output) before changing code.
 - Keep every threshold in staff-space units and in a single config module. No magic pixel numbers.
