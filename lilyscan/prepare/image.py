@@ -83,7 +83,7 @@ def find_page(gray: Image) -> NDArray[np.float32] | None:
             break
     if quad is None:
         quad = cv2.boxPoints(cv2.minAreaRect(hull)).astype(np.float32)
-    if _cut_lines(ink_mask(small), quad) > PREPARE_MAX_CUT_LINES:
+    if _cut_lines(ink_mask(f32(small)), quad) > PREPARE_MAX_CUT_LINES:
         return None
     return _order(quad / np.float32(scale))
 
@@ -93,9 +93,10 @@ def _cut_lines(mask: NDArray[np.uint8], quad: NDArray[np.float32]) -> float:
     inside = np.zeros(mask.shape, dtype=np.uint8)
     cv2.fillPoly(inside, [np.round(quad).astype(np.int32)], 1)
     lines = (_lines(mask, horizontal=True) > 0).astype(np.uint8)
-    n, labels = cv2.connectedComponents(lines, connectivity=8)
-    total = np.bincount(labels.ravel(), minlength=n)[1:]
-    kept = np.bincount(labels.ravel(), weights=inside.ravel(), minlength=n)[1:]
+    n, found = cv2.connectedComponents(lines, connectivity=8)
+    labels = np.asarray(found, dtype=np.intp).ravel()
+    total = np.bincount(labels, minlength=n)[1:]
+    kept = np.bincount(labels, weights=inside.ravel(), minlength=n)[1:]
     held = kept > total / 2  # lines of this page, not of a facing page
     whole = float(total[held].sum())
     return float((total[held] - kept[held]).sum()) / whole if whole else 0.0
