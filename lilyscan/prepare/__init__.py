@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 import cv2
+import numpy as np
 
 from lilyscan.prepare.image import (
     Image,
@@ -26,9 +27,11 @@ from lilyscan.prepare.image import (
     find_page,
     flatten_light,
     ink_mask,
+    level_staves,
     load_gray,
     save_png,
     sharpen,
+    upside_down,
     warp_page,
 )
 from lilyscan.prepare.staff import (
@@ -59,6 +62,7 @@ class PrepareReport:
     curvature_before: float | None = None  # interlines
     curvature_after: float | None = None
     dewarped: bool = False
+    rotated: float = 0.0  # degrees counterclockwise the page was turned to stand upright
     cleaned: str | None = None  # "sharpen" or "binarize" when applied
     warnings: list[str] = field(default_factory=list)
 
@@ -108,6 +112,10 @@ def prepare_page(
         gray = warp_page(gray, corners)
     if light:
         gray = flatten_light(gray)
+    # Staff lines across the page; whether it is upside down is settled once they are
+    # straight.
+    gray, angle = level_staves(gray)
+    report.rotated = round(angle, 1)
     mask = ink_mask(gray)
 
     scale = measure_scale(mask)
@@ -137,6 +145,9 @@ def prepare_page(
             report.dewarped = True
             after = curvature(displacement_samples(ink_mask(gray), interline)) / interline
     report.curvature_after = round(after, 4)
+    if upside_down(gray):
+        gray = f32(np.rot90(gray, 2))
+        report.rotated = round((report.rotated + 360) % 360 - 180, 1)
     if clean == "auto":
         clean = "sharpen" if report.page_found else None
     report.cleaned = clean

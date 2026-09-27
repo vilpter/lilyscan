@@ -177,3 +177,39 @@ def test_job_task_can_skip_preparation(tmp_path: Path, monkeypatch: pytest.Monke
     (job_dir(tmp_path, job.id) / "input").mkdir(parents=True)
     assert tasks.prepare_inputs(job.id) == {"pages": []}
     store.close()
+
+
+def page_with_text() -> np.ndarray:
+    """The synthetic page with a title and a line of Latin text, as most real pages have."""
+    img = (page() * 255).astype(np.uint8)
+    for y, text in (
+        (70, "Twinkle, Twinkle, Little Star - Variations"),
+        (1690, "Allegretto: lightly, with the tip of the bow"),
+    ):
+        cv2.putText(img, text, (100, y), cv2.FONT_HERSHEY_SIMPLEX, 1.1, 0, 2, cv2.LINE_AA)
+    return img.astype(np.float32) / np.float32(255.0)
+
+
+@pytest.mark.parametrize("turns", [1, 2, 3])
+def test_turned_page_comes_back_upright(tmp_path: Path, turns: int) -> None:
+    upright = page_with_text()
+    src, dst = tmp_path / "turned.png", tmp_path / "prepared.png"
+    save_png(np.ascontiguousarray(np.rot90(upright, turns)), src)
+    report = prepare_image(src, dst)
+    assert report.rotated % 360 == pytest.approx({1: 270, 2: 180, 3: 90}[turns], abs=1)
+    out = load_gray(dst)
+    assert out.shape == upright.shape
+    # The title is at the top again.
+    assert out[40:90].mean() < out[1720:1760].mean() + 0.02
+
+
+def test_tilted_photo_is_levelled(tmp_path: Path) -> None:
+    from lilyscan.prepare.image import staff_angle
+
+    tilted = cv2.warpAffine(
+        page_with_text(),
+        cv2.getRotationMatrix2D((620, 877), 12, 1.0),
+        (1240, 1754),
+        borderValue=1.0,
+    )
+    assert staff_angle(np.asarray(tilted, dtype=np.float32)) == pytest.approx(-12, abs=0.5)
