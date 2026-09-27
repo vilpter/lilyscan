@@ -77,7 +77,7 @@ def produce(score: Score, root: Path, settings: Settings | None = None) -> dict[
     """Write ``ir/score.json`` and the ``ly/`` project under ``root``; return the report."""
     ir_path = root / "ir" / "score.json"
     ir_path.parent.mkdir(parents=True, exist_ok=True)
-    ir_path.write_text(score.model_dump_json(indent=1), encoding="utf-8")
+    ir_path.write_text(score.model_dump_json(indent=1), encoding="utf-8", newline="\n")
 
     ly_root = root / "ly"
     project = write_project(score, ly_root)
@@ -98,5 +98,7 @@ def produce(score: Score, root: Path, settings: Settings | None = None) -> dict[
 def convert_file(musicxml: Path, out_dir: Path, settings: Settings | None = None) -> dict[str, Any]:
     """Standalone conversion of a MusicXML file (CLI and tests)."""
     report = produce(import_musicxml_files([musicxml], "musicxml"), out_dir, settings)
-    (out_dir / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    (out_dir / "report.json").write_text(
+        json.dumps(report, indent=2), encoding="utf-8", newline="\n"
+    )
     return report

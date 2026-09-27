@@ -77,7 +77,7 @@ def _engine_output(
             "errors": run.step_errors + run.ocr_problems,
             "timed_out": run.timed_out,
         }
-        summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8", newline="\n")
 
     errors: list[str] = list(summary["errors"])
     score: Score | None = None
@@ -212,6 +212,7 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
         )
         + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
     with_qa = any(r.qa is not None for r in results)
@@ -265,5 +266,5 @@ def write_results(results: list[ItemResult], out_dir: Path, label: str, notes: s
                 )
         lines.append("")
     path = out_dir / "summary.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
+    path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     return path
