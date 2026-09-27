@@ -427,8 +427,9 @@ const LABELS = {
 function renderNotes(review) {
   const notes = [];
   for (const page of review.prepare || []) {
-    if (page.error) notes.push(`${page.input}: could not be straightened (${page.error}); transcribed as uploaded.`);
-    for (const w of page.warnings || []) notes.push(`${page.input}: ${w}.`);
+    const where = page.page ? `${page.input}, page ${page.page + 1}` : page.input;
+    if (page.error) notes.push(`${where}: could not be read (${page.error}); it was left out.`);
+    for (const w of page.warnings || []) notes.push(`${where}: ${w}.`);
   }
   const kept = (review.alternatives || []).find((a) => a.chosen);
   if (kept && kept.pages === "uploaded") {

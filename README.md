@@ -158,8 +158,9 @@ uv run lilyscan eval run --corpus eval/corpus/repertoire --label my-repertoire-r
 
 ### Job outputs
 
-A finished job's folder holds `prepared/` (each straightened page and `report.json` with
-what Stage 1 did and any quality warnings), `ir/score.json` (the internal model, with page
+A finished job's folder holds `prepared/` (`pages.tif`, every page of the job as given to
+the engine, in upload order; `uploaded.tif` when some page is a scan; and `report.json` with
+what was done to each page and any quality warnings), `ir/score.json` (the internal model, with page
 boxes and confidence per event), the LilyPond project in `ly/` (`main.ly`, `parts/`,
 `layout/`, plus the compiled PDF and MIDI), `report.json` (Stage 1 pages, the engine run and
 any alternative it was chosen over, geometry, repairs, QA checks Q1-Q5), and

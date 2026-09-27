@@ -40,39 +40,14 @@ def _write_json(path: Path, data: Any) -> None:
     )
 
 
-# Inputs prepared before the engine: raster pages (Stage 1) and PDFs (Stage 0). TIFFs,
-# possibly multi-page, go to the engine as they are.
-PREPARED_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".pdf"}
-
-
-def _prepared(root: Path, name: str) -> Path:
-    """Where Stage 0/1 put its version of an input: a page image, or a born-digital PDF
-    rendered to a multi-page TIFF."""
-    stem = root / "prepared" / Path(name).stem
-    tif = stem.with_suffix(".tif")
-    return tif if tif.is_file() else stem.with_suffix(".png")
-
-
-def _prepare_one(root: Path, name: str) -> dict[str, Any]:
-    src = root / "input" / name
-    if src.suffix.lower() == ".pdf":
-        from lilyscan.ingest.pdf import inspect_pdf, render_pdf  # vector and vision extras
-
-        info = inspect_pdf(src)
-        if not info.born_digital:
-            return info.to_dict()  # scanned pages: the engine renders them as they are
-        target = root / "prepared" / f"{Path(name).stem}.tif"
-        return render_pdf(src, target).to_dict()
-    from lilyscan.prepare import prepare_image  # needs the vision extra
-
-    return prepare_image(src, _prepared(root, name)).to_dict()
-
-
 def prepare_inputs(job_id: str) -> dict[str, Any]:
-    """Stages 0 and 1: render born-digital PDFs for the engine, and find, straighten and
-    clean each photo or scan.
+    """Stages 0 and 1: every page of the job, in order, as one book for the engine
+    (``prepared/pages.tif``): born-digital PDF pages rendered, photos and scans (images,
+    or pages of a scanned PDF) found, straightened and cleaned. When some page is a scan,
+    ``prepared/uploaded.tif`` holds the pages as uploaded too.
 
-    An input that cannot be prepared goes to the engine as uploaded; the report says why.
+    A page that cannot be prepared is left out and the report says why; when nothing
+    could be prepared, the engine reads the uploads as they are.
     """
     settings = Settings.from_env()
     store = _store(settings)
@@ -84,14 +59,10 @@ def prepare_inputs(job_id: str) -> dict[str, Any]:
         root = job_dir(settings.data_dir, job_id)
         pages: list[dict[str, Any]] = []
         if job.options.get("prepare", True):
-            for name in job.inputs:
-                if Path(name).suffix.lower() not in PREPARED_SUFFIXES:
-                    continue
-                try:
-                    pages.append({"input": name, **_prepare_one(root, name)})
-                except Exception as exc:  # the raw page is still worth transcribing
-                    log.warning("prepare %s/%s failed: %s", job_id, name, exc)
-                    pages.append({"input": name, "error": str(exc), "passed": False})
+            from lilyscan.ingest.book import assemble  # vision and vector extras
+
+            book = assemble([root / "input" / name for name in job.inputs], root / "prepared")
+            pages = book.pages
         _write_json(root / "prepared" / "report.json", pages)
         return {"pages": pages}
     except Exception as exc:
@@ -126,14 +97,13 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
             raise LookupError(f"unknown job {job_id}")
         store.update(job_id, status=JobStatus.RUNNING, stage="engine")
         root = job_dir(settings.data_dir, job_id)
-        uploaded = [root / "input" / name for name in job.inputs]
-        prepared = [
-            _prepared(root, name) if _prepared(root, name).is_file() else root / "input" / name
-            for name in job.inputs
-        ]
-        candidates = [("prepared" if prepared != uploaded else "uploaded", prepared, "engine")]
-        if prepared != uploaded and _scan_like(root):
-            candidates.append(("uploaded", uploaded, "engine/uploaded"))
+        pages, as_uploaded = root / "prepared" / "pages.tif", root / "prepared" / "uploaded.tif"
+        if pages.is_file():
+            candidates = [("prepared", [pages], "engine")]
+            if as_uploaded.is_file() and _scan_like(root):
+                candidates.append(("uploaded", [as_uploaded], "engine/uploaded"))
+        else:
+            candidates = [("uploaded", [root / "input" / name for name in job.inputs], "engine")]
         constants = {str(k): str(v) for k, v in job.options.get("audiveris_constants", {}).items()}
         runs = []
         for label, inputs, out in candidates:
@@ -201,17 +171,19 @@ def _choose(
 
 
 def _born_digital_pdf(root: Path, engine: dict[str, Any]) -> Path | None:
-    """The job's one born-digital PDF, when the kept engine run read its rendered pages."""
+    """The job's PDF, when it is the only input, every page of it is born-digital, and the
+    kept engine run read those pages as rendered (so sheet n is the PDF's page n)."""
     report = root / "prepared" / "report.json"
-    # One book only: geometry, and so the oracle's page mapping, come from the first one.
-    if not report.is_file() or engine.get("pages") != "prepared" or len(engine["omr_files"]) != 1:
+    if not report.is_file() or engine.get("pages") != "prepared":
         return None
-    pdfs = [
-        p["input"]
-        for p in json.loads(report.read_text(encoding="utf-8"))
-        if p.get("born_digital") and p.get("rendered_dpi")
-    ]
-    return root / "input" / pdfs[0] if len(pdfs) == 1 else None
+    pages = json.loads(report.read_text(encoding="utf-8"))
+    inputs: set[str] = {str(p["input"]) for p in pages}
+    numbers = [p.get("page") for p in pages]
+    if len(inputs) != 1 or not all(p.get("born_digital") for p in pages):
+        return None
+    if numbers != list(range(len(pages))):
+        return None  # empty pages were left out: sheets and PDF pages no longer line up
+    return root / "input" / inputs.pop()
 
 
 def pipeline_finish(job_id: str) -> dict[str, Any]:
