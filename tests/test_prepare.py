@@ -73,6 +73,7 @@ def test_photo_is_found_straightened_and_passes_the_gate(tmp_path: Path) -> None
         and report.curvature_after < 0.5 * report.curvature_before
     )
     assert report.passed, report.warnings
+    assert report.cleaned == "sharpen"  # photos are denoised and sharpened
     out = load_gray(dst)
     lines = curvature(displacement_samples(ink_mask(out), report.interline)) / report.interline
     assert lines < 0.15
@@ -82,7 +83,7 @@ def test_scan_is_deskewed_without_cropping(tmp_path: Path) -> None:
     src, dst = tmp_path / "scan.png", tmp_path / "prepared.png"
     save_png(scan(page(), seed=5), src)
     report = prepare_image(src, dst)
-    assert not report.page_found
+    assert not report.page_found and report.cleaned is None
     assert report.output_size == report.input_size
     assert report.curvature_after is not None and report.curvature_after < 0.15
 

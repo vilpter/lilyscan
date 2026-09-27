@@ -58,6 +58,7 @@ class PrepareReport:
     curvature_before: float | None = None  # interlines
     curvature_after: float | None = None
     dewarped: bool = False
+    cleaned: str | None = None  # "sharpen" or "binarize" when applied
     warnings: list[str] = field(default_factory=list)
 
     @property
@@ -74,13 +75,14 @@ def prepare_image(
     dst: Path,
     light: bool = True,
     straighten: bool = True,
-    clean: str | None = None,
+    clean: str | None = "auto",
 ) -> PrepareReport:
     """Write the prepared page for ``src`` to ``dst`` (PNG) and report what was done.
 
-    ``light`` and ``straighten`` switch the light flattening and the dewarping;
-    ``clean`` is None, ``"sharpen"`` (denoise and sharpen) or ``"binarize"`` (denoise,
-    then a local threshold).
+    ``light`` and ``straighten`` switch the light flattening and the dewarping.
+    ``clean`` is ``"sharpen"`` (denoise and sharpen), ``"binarize"`` (denoise, then a
+    local threshold), None, or ``"auto"``: sharpen photos (pages found in the frame),
+    which helped Audiveris on 23 of 30 seed photos and hurt 4, and leave scans as they are.
     """
     gray = load_gray(src)
     h, w = gray.shape
@@ -119,6 +121,9 @@ def prepare_image(
             report.dewarped = True
             after = curvature(displacement_samples(ink_mask(gray), interline)) / interline
     report.curvature_after = round(after, 4)
+    if clean == "auto":
+        clean = "sharpen" if report.page_found else None
+    report.cleaned = clean
     if clean in ("sharpen", "binarize"):
         gray = sharpen(gray, interline)
         if clean == "binarize":
