@@ -122,8 +122,16 @@ in `eval/work/`. The summary reports exact-measure accuracy, edit rate, note F1,
 chord accuracy, how many engine events were located on the page, and how well the engine's
 confidence is calibrated. `--lilypond` also runs the full pipeline on each engine output and
 reports how often it compiles (Q1) and passes bar checks (Q2). `--repair` applies the Stage 5
-repair rules before scoring, so a rule can be measured against the same cached engine output;
-the summary lists every repair made.
+repair rules and Lilyscan's confidence before scoring, so a rule can be measured against the
+same cached engine output; the summary lists every repair made.
+
+Lilyscan's confidence is a small model fitted on both corpora. After changing a repair rule
+or adding corpus pieces, refit it (this rewrites `lilyscan/repair/confidence.json` and prints
+the out-of-fold calibration error per corpus):
+
+```bash
+uv run lilyscan eval calibrate
+```
 
 A second corpus holds real repertoire: excerpts of public-domain works from music21's bundled
 corpus (`eval/corpus/repertoire.json`). The encodings are not committed; the build fetches them
@@ -144,8 +152,10 @@ A finished job's folder holds `ir/score.json` (the internal model, with page box
 confidence per event), the LilyPond project in `ly/` (`main.ly`, `parts/`, `layout/`, plus the
 compiled PDF and MIDI), `report.json` (engine run, geometry, repairs, QA checks Q1-Q5), and
 `overlays/page-N.png`: each page as the engine saw it, with every note boxed in green, amber,
-or red by confidence. Low-confidence notes are also marked in the LilyPond source as
-`%{ ?? conf=... %}`, so `grep "??"` lists them.
+or red by confidence. Confidence is Lilyscan's estimate that the note is right, calibrated on
+the evaluation corpora (a note at 0.7 is right about 70% of the time), not the engine's raw
+grade. Notes below 0.5 are also marked in the LilyPond source as `%{ ?? conf=... %}`, so
+`grep "??"` lists them.
 
 Tests marked `lilypond` need LilyPond (`LILYPOND_BIN`, default `lilypond`); `engine` tests
 need Audiveris (`AUDIVERIS_BIN`, default `audiveris`); `gpu` tests need a CUDA device. Missing
