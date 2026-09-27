@@ -1,13 +1,13 @@
 {
   "environment": {
     "label": "m5-repair",
-    "created": "2026-09-27T13:18:04+00:00",
+    "created": "2026-09-27T13:36:41+00:00",
     "lilyscan": "0.1.0",
     "audiveris": "5.11.0",
     "lilypond": "2.26.0",
     "platform": "Windows-11-10.0.26200-SP0",
     "processor": "Intel64 Family 6 Model 142 Stepping 10, GenuineIntel",
-    "notes": "Stage 5 (part-merge, octave-clef, rhythm, lyric-text, lyric-verse, lyric-split, calibrated confidence) on the same cached Audiveris 5.11.0 output as m1-baseline. ECE here is in-sample: the confidence model was fitted on this corpus and the repertoire; its piece-grouped out-of-fold ECE is 0.012 (seed) and 0.038 (repertoire), see lilyscan/repair/confidence.json. Same laptop and contention caveats as m1-baseline."
+    "notes": "Stage 5 (part-merge, octave-clef, rhythm, lyric-text, lyric-verse, lyric-split, calibrated confidence) on the same cached Audiveris 5.11.0 output as m1-baseline. ECE here is in-sample: the confidence model was fitted on this corpus and the repertoire; its piece-grouped out-of-fold ECE is 0.009 (seed) and 0.039 (repertoire), see lilyscan/repair/confidence.json. Same laptop and contention caveats as m1-baseline."
   },
   "summary": {
     "all": {
@@ -26,37 +26,37 @@
       "calibration": {
         "events": 14569,
         "scored_events": 14569,
-        "ece": 0.0067,
+        "ece": 0.0059,
         "bands": [
           {
             "band": "0.0-0.5",
-            "events": 1692,
-            "accuracy": 0.2394,
-            "mean_confidence": 0.2415
+            "events": 1721,
+            "accuracy": 0.244,
+            "mean_confidence": 0.2452
           },
           {
             "band": "0.5-0.7",
-            "events": 1123,
-            "accuracy": 0.5859,
-            "mean_confidence": 0.6011
+            "events": 1109,
+            "accuracy": 0.5843,
+            "mean_confidence": 0.5897
           },
           {
             "band": "0.7-0.8",
-            "events": 350,
-            "accuracy": 0.6829,
-            "mean_confidence": 0.7462
+            "events": 229,
+            "accuracy": 0.6594,
+            "mean_confidence": 0.7511
           },
           {
             "band": "0.8-0.9",
-            "events": 1402,
-            "accuracy": 0.8345,
-            "mean_confidence": 0.8579
+            "events": 1439,
+            "accuracy": 0.8235,
+            "mean_confidence": 0.8471
           },
           {
             "band": "0.9-1.0",
-            "events": 10002,
-            "accuracy": 0.9716,
-            "mean_confidence": 0.9695
+            "events": 10071,
+            "accuracy": 0.9717,
+            "mean_confidence": 0.9694
           }
         ],
         "unscored_accuracy": null
@@ -86,37 +86,37 @@
       "calibration": {
         "events": 1167,
         "scored_events": 1167,
-        "ece": 0.0532,
+        "ece": 0.0527,
         "bands": [
           {
             "band": "0.0-0.5",
-            "events": 16,
-            "accuracy": 0.5625,
-            "mean_confidence": 0.4475
+            "events": 17,
+            "accuracy": 0.5882,
+            "mean_confidence": 0.4366
           },
           {
             "band": "0.5-0.7",
             "events": 100,
-            "accuracy": 0.29,
-            "mean_confidence": 0.6208
+            "accuracy": 0.28,
+            "mean_confidence": 0.6045
           },
           {
             "band": "0.7-0.8",
-            "events": 14,
-            "accuracy": 0.2143,
-            "mean_confidence": 0.7383
+            "events": 12,
+            "accuracy": 0.25,
+            "mean_confidence": 0.7473
           },
           {
             "band": "0.8-0.9",
-            "events": 61,
-            "accuracy": 0.541,
-            "mean_confidence": 0.8518
+            "events": 60,
+            "accuracy": 0.5167,
+            "mean_confidence": 0.8422
           },
           {
             "band": "0.9-1.0",
-            "events": 976,
+            "events": 978,
             "accuracy": 0.9703,
-            "mean_confidence": 0.9694
+            "mean_confidence": 0.9693
           }
         ],
         "unscored_accuracy": null
@@ -145,37 +145,37 @@
       "calibration": {
         "events": 2327,
         "scored_events": 2327,
-        "ece": 0.0288,
+        "ece": 0.0327,
         "bands": [
           {
             "band": "0.0-0.5",
-            "events": 259,
-            "accuracy": 0.3359,
-            "mean_confidence": 0.3605
+            "events": 282,
+            "accuracy": 0.3511,
+            "mean_confidence": 0.3591
           },
           {
             "band": "0.5-0.7",
-            "events": 456,
-            "accuracy": 0.6118,
-            "mean_confidence": 0.5954
+            "events": 434,
+            "accuracy": 0.6175,
+            "mean_confidence": 0.5825
           },
           {
             "band": "0.7-0.8",
-            "events": 40,
-            "accuracy": 0.675,
-            "mean_confidence": 0.7435
+            "events": 26,
+            "accuracy": 0.5385,
+            "mean_confidence": 0.7363
           },
           {
             "band": "0.8-0.9",
-            "events": 403,
-            "accuracy": 0.9007,
-            "mean_confidence": 0.8637
+            "events": 405,
+            "accuracy": 0.8988,
+            "mean_confidence": 0.8553
           },
           {
             "band": "0.9-1.0",
-            "events": 1169,
-            "accuracy": 0.9906,
-            "mean_confidence": 0.9602
+            "events": 1180,
+            "accuracy": 0.9907,
+            "mean_confidence": 0.9603
           }
         ],
         "unscored_accuracy": null
@@ -200,37 +200,37 @@
       "calibration": {
         "events": 4108,
         "scored_events": 4108,
-        "ece": 0.0253,
+        "ece": 0.0252,
         "bands": [
           {
             "band": "0.0-0.5",
             "events": 687,
             "accuracy": 0.2606,
-            "mean_confidence": 0.2224
+            "mean_confidence": 0.2249
           },
           {
             "band": "0.5-0.7",
-            "events": 195,
-            "accuracy": 0.7333,
-            "mean_confidence": 0.6045
+            "events": 193,
+            "accuracy": 0.7306,
+            "mean_confidence": 0.593
           },
           {
             "band": "0.7-0.8",
-            "events": 94,
-            "accuracy": 0.766,
-            "mean_confidence": 0.7545
+            "events": 58,
+            "accuracy": 0.7414,
+            "mean_confidence": 0.7628
           },
           {
             "band": "0.8-0.9",
-            "events": 366,
-            "accuracy": 0.9126,
-            "mean_confidence": 0.8594
+            "events": 364,
+            "accuracy": 0.8929,
+            "mean_confidence": 0.8469
           },
           {
             "band": "0.9-1.0",
-            "events": 2766,
-            "accuracy": 0.979,
-            "mean_confidence": 0.9674
+            "events": 2806,
+            "accuracy": 0.9793,
+            "mean_confidence": 0.967
           }
         ],
         "unscored_accuracy": null
@@ -257,37 +257,37 @@
       "calibration": {
         "events": 5107,
         "scored_events": 5107,
-        "ece": 0.0294,
+        "ece": 0.029,
         "bands": [
           {
             "band": "0.0-0.5",
-            "events": 532,
-            "accuracy": 0.1823,
-            "mean_confidence": 0.2362
+            "events": 537,
+            "accuracy": 0.1844,
+            "mean_confidence": 0.239
           },
           {
             "band": "0.5-0.7",
-            "events": 327,
-            "accuracy": 0.581,
-            "mean_confidence": 0.5981
+            "events": 336,
+            "accuracy": 0.5774,
+            "mean_confidence": 0.5903
           },
           {
             "band": "0.7-0.8",
-            "events": 196,
-            "accuracy": 0.6888,
-            "mean_confidence": 0.7436
+            "events": 129,
+            "accuracy": 0.6899,
+            "mean_confidence": 0.7496
           },
           {
             "band": "0.8-0.9",
-            "events": 466,
-            "accuracy": 0.7618,
-            "mean_confidence": 0.8517
+            "events": 513,
+            "accuracy": 0.7602,
+            "mean_confidence": 0.8405
           },
           {
             "band": "0.9-1.0",
-            "events": 3586,
-            "accuracy": 0.9562,
-            "mean_confidence": 0.9739
+            "events": 3592,
+            "accuracy": 0.956,
+            "mean_confidence": 0.9743
           }
         ],
         "unscored_accuracy": null
@@ -317,37 +317,37 @@
       "calibration": {
         "events": 1860,
         "scored_events": 1860,
-        "ece": 0.0213,
+        "ece": 0.021,
         "bands": [
           {
             "band": "0.0-0.5",
             "events": 198,
             "accuracy": 0.1667,
-            "mean_confidence": 0.1494
+            "mean_confidence": 0.1543
           },
           {
             "band": "0.5-0.7",
-            "events": 45,
-            "accuracy": 0.3778,
-            "mean_confidence": 0.623
+            "events": 46,
+            "accuracy": 0.3696,
+            "mean_confidence": 0.6082
           },
           {
             "band": "0.7-0.8",
-            "events": 6,
-            "accuracy": 0.3333,
-            "mean_confidence": 0.7353
+            "events": 4,
+            "accuracy": 0.5,
+            "mean_confidence": 0.7387
           },
           {
             "band": "0.8-0.9",
-            "events": 106,
-            "accuracy": 0.8019,
-            "mean_confidence": 0.8617
+            "events": 97,
+            "accuracy": 0.7732,
+            "mean_confidence": 0.8505
           },
           {
             "band": "0.9-1.0",
-            "events": 1505,
-            "accuracy": 0.9807,
-            "mean_confidence": 0.9698
+            "events": 1515,
+            "accuracy": 0.9809,
+            "mean_confidence": 0.9695
           }
         ],
         "unscored_accuracy": null
@@ -373,37 +373,37 @@
       "calibration": {
         "events": 4096,
         "scored_events": 4096,
-        "ece": 0.0145,
+        "ece": 0.0153,
         "bands": [
           {
             "band": "0.0-0.5",
-            "events": 79,
-            "accuracy": 0.4051,
-            "mean_confidence": 0.4157
+            "events": 87,
+            "accuracy": 0.3908,
+            "mean_confidence": 0.412
           },
           {
             "band": "0.5-0.7",
-            "events": 189,
-            "accuracy": 0.6878,
-            "mean_confidence": 0.6003
+            "events": 186,
+            "accuracy": 0.6882,
+            "mean_confidence": 0.5937
           },
           {
             "band": "0.7-0.8",
-            "events": 126,
-            "accuracy": 0.7381,
-            "mean_confidence": 0.75
+            "events": 72,
+            "accuracy": 0.7222,
+            "mean_confidence": 0.7546
           },
           {
             "band": "0.8-0.9",
-            "events": 493,
-            "accuracy": 0.9412,
-            "mean_confidence": 0.8615
+            "events": 511,
+            "accuracy": 0.9276,
+            "mean_confidence": 0.8495
           },
           {
             "band": "0.9-1.0",
-            "events": 3209,
-            "accuracy": 0.9648,
-            "mean_confidence": 0.9652
+            "events": 3240,
+            "accuracy": 0.9651,
+            "mean_confidence": 0.9654
           }
         ],
         "unscored_accuracy": null
@@ -433,37 +433,37 @@
       "calibration": {
         "events": 2404,
         "scored_events": 2404,
-        "ece": 0.0909,
+        "ece": 0.0893,
         "bands": [
           {
             "band": "0.0-0.5",
-            "events": 1306,
-            "accuracy": 0.206,
-            "mean_confidence": 0.2191
+            "events": 1318,
+            "accuracy": 0.2094,
+            "mean_confidence": 0.2234
           },
           {
             "band": "0.5-0.7",
-            "events": 446,
-            "accuracy": 0.5022,
-            "mean_confidence": 0.5966
+            "events": 437,
+            "accuracy": 0.4989,
+            "mean_confidence": 0.5856
           },
           {
             "band": "0.7-0.8",
-            "events": 113,
-            "accuracy": 0.6195,
-            "mean_confidence": 0.7483
+            "events": 72,
+            "accuracy": 0.6111,
+            "mean_confidence": 0.7518
           },
           {
             "band": "0.8-0.9",
-            "events": 342,
-            "accuracy": 0.5702,
-            "mean_confidence": 0.8481
+            "events": 377,
+            "accuracy": 0.5756,
+            "mean_confidence": 0.8377
           },
           {
             "band": "0.9-1.0",
-            "events": 197,
-            "accuracy": 0.7056,
-            "mean_confidence": 0.9576
+            "events": 200,
+            "accuracy": 0.71,
+            "mean_confidence": 0.9568
           }
         ],
         "unscored_accuracy": null
@@ -493,37 +493,37 @@
       "calibration": {
         "events": 4108,
         "scored_events": 4108,
-        "ece": 0.0153,
+        "ece": 0.0163,
         "bands": [
           {
             "band": "0.0-0.5",
-            "events": 40,
-            "accuracy": 0.425,
-            "mean_confidence": 0.4264
+            "events": 43,
+            "accuracy": 0.4651,
+            "mean_confidence": 0.4177
           },
           {
             "band": "0.5-0.7",
-            "events": 126,
-            "accuracy": 0.6667,
-            "mean_confidence": 0.5977
+            "events": 124,
+            "accuracy": 0.6613,
+            "mean_confidence": 0.5858
           },
           {
             "band": "0.7-0.8",
-            "events": 15,
-            "accuracy": 0.6667,
-            "mean_confidence": 0.7399
+            "events": 11,
+            "accuracy": 0.5455,
+            "mean_confidence": 0.7577
           },
           {
             "band": "0.8-0.9",
-            "events": 236,
-            "accuracy": 0.9025,
-            "mean_confidence": 0.861
+            "events": 228,
+            "accuracy": 0.8991,
+            "mean_confidence": 0.8518
           },
           {
             "band": "0.9-1.0",
-            "events": 3691,
+            "events": 3702,
             "accuracy": 0.9843,
-            "mean_confidence": 0.9726
+            "mean_confidence": 0.9728
           }
         ],
         "unscored_accuracy": null
@@ -553,37 +553,37 @@
       "calibration": {
         "events": 3961,
         "scored_events": 3961,
-        "ece": 0.0157,
+        "ece": 0.0182,
         "bands": [
           {
             "band": "0.0-0.5",
-            "events": 267,
-            "accuracy": 0.3258,
-            "mean_confidence": 0.2717
+            "events": 273,
+            "accuracy": 0.3297,
+            "mean_confidence": 0.2702
           },
           {
             "band": "0.5-0.7",
             "events": 362,
             "accuracy": 0.6077,
-            "mean_confidence": 0.6082
+            "mean_confidence": 0.5941
           },
           {
             "band": "0.7-0.8",
-            "events": 96,
-            "accuracy": 0.6875,
-            "mean_confidence": 0.7396
+            "events": 74,
+            "accuracy": 0.6622,
+            "mean_confidence": 0.746
           },
           {
             "band": "0.8-0.9",
-            "events": 331,
-            "accuracy": 0.9003,
-            "mean_confidence": 0.8605
+            "events": 323,
+            "accuracy": 0.8947,
+            "mean_confidence": 0.8508
           },
           {
             "band": "0.9-1.0",
-            "events": 2905,
-            "accuracy": 0.9811,
-            "mean_confidence": 0.9709
+            "events": 2929,
+            "accuracy": 0.9809,
+            "mean_confidence": 0.9704
           }
         ],
         "unscored_accuracy": null
