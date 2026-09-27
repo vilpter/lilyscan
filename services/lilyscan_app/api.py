@@ -164,6 +164,8 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
         review["qa"] = report.get("qa")
         review["lilypond"] = report.get("lilypond")
         review["pages"] = (report.get("geometry") or {}).get("pages", [])
+        review["prepare"] = report.get("prepare", [])
+        review["alternatives"] = (report.get("engine") or {}).get("alternatives", [])
         return review
 
     def _ly_path(root: Path, path: str) -> Path:

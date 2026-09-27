@@ -163,6 +163,9 @@ table.jobs { width: 100%; border-collapse: collapse; }
 .review li.sel { background: rgba(45, 108, 223, 0.15); }
 .review .kind { font-weight: 600; }
 .repairs { font-size: 12px; margin: 6px 0; }
+.notes { margin: 8px 0; padding: 8px 12px; border-radius: 6px; font-size: 13px;
+  background: rgba(230, 160, 40, 0.12); border: 1px solid rgba(230, 160, 40, 0.5); }
+.notes ul { margin: 4px 0 0; padding-left: 18px; }
 .repairs ul { margin: 2px 0 0; padding-left: 18px; }
 .repairs .kind { font-weight: 600; }
 

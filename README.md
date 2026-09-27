@@ -21,7 +21,10 @@ Changing a pin is its own change: update both places, then re-run the eval harne
 ## Review UI
 
 Open the app in a browser (port 8000 by default) to upload a PDF, scans, or phone photos,
-follow the job, and review the result in three panes:
+follow the job, and review the result in three panes. Photos and scans are straightened
+first (unless you untick the option): the page is found and seen head-on, uneven light is
+evened out, and curled or skewed staff lines are made straight. A scan is also transcribed
+as uploaded, and Lilyscan keeps whichever result it expects to be better.
 
 - **Source:** the page as the engine read it, every note boxed by confidence and measures
   that need attention outlined.
@@ -124,7 +127,11 @@ chord accuracy, how many engine events were located on the page, and how well th
 confidence is calibrated. `--lilypond` also runs the full pipeline on each engine output and
 reports how often it compiles (Q1) and passes bar checks (Q2). `--repair` applies the Stage 5
 repair rules and Lilyscan's confidence before scoring, so a rule can be measured against the
-same cached engine output; the summary lists every repair made.
+same cached engine output; the summary lists every repair made. `--prepare` sends scans and
+photos through Stage 1 first (new engine runs, cached separately) and applies the same
+choice between prepared and uploaded scans as a job; the summary adds a row per input type
+for pages that passed the quality gate. New engine runs need Audiveris and its OCR models
+(`AUDIVERIS_BIN`, `TESSDATA_PREFIX`); without the models Audiveris reads no text at all.
 
 Lilyscan's confidence is a small model fitted on both corpora. After changing a repair rule
 or adding corpus pieces, refit it (this rewrites `lilyscan/repair/confidence.json` and prints
@@ -149,9 +156,11 @@ uv run lilyscan eval run --corpus eval/corpus/repertoire --label my-repertoire-r
 
 ### Job outputs
 
-A finished job's folder holds `ir/score.json` (the internal model, with page boxes and
-confidence per event), the LilyPond project in `ly/` (`main.ly`, `parts/`, `layout/`, plus the
-compiled PDF and MIDI), `report.json` (engine run, geometry, repairs, QA checks Q1-Q5), and
+A finished job's folder holds `prepared/` (each straightened page and `report.json` with
+what Stage 1 did and any quality warnings), `ir/score.json` (the internal model, with page
+boxes and confidence per event), the LilyPond project in `ly/` (`main.ly`, `parts/`,
+`layout/`, plus the compiled PDF and MIDI), `report.json` (Stage 1 pages, the engine run and
+any alternative it was chosen over, geometry, repairs, QA checks Q1-Q5), and
 `overlays/page-N.png`: each page as the engine saw it, with every note boxed in green, amber,
 or red by confidence. Confidence is Lilyscan's estimate that the note is right, calibrated on
 the evaluation corpora (a note at 0.7 is right about 70% of the time), not the engine's raw

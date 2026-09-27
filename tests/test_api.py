@@ -148,6 +148,7 @@ def test_review_and_page_images(client: TestClient, finished_job: str) -> None:
     review = client.get(f"/api/jobs/{finished_job}/review").json()
     assert review["measures"] and review["pages"][0]["width"] == 2480
     assert review["lilypond"]["svg"] and {c["id"] for c in review["qa"]["checks"]} >= {"Q1", "Q5"}
+    assert review["prepare"] == [] and review["alternatives"] == []  # no Stage 1 in this job
     page = client.get(f"/api/jobs/{finished_job}/pages/1.png")
     assert page.status_code == 200 and page.content.startswith(b"\x89PNG")
     assert client.get(f"/api/jobs/{finished_job}/pages/2.png").status_code == 404
