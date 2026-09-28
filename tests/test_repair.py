@@ -312,6 +312,13 @@ def test_page_text_line_is_dropped() -> None:
     assert lyrics_of(score) == {1: ["Ky", "ri", "e"]}
 
 
+def test_a_scanner_watermark_is_page_text() -> None:
+    # "Scanned by CamScanner" at the foot of a scanned part, read as one line of lyrics.
+    score = sung(["A", "B", "C"], {1: ["", "Scanned", "by CamScanner"]})
+    clean_lyrics(score)
+    assert lyrics_of(score) == {}
+
+
 def test_chord_names_become_chord_symbols() -> None:
     score = sung([], {1: ["A", "ma", "zing"], 2: ["Cm7", "", "E7"]})
     clean_lyrics(score)
