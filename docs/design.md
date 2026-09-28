@@ -216,7 +216,7 @@ Audiveris expects clean, flat, scan-like pages. This stage turns every raster in
 
 ### Stage 2 — Recognition Engine (Audiveris)
 - Invoke the pinned Audiveris release in batch mode (confirmed against 5.11.0 at M0):
-  `audiveris -batch -transcribe -export -save -output <dir> [-constant key=value ...] [-sheets "1 3-4"] -- <inputs...>`
+  `audiveris -batch -transcribe -export -save -output <dir> [-constant key=value ...] [-sheets 1,3-4] -- <inputs...>`
 - Inputs: the prepared page images (or 400 DPI renders), plus per-job `-constant` overrides. PDF input is accepted directly; Audiveris rasterizes it with PDFBox.
 - OCR languages are passed on every run as `-constant org.audiveris.omr.text.Language.defaultSpecification=<spec>` (D10).
 - The time one step may take on one sheet is passed as `-constant org.audiveris.omr.Main.sheetStepTimeOut=<s>` (`AUDIVERIS_STEP_TIMEOUT_S`, default 300; Audiveris's own default is 120). On a busy machine, pages mixing small and normal noteheads ran past 120 s in HEADS and the sheet was dropped (4 of 32 runs on the accompaniment corpus). The key is proven by a one-second limit stopping an ordinary page.

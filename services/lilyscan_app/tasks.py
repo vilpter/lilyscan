@@ -14,7 +14,12 @@ import traceback
 from pathlib import Path
 from typing import Any
 
-from lilyscan.engine.audiveris.runner import AudiverisRun, engine_timeout, run_audiveris
+from lilyscan.engine.audiveris.runner import (
+    AudiverisRun,
+    engine_timeout,
+    run_audiveris,
+    sheet_ranges,
+)
 from lilyscan.pipeline import (
     assess_engine_run,
     import_engine_output,
@@ -109,16 +114,29 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
         page_count = (
             len(json.loads(report.read_text(encoding="utf-8"))) if report.is_file() else None
         ) or len(job.inputs)
-        runs = []
-        for label, inputs, out in candidates:
-            run = run_audiveris(
+
+        def transcribe(inputs: list[Path], out: str, sheets: str | None = None) -> AudiverisRun:
+            return run_audiveris(
                 inputs,
                 root / out,
                 constants=constants,
                 settings=settings,
                 ocr_languages=job.options.get("ocr_languages"),
                 pages=page_count,
+                sheets=sheets,
             )
+
+        runs = []
+        for label, inputs, out in candidates:
+            run = transcribe(inputs, out)
+            skipped: list[int] = []
+            # One page Audiveris cannot read (no staves found) fails the whole book: read
+            # the others without it.
+            if not run.ok and not run.timed_out and len(inputs) == 1 and run.invalid_sheets:
+                keep = [n for n in range(1, page_count + 1) if n not in run.invalid_sheets]
+                if keep:
+                    skipped = run.invalid_sheets
+                    run = transcribe(inputs, out, sheet_ranges(keep))
             summary = {
                 "pages": label,
                 "command": run.command,
@@ -129,6 +147,7 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
                 "mxl_files": [p.relative_to(root).as_posix() for p in run.mxl_files],
                 "ocr_problems": run.ocr_problems,
                 "step_errors": run.step_errors,
+                "skipped_sheets": skipped,
             }
             runs.append((run, summary))
         run, summary = _choose(root, runs)

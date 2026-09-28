@@ -37,6 +37,33 @@ _STEP_ERROR = re.compile(
 )
 
 
+# A sheet Audiveris gave up on ("Sheet pages#6 flagged as invalid"): no staves found, say.
+# One such sheet makes the whole book fail to export.
+_INVALID_SHEET = re.compile(r"Sheet \S*#(\d+) flagged as invalid")
+
+
+def invalid_sheets(log: str) -> list[int]:
+    """Numbers (from 1) of the sheets Audiveris flagged as invalid."""
+    return sorted({int(m[1]) for m in _INVALID_SHEET.finditer(log)})
+
+
+def sheet_ranges(numbers: list[int]) -> str:
+    """``[1, 2, 3, 5, 7, 8]`` as Audiveris's ``-sheets`` argument: ``"1-3,5,7-8"``.
+
+    One argument, comma-separated: Audiveris 5.11.0 parses it that way (its help text's
+    "1 4-5" fails with a NumberFormatException).
+    """
+    out: list[str] = []
+    for n in sorted(numbers):
+        if out and "-" in out[-1] and int(out[-1].split("-")[1]) == n - 1:
+            out[-1] = f"{out[-1].split('-')[0]}-{n}"
+        elif out and "-" not in out[-1] and int(out[-1]) == n - 1:
+            out[-1] = f"{out[-1]}-{n}"
+        else:
+            out.append(str(n))
+    return ",".join(out)
+
+
 def ocr_problems(log: str) -> list[str]:
     """Log lines showing that Audiveris ran without working OCR."""
     return [line.strip() for line in log.splitlines() if any(p in line for p in _OCR_PROBLEMS)]
@@ -73,6 +100,10 @@ class AudiverisRun:
     @property
     def step_errors(self) -> list[str]:
         return step_errors(self.log)
+
+    @property
+    def invalid_sheets(self) -> list[int]:
+        return invalid_sheets(self.log)
 
 
 def build_command(
