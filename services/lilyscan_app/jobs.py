@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -58,6 +59,27 @@ CREATE TABLE IF NOT EXISTS jobs (
 """
 
 
+_BUSY_TIMEOUT_S = 30.0
+
+
+def _use_wal(db: sqlite3.Connection) -> None:
+    """Switch the database to write-ahead logging, once: the mode is stored in the file.
+
+    Changing the journal mode does not wait for other connections, so a store opened
+    while another process is busy with the database could fail to open. Only the first
+    store needs to switch it, and a busy switch is retried.
+    """
+    for attempt in range(50):
+        try:
+            if str(db.execute("PRAGMA journal_mode").fetchone()[0]).lower() != "wal":
+                db.execute("PRAGMA journal_mode=WAL")
+            return
+        except sqlite3.OperationalError:
+            if attempt == 49:
+                raise
+            time.sleep(0.1)
+
+
 def job_dir(data_dir: Path, job_id: str) -> Path:
     return data_dir / "jobs" / job_id
 
@@ -67,9 +89,13 @@ class JobStore:
         self.data_dir = data_dir
         data_dir.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
-        self._db = sqlite3.connect(data_dir / "jobs.sqlite", check_same_thread=False)
+        # The API and each worker process open their own store; wait on a busy database
+        # rather than fail.
+        self._db = sqlite3.connect(
+            data_dir / "jobs.sqlite", check_same_thread=False, timeout=_BUSY_TIMEOUT_S
+        )
         self._db.row_factory = sqlite3.Row
-        self._db.execute("PRAGMA journal_mode=WAL")
+        _use_wal(self._db)
         self._db.execute(_SCHEMA)
         self._db.commit()
 
