@@ -164,3 +164,49 @@ def test_ir_json_round_trip() -> None:
 def test_rejects_non_musicxml() -> None:
     with pytest.raises(MusicXMLError):
         parse_musicxml(b"<html/>")
+
+
+def rests_doc(measures: str) -> bytes:
+    return doc(
+        '<score-part id="P1"><part-name>Bass</part-name></score-part>',
+        f"""<part id="P1">
+    <measure number="1">
+      <attributes><divisions>1</divisions><staves>2</staves>
+        <time><beats>3</beats><beat-type>4</beat-type></time>
+        <measure-style><multiple-rest>4</multiple-rest></measure-style></attributes>
+      <note><rest measure="yes"/><duration>3</duration><staff>1</staff></note>
+    </measure>{measures}</part>""",
+    )
+
+
+def rested(measure_numbers: list[str]) -> str:
+    return "".join(
+        f'<measure number="{n}"><note><rest measure="yes"/><duration>3</duration></note></measure>'
+        for n in measure_numbers
+    )
+
+
+PLAYED = "<note><pitch><step>D</step><octave>3</octave></pitch><duration>3</duration></note>"
+
+
+def test_a_multi_measure_rest_written_as_one_measure_is_expanded() -> None:
+    # Audiveris writes a four-measure rest as one measure and numbers on from there.
+    score = parse_musicxml(rests_doc(f'<measure number="2">{PLAYED}</measure>'))
+    for staff in score.parts[0].staves:
+        assert [m.number for m in staff.measures] == ["1", "2", "3", "4", "5"]
+        for m in staff.measures[1:4]:
+            (rest,) = m.voices[0].events
+            assert rest.kind == "rest" and rest.measure_rest
+            assert rest.duration == Fraction(3)
+    assert score.parts[0].staves[0].measures[4].voices[0].events[0].kind == "note"
+
+
+def test_a_multi_measure_rest_numbered_past_is_expanded_without_renumbering() -> None:
+    score = parse_musicxml(rests_doc(f'<measure number="5">{PLAYED}</measure>'))
+    assert [m.number for m in score.parts[0].staves[0].measures] == ["1", "2", "3", "4", "5"]
+
+
+def test_a_multi_measure_rest_with_its_measures_written_out_is_kept() -> None:
+    body = rested(["2", "3", "4"]) + f'<measure number="5">{PLAYED}</measure>'
+    score = parse_musicxml(rests_doc(body))
+    assert [m.number for m in score.parts[0].staves[0].measures] == ["1", "2", "3", "4", "5"]

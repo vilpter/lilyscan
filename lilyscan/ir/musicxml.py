@@ -38,6 +38,29 @@ class MusicXMLError(ValueError):
     pass
 
 
+# The provenance rule on the measures the reader adds for a multi-measure rest written
+# as one measure: they have no place of their own on the page.
+MULTI_REST = "multi-rest"
+
+
+def added_rest(measure: Measure) -> bool:
+    """A measure the reader added for a multi-measure rest written as one measure."""
+    events = [e for v in measure.voices for e in v.events]
+    return bool(events) and all(any(p.rule == MULTI_REST for p in e.provenance) for e in events)
+
+
+def written_measures(measures: list[Measure]) -> list[int]:
+    """Each measure's index among the measures the file wrote: the measures added for a
+    multi-measure rest share the index of the one holding the rest."""
+    out: list[int] = []
+    k = -1
+    for m in measures:
+        if not added_rest(m):
+            k += 1
+        out.append(max(k, 0))
+    return out
+
+
 def read_musicxml_bytes(path: Path) -> bytes:
     """Return the score document, unpacking ``.mxl`` containers."""
     data = path.read_bytes()
@@ -146,15 +169,36 @@ def parse_musicxml(data: bytes, source: str = "musicxml") -> Score:
     for part_el in root.findall("part"):
         pid = part_el.get("id", f"P{len(score.parts) + 1}")
         name, abbr = part_info.get(pid, (None, None))
-        score.parts.append(_parse_part(part_el, pid, name, abbr))
+        score.parts.append(_parse_part(part_el, pid, name, abbr, source))
     return score
 
 
-def _parse_part(part_el: ET.Element, pid: str, name: str | None, abbr: str | None) -> Part:
+def _parse_part(
+    part_el: ET.Element, pid: str, name: str | None, abbr: str | None, source: str
+) -> Part:
     part = Part(id=pid, name=name or None, abbreviation=abbr or None)
     st = _PartState()
-    for index, m_el in enumerate(part_el.findall("measure")):
+    elements = part_el.findall("measure")
+    index = 0
+    shift = 0  # measures added so far that the file's own numbers leave out
+    for k, m_el in enumerate(elements):
+        own = m_el.get("number", "")
+        if shift and own.isdigit():
+            m_el.set("number", str(int(own) + shift))
         _parse_measure(m_el, index, st, part)
+        index += 1
+        rests = _int(m_el, "attributes/measure-style/multiple-rest", 1)
+        following = elements[k + 1 : k + rests]
+        if rests > 1 and not (len(following) == rests - 1 and all(map(_rests_only, following))):
+            # A multi-measure rest written as one measure (as Audiveris exports it): the
+            # measures it stands for, each a whole-measure rest.
+            first = m_el.get("number", "")
+            for j in range(1, rests):
+                _rest_measure(st, index, str(int(first) + j) if first.isdigit() else "", source)
+                index += 1
+            after = elements[k + 1].get("number", "") if k + 1 < len(elements) else ""
+            if own.isdigit() and after.isdigit() and int(after) == int(own) + 1:
+                shift += rests - 1
 
     part.staves = [Staff(number=n, measures=ms) for n, ms in sorted(st.measures.items())]
     for staff in part.staves:
@@ -163,6 +207,25 @@ def _parse_part(part_el: ET.Element, pid: str, name: str | None, abbr: str | Non
                 voice.events.sort(key=lambda e: (e.offset, not e.grace))
             measure.voices.sort(key=lambda v: v.number)
     return part
+
+
+def _rests_only(m_el: ET.Element) -> bool:
+    """A measure whose notes are all rests (or that has none)."""
+    return all(n.find("rest") is not None for n in m_el.findall("note"))
+
+
+def _rest_measure(st: _PartState, index: int, number: str, source: str) -> None:
+    """A whole-measure rest in every staff at ``index``, as long as the time signature."""
+    length = st.time.measure_length if st.time is not None else Fraction(4)
+    for staff in range(1, st.staves + 1):
+        rest = Event(
+            kind="rest",
+            offset=Fraction(0),
+            duration=length,
+            measure_rest=True,
+            provenance=[Provenance(stage=source, rule=MULTI_REST)],
+        )
+        _measure_for(st, staff, index, number, False).voice(1).events.append(rest)
 
 
 def _measure_for(st: _PartState, staff: int, index: int, number: str, implicit: bool) -> Measure:

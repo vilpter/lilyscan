@@ -136,3 +136,42 @@ def test_confidence_colours() -> None:
         LOW,
         UNKNOWN,
     ]
+
+
+def test_measures_added_for_a_multi_measure_rest_share_its_stack() -> None:
+    from lilyscan.engine.audiveris.omr import (
+        OmrBook,
+        OmrSheet,
+        OmrStaff,
+        OmrSystem,
+        Stack,
+        attach_movements,
+    )
+    from lilyscan.ir.musicxml import parse_musicxml
+
+    def movement(*measures: str) -> bytes:
+        return (
+            '<score-partwise version="4.0"><part-list><score-part id="P1"/></part-list>'
+            '<part id="P1">' + "".join(measures) + "</part></score-partwise>"
+        ).encode()
+
+    note = "<note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration></note>"
+    first = movement(
+        f'<measure number="1"><attributes><divisions>1</divisions></attributes>{note}</measure>',
+        '<measure number="2"><attributes><measure-style><multiple-rest>3</multiple-rest>'
+        '</measure-style></attributes><note><rest measure="yes"/><duration>4</duration>'
+        "</note></measure>",
+        f'<measure number="3">{note}</measure>',
+    )
+    second = movement(
+        f'<measure number="1"><attributes><divisions>1</divisions></attributes>{note}</measure>'
+    )
+    staff = [OmrStaff(1, 100, 180)]
+    system = OmrSystem(
+        stacks=[Stack(x, x + 100, {}) for x in (0, 100, 200, 300)], parts={1: staff}, inters=[]
+    )
+    book = OmrBook(None, [OmrSheet(1, 1000, 1400, 20.0, [system])], {})
+
+    score, _ = attach_movements([parse_musicxml(first), parse_musicxml(second)], book)
+    lefts = [m.bbox.x if m.bbox else None for m in score.parts[0].staves[0].measures]
+    assert lefts == [0, 100, 100, 100, 200, 300]
