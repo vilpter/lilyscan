@@ -13,10 +13,12 @@ from lilyscan.ir.models import (
     NoteHead,
     Part,
     Pitch,
+    Provenance,
     Score,
     Staff,
     Voice,
 )
+from lilyscan.ir.musicxml import MULTI_REST
 from lilyscan.ir.ops import merge_scores
 from lilyscan.repair.keys import consistent_keys, key_alter
 
@@ -203,3 +205,27 @@ def test_a_transposing_part_keeps_its_own_key() -> None:
     log = consistent_keys(s, book(1, 1, 1))
     assert [r.part for r in log] == ["P4"]
     assert [in_force(p.staves[0]) for p in s.parts] == [[1] * 3, [3] * 3, [0] * 3, [1] * 3]
+
+
+def test_measures_added_for_a_multi_measure_rest_do_not_move_the_system_starts() -> None:
+    # Three systems of two stacks. The first ends in a two-measure rest the engine wrote
+    # as one measure, so the reader added a measure; the second system is read in G
+    # major (its C sharps as C naturals).
+    added = [Provenance(stage="audiveris", rule=MULTI_REST)]
+    rest = Event(kind="rest", offset=Fraction(0), duration=Fraction(4), measure_rest=True)
+    s = score(
+        measure(0, 3, ("C", 1, False)),
+        measure(1, None),
+        Measure(
+            index=2,
+            number="3",
+            voices=[Voice(number=1, events=[rest.model_copy(update={"provenance": added})])],
+        ),
+        measure(3, 1, ("C", 0, False)),
+        measure(4, None, ("C", 0, False)),
+        measure(5, 3, ("C", 1, False)),
+        measure(6, None, ("C", 1, False)),
+    )
+    consistent_keys(s, book(2, 2, 2))
+    assert keys(s) == [(0, 3)]
+    assert pitches(s.parts[0].staves[0].measures[3]) == ["C#5"]

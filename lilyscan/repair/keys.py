@@ -23,6 +23,7 @@ from dataclasses import dataclass
 
 from lilyscan.engine.audiveris.omr import OmrBook
 from lilyscan.ir.models import KeySignature, Measure, Pitch, Provenance, Score, Staff
+from lilyscan.ir.musicxml import added_rest, written_measures
 from lilyscan.repair import Repair
 
 RULE = "key-signature"
@@ -50,7 +51,7 @@ class _Segment:
 
 
 def _layout(book: OmrBook) -> tuple[list[int], set[int]]:
-    """Measure indices where systems start, and those where pieces start."""
+    """Engine measure indices (stacks) where systems start, and those where pieces start."""
     starts: list[int] = []
     movements: set[int] = set()
     index = 0
@@ -71,12 +72,13 @@ def _stretches(staff: Staff, starts: list[int], movements: set[int]) -> list[lis
     stretches: list[list[_Segment]] = []
     fifths = 0
     previous: Measure | None = None
-    for m in staff.measures:
+    for m, written in zip(staff.measures, written_measures(staff.measures), strict=True):
         changed = m.key is not None and m.key.fifths != fifths
         if m.key is not None:
             fifths = m.key.fifths
-        new_piece = m.index in movements or previous is None
-        at_system = m.index in system_start
+        first = not added_rest(m)  # a rest added after a multi-measure rest starts nothing
+        new_piece = (first and written in movements) or previous is None
+        at_system = first and written in system_start
         if new_piece:
             stretches.append([_Segment([m], fifths, True)])
         elif at_system or changed:

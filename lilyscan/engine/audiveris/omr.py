@@ -6,7 +6,8 @@ Written against Audiveris 5.11.0 (D7). An ``.omr`` file is a zip holding
 staves, and the interpretation graph (``sig``): interpretations with a shape,
 ``grade``, ``ctx-grade`` and pixel ``bounds``, plus relations between them.
 
-MusicXML measure *i* is the *i*-th stack in sheet/system order. An event's onset
+MusicXML measure *i* is the *i*-th stack in sheet/system order (the measures the reader
+adds for a multi-measure rest share its stack). An event's onset
 selects a slot, hence an x position; the notehead on the event's staff near that x
 whose staff step matches the event's pitch supplies the bbox and confidence.
 """
@@ -20,6 +21,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from lilyscan.ir.models import BBox, Clef, Event, Pitch, Score
+from lilyscan.ir.musicxml import added_rest, written_measures
 from lilyscan.ir.ops import merge_scores
 
 
@@ -375,15 +377,16 @@ def attach_geometry(score: Score, book: OmrBook, first_measure: int = 0) -> Atta
     for part_index, part in enumerate(score.parts, 1):
         for staff in part.staves:
             clef = Clef(sign="G", line=2)
-            for m in staff.measures:
+            for m, written in zip(staff.measures, written_measures(staff.measures), strict=True):
+                added = added_rest(m)
                 stats.measures += 1
                 stats.events += sum(len(v.events) for v in m.voices)
                 starting = [c for c in m.clefs if c.offset == 0]
                 if starting:
                     clef = starting[-1]
-                if m.index + first_measure >= len(placements):
+                if written + first_measure >= len(placements):
                     continue
-                page, sheet, system, stack = placements[m.index + first_measure]
+                page, sheet, system, stack = placements[written + first_measure]
                 omr_staves = system.parts.get(part_index, [])
                 if staff.number > len(omr_staves):
                     label = f"{part.id}/{staff.number}"
@@ -399,6 +402,8 @@ def attach_geometry(score: Score, book: OmrBook, first_measure: int = 0) -> Atta
                     h=omr_staff.bottom - omr_staff.top,
                 )
                 stats.measures_located += 1
+                if added:
+                    continue  # drawn once, as the multi-measure rest
                 heads = system.on_staff(omr_staff.id, ("head",))
                 rests = system.on_staff(omr_staff.id, ("rest",))
                 used: set[int] = set()
@@ -449,5 +454,7 @@ def attach_movements(
         total.unmapped_staves += [
             x for x in stats.unmapped_staves if x not in total.unmapped_staves
         ]
-        first += max((len(st.measures) for _, st in movement.staves()), default=0)
+        first += max(
+            (len(set(written_measures(st.measures))) for _, st in movement.staves()), default=0
+        )
     return merge_scores(movements), total
