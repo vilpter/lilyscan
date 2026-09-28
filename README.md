@@ -50,6 +50,13 @@ edits to each part carry over, because the new score includes the parts' own Lil
 sources (transposition is done by LilyPond's `\transpose`, so those sources stay as
 written). The combined score is a job like any other: review it, edit it, download it.
 
+A part can also go **in the piano accompaniment** instead of on its own staff: the chosen
+parts are reduced onto a piano grand staff below the others. That turns an ensemble
+arrangement into a melody with piano: say the violin 1 part, with violin 2 and viola on the
+piano's upper staff and cello and bass on its lower one. Each part goes to the staff for the
+register it sounds in (a double bass an octave below where it is written); parts playing the
+same rhythm merge into chords, and others keep voices of their own.
+
 To try it on one machine without Docker or Redis (jobs run inside the server process):
 
 ```bash

@@ -239,17 +239,19 @@ def combine_job(job_id: str) -> dict[str, Any]:
             raise LookupError(f"unknown job {job_id}")
         store.update(job_id, status=JobStatus.RUNNING, stage="combine")
         spec = job.options["combine"]
-        selections = [
-            Selection(
+
+        def selection(p: dict[str, Any]) -> Selection:
+            return Selection(
                 job_dir(settings.data_dir, p["job"]),
                 p["part"],
                 transpose=p.get("transpose"),
                 name=p.get("name"),
             )
-            for p in spec["parts"]
-        ]
+
+        selections = [selection(p) for p in spec["parts"]]
+        piano = [selection(p) for p in spec.get("piano") or []]
         root = job_dir(settings.data_dir, job_id)
-        report = combine(selections, root, spec.get("title"), settings)
+        report = combine(selections, root, spec.get("title"), settings, piano=piano)
         store.update(job_id, status=JobStatus.DONE, stage="done", report=report)
         return report
     except Exception as exc:

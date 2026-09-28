@@ -118,13 +118,21 @@ async function renderCombine(jobs) {
       const box = el("input", { type: "checkbox" });
       const choices = part.transpose_semitones ? [...INTERVALS, ["concert", "at concert pitch"]] : INTERVALS;
       const interval = el("select", {}, ...choices.map(([v, label]) => el("option", { value: v }, label)));
+      const role = el(
+        "select",
+        { class: "role" },
+        el("option", { value: "staff" }, "on its own staff"),
+        el("option", { value: "piano" }, "in the piano accompaniment"),
+      );
       box.addEventListener("change", updateCombine);
+      role.addEventListener("change", updateCombine);
       const row = el(
         "label",
         { class: "row" },
         box,
         `${jobLabel(job)} · ${part.name} (${part.measures} measures)`,
         interval,
+        role,
       );
       row.dataset.job = job.id;
       row.dataset.part = part.id;
@@ -135,24 +143,30 @@ async function renderCombine(jobs) {
   updateCombine();
 }
 
-function updateCombine() {
-  $("combine-btn").disabled = !$("combine-parts").querySelector("input:checked");
-}
-
-$("combine-btn").addEventListener("click", async () => {
-  const parts = [...$("combine-parts").querySelectorAll(".row")]
-    .filter((row) => row.querySelector("input").checked)
+function chosenParts(role) {
+  return [...$("combine-parts").querySelectorAll(".row")]
+    .filter((row) => row.querySelector("input").checked && row.querySelector("select.role").value === role)
     .map((row) => {
       const transpose = row.querySelector("select").value;
       return { job: row.dataset.job, part: row.dataset.part, ...(transpose ? { transpose } : {}) };
     });
+}
+
+function updateCombine() {
+  // A piano accompaniment goes with at least one part on its own staff.
+  $("combine-btn").disabled = chosenParts("staff").length === 0;
+}
+
+$("combine-btn").addEventListener("click", async () => {
+  const parts = chosenParts("staff");
+  const piano = chosenParts("piano");
   $("combine-btn").disabled = true;
   $("combine-msg").textContent = "Combining...";
   try {
     const response = await api("/api/scores", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: $("combine-title").value.trim() || null, parts }),
+      body: JSON.stringify({ title: $("combine-title").value.trim() || null, parts, piano }),
     });
     const job = await response.json();
     $("combine-msg").textContent = "";
