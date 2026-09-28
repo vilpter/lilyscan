@@ -47,6 +47,17 @@ def invalid_sheets(log: str) -> list[int]:
     return sorted({int(m[1]) for m in _INVALID_SHEET.finditer(log)})
 
 
+# A sheet whose processing threw ("WARN [pages#3] Book.java:2044 | Error processing stub
+# java.lang.NullPointerException ..."): that too makes the whole book fail to export.
+_CRASHED_SHEET = re.compile(r"\[\S*#(\d+)\]\s+\S+\.java:\d+\s+\|\s+Error processing stub")
+
+
+def failed_sheets(log: str) -> list[int]:
+    """Numbers (from 1) of the sheets Audiveris flagged as invalid or failed on."""
+    crashed = {int(m[1]) for m in _CRASHED_SHEET.finditer(log)}
+    return sorted(crashed | set(invalid_sheets(log)))
+
+
 def sheet_ranges(numbers: list[int]) -> str:
     """``[1, 2, 3, 5, 7, 8]`` as Audiveris's ``-sheets`` argument: ``"1-3,5,7-8"``.
 
@@ -104,6 +115,10 @@ class AudiverisRun:
     @property
     def invalid_sheets(self) -> list[int]:
         return invalid_sheets(self.log)
+
+    @property
+    def failed_sheets(self) -> list[int]:
+        return failed_sheets(self.log)
 
 
 def build_command(

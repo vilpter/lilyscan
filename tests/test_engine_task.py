@@ -8,7 +8,12 @@ from typing import Any
 
 import pytest
 
-from lilyscan.engine.audiveris.runner import AudiverisRun, invalid_sheets, sheet_ranges
+from lilyscan.engine.audiveris.runner import (
+    AudiverisRun,
+    failed_sheets,
+    invalid_sheets,
+    sheet_ranges,
+)
 
 
 def test_invalid_sheets_and_ranges() -> None:
@@ -18,6 +23,11 @@ def test_invalid_sheets_and_ranges() -> None:
         "INFO [pages#2] SheetStub.java:1194 | Sheet pages#2 flagged as invalid.\n"
     )
     assert invalid_sheets(log) == [2, 6]
+    crashed = (
+        "WARN [pages#3] Book.java:2044 | Error processing stub java.lang.NullPointerException\n"
+        "Caused by: java.lang.NullPointerException: ... Measure.purgeVoices() ...\n"
+    )
+    assert failed_sheets(log + crashed) == [2, 3, 6]
     assert sheet_ranges([1, 3, 4, 5, 7, 8]) == "1,3-5,7-8"
     assert sheet_ranges([4]) == "4"
 

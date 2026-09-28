@@ -130,12 +130,12 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
         for label, inputs, out in candidates:
             run = transcribe(inputs, out)
             skipped: list[int] = []
-            # One page Audiveris cannot read (no staves found) fails the whole book: read
-            # the others without it.
-            if not run.ok and not run.timed_out and len(inputs) == 1 and run.invalid_sheets:
-                keep = [n for n in range(1, page_count + 1) if n not in run.invalid_sheets]
+            # One page Audiveris cannot read (no staves found) or fails on fails the whole
+            # book: read the others without it.
+            if not run.ok and not run.timed_out and len(inputs) == 1 and run.failed_sheets:
+                keep = [n for n in range(1, page_count + 1) if n not in run.failed_sheets]
                 if keep:
-                    skipped = run.invalid_sheets
+                    skipped = run.failed_sheets
                     run = transcribe(inputs, out, sheet_ranges(keep))
             summary = {
                 "pages": label,
