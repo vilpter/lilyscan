@@ -88,7 +88,8 @@ Services:
 - `audiveris`: Audiveris 5.11.0 behind an RQ worker on the `engine` queue. JVM heap is capped
   by `AUDIVERIS_MAX_HEAP` (default `3G`). An engine run may take the larger of
   `AUDIVERIS_TIMEOUT_S` (default 900) and `AUDIVERIS_TIMEOUT_PER_PAGE_S` (default 240) per
-  page, so long scores are not cut off.
+  page, so long scores are not cut off. One step on one sheet may take up to
+  `AUDIVERIS_STEP_TIMEOUT_S` (default 300; Audiveris's own default is 120).
 - `redis`: job queue, served by Valkey (BSD-3, Redis-protocol compatible).
 
 ### OCR languages

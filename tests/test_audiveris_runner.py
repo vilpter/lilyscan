@@ -8,7 +8,11 @@ import pytest
 
 from lilyscan.engine.audiveris import runner
 from lilyscan.engine.audiveris.runner import build_command, ocr_problems, step_errors
-from lilyscan.runtime.config import AUDIVERIS_OCR_LANGUAGES_KEY, Settings
+from lilyscan.runtime.config import (
+    AUDIVERIS_OCR_LANGUAGES_KEY,
+    AUDIVERIS_STEP_TIMEOUT_KEY,
+    Settings,
+)
 
 
 def test_ocr_problems_detects_missing_and_fast_models() -> None:
@@ -85,6 +89,22 @@ def test_run_passes_configured_ocr_languages(
         [tmp_path / "a.pdf"], tmp_path / "out", settings=settings, ocr_languages="ENG+ita"
     )
     assert f"{AUDIVERIS_OCR_LANGUAGES_KEY}=eng+ita" in captured.cmd
+
+
+def test_run_passes_the_step_timeout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = _Captured()
+    monkeypatch.setattr(runner.subprocess, "run", _fake_run(captured))
+    settings = Settings.from_env({"AUDIVERIS_STEP_TIMEOUT_S": "600"})
+    runner.run_audiveris([tmp_path / "a.pdf"], tmp_path / "out", settings=settings)
+    assert f"{AUDIVERIS_STEP_TIMEOUT_KEY}=600" in captured.cmd
+    # A caller may still set it explicitly.
+    runner.run_audiveris(
+        [tmp_path / "a.pdf"],
+        tmp_path / "out",
+        settings=settings,
+        constants={AUDIVERIS_STEP_TIMEOUT_KEY: "30"},
+    )
+    assert f"{AUDIVERIS_STEP_TIMEOUT_KEY}=30" in captured.cmd
 
 
 def test_run_rejects_ocr_languages_as_raw_constant(tmp_path: Path) -> None:

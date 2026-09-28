@@ -85,6 +85,8 @@ services:
       # Time an engine run may take: the larger of a minimum and an allowance per page.
       AUDIVERIS_TIMEOUT_S: "${AUDIVERIS_TIMEOUT_S:-900}"
       AUDIVERIS_TIMEOUT_PER_PAGE_S: "${AUDIVERIS_TIMEOUT_PER_PAGE_S:-240}"
+      # Time one engine step may take on one sheet before Audiveris gives up on it.
+      AUDIVERIS_STEP_TIMEOUT_S: "${AUDIVERIS_STEP_TIMEOUT_S:-300}"
     volumes:
       - lilyscan-data:/data
       # Extra OCR models (downloaded or custom *.traineddata) persist here.

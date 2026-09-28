@@ -30,6 +30,9 @@ _OCR_SPEC = re.compile(r"^[a-z]{3}(?:_[a-z]+)?(?:\+[a-z]{3}(?:_[a-z]+)?)*$")
 # Audiveris silently ignores unknown -constant keys, so every key used here is
 # covered by a behavioural test against the pinned release.
 AUDIVERIS_OCR_LANGUAGES_KEY = "org.audiveris.omr.text.Language.defaultSpecification"
+# Audiveris gives up on a sheet when one step takes longer than this (120 s by default).
+# Pages mixing small and normal noteheads can take longer in HEADS on a busy machine.
+AUDIVERIS_STEP_TIMEOUT_KEY = "org.audiveris.omr.Main.sheetStepTimeOut"
 
 # Stage 0: born-digital PDF pages are rendered at this resolution (PyMuPDF) for the engine.
 # On both corpora this beat giving Audiveris the PDF (it renders at 300 DPI; exact
@@ -89,6 +92,7 @@ class Settings:
     lilypond_timeout_s: float
     audiveris_timeout_s: float  # the least time an engine run gets
     audiveris_timeout_per_page_s: float  # more for long books: this much per page
+    audiveris_step_timeout_s: int = 300  # the most one engine step may take on a sheet
     ocr_languages: str = DEFAULT_OCR_LANGUAGES
     dispatch: str = "rq"  # "rq" (Redis workers) or "inline" (in the API process)
     web_dir: Path | None = None  # the web UI's static files; None disables it
@@ -104,6 +108,7 @@ class Settings:
             lilypond_timeout_s=float(e.get("LILYPOND_TIMEOUT_S", "120")),
             audiveris_timeout_s=float(e.get("AUDIVERIS_TIMEOUT_S", "900")),
             audiveris_timeout_per_page_s=float(e.get("AUDIVERIS_TIMEOUT_PER_PAGE_S", "240")),
+            audiveris_step_timeout_s=int(e.get("AUDIVERIS_STEP_TIMEOUT_S", "300")),
             ocr_languages=parse_ocr_languages(
                 e.get("LILYSCAN_OCR_LANGUAGES", DEFAULT_OCR_LANGUAGES)
             ),
