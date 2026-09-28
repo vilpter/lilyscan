@@ -58,23 +58,6 @@ def failed_sheets(log: str) -> list[int]:
     return sorted(crashed | set(invalid_sheets(log)))
 
 
-def sheet_ranges(numbers: list[int]) -> str:
-    """``[1, 2, 3, 5, 7, 8]`` as Audiveris's ``-sheets`` argument: ``"1-3,5,7-8"``.
-
-    One argument, comma-separated: Audiveris 5.11.0 parses it that way (its help text's
-    "1 4-5" fails with a NumberFormatException).
-    """
-    out: list[str] = []
-    for n in sorted(numbers):
-        if out and "-" in out[-1] and int(out[-1].split("-")[1]) == n - 1:
-            out[-1] = f"{out[-1].split('-')[0]}-{n}"
-        elif out and "-" not in out[-1] and int(out[-1]) == n - 1:
-            out[-1] = f"{out[-1]}-{n}"
-        else:
-            out.append(str(n))
-    return ",".join(out)
-
-
 def ocr_problems(log: str) -> list[str]:
     """Log lines showing that Audiveris ran without working OCR."""
     return [line.strip() for line in log.splitlines() if any(p in line for p in _OCR_PROBLEMS)]
@@ -161,6 +144,11 @@ def run_audiveris(
 
     ``pages`` (when known) extends the time limit for long books: the run gets the
     larger of the configured minimum and a per-page allowance.
+
+    ``sheets`` is Audiveris's ``-sheets``, one comma-separated argument such as
+    ``"1-5,7-8"`` (5.11.0 fails on its help text's "1 4-5"). Beware that with it,
+    Audiveris 5.11.0 exports every movement of the book to the same ``.mvtnull`` file,
+    each overwriting the last.
     """
     s = settings or Settings.from_env()
     merged = dict(constants or {})

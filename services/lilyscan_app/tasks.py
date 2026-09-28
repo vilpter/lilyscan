@@ -18,7 +18,6 @@ from lilyscan.engine.audiveris.runner import (
     AudiverisRun,
     engine_timeout,
     run_audiveris,
-    sheet_ranges,
 )
 from lilyscan.pipeline import (
     assess_engine_run,
@@ -115,7 +114,7 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
             len(json.loads(report.read_text(encoding="utf-8"))) if report.is_file() else None
         ) or len(job.inputs)
 
-        def transcribe(inputs: list[Path], out: str, sheets: str | None = None) -> AudiverisRun:
+        def transcribe(inputs: list[Path], out: str) -> AudiverisRun:
             return run_audiveris(
                 inputs,
                 root / out,
@@ -123,7 +122,6 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
                 settings=settings,
                 ocr_languages=job.options.get("ocr_languages"),
                 pages=page_count,
-                sheets=sheets,
             )
 
         runs = []
@@ -131,12 +129,15 @@ def engine_transcribe(job_id: str) -> dict[str, Any]:
             run = transcribe(inputs, out)
             skipped: list[int] = []
             # One page Audiveris cannot read (no staves found) or fails on fails the whole
-            # book: read the others without it.
+            # book: read the others without it. Not with -sheets: Audiveris 5.11.0 then
+            # exports every movement to the same file, each overwriting the last.
             if not run.ok and not run.timed_out and len(inputs) == 1 and run.failed_sheets:
                 keep = [n for n in range(1, page_count + 1) if n not in run.failed_sheets]
                 if keep:
+                    from lilyscan.ingest.book import without_pages  # vision, vector extras
+
                     skipped = run.failed_sheets
-                    run = transcribe(inputs, out, sheet_ranges(keep))
+                    run = transcribe([without_pages(inputs[0], keep, root / out / "kept")], out)
             summary = {
                 "pages": label,
                 "command": run.command,
@@ -205,8 +206,8 @@ def _born_digital_pdf(root: Path, engine: dict[str, Any]) -> Path | None:
     numbers = [p.get("page") for p in pages]
     if len(inputs) != 1 or not all(p.get("born_digital") for p in pages):
         return None
-    if numbers != list(range(len(pages))):
-        return None  # empty pages were left out: sheets and PDF pages no longer line up
+    if numbers != list(range(len(pages))) or engine.get("skipped_sheets"):
+        return None  # pages were left out: sheets and PDF pages no longer line up
     return root / "input" / inputs.pop()
 
 

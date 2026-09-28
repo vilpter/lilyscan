@@ -147,3 +147,24 @@ def assemble(inputs: list[Path], out_dir: Path) -> Book:
         if not cv2.imwritemulti(str(book.uploaded), uploaded):
             raise OSError(f"cannot write {book.uploaded}")
     return book
+
+
+def without_pages(path: Path, keep: list[int], out_dir: Path) -> Path:
+    """A copy of the multi-page TIFF or PDF ``path`` holding only the pages ``keep``
+    (numbered from 1), under the same name in ``out_dir``."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    dst = out_dir / path.name
+    if path.suffix.lower() == ".pdf":
+        import pymupdf
+
+        with pymupdf.open(path) as doc:
+            doc.select([n - 1 for n in keep])
+            doc.save(dst)
+        return dst
+    import cv2
+
+    pages = _image_pages(path)
+    kept = [pages[n - 1] for n in keep if 0 < n <= len(pages)]
+    if not kept or not cv2.imwritemulti(str(dst), kept):
+        raise OSError(f"cannot write {dst}")
+    return dst
