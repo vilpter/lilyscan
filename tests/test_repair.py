@@ -133,6 +133,29 @@ def test_merges_parts_split_between_systems() -> None:
     assert [pr.rule for pr in score.provenance] == ["part-merge"] * 4
 
 
+def test_a_system_of_same_named_parts_is_matched_top_to_bottom() -> None:
+    # Three violins read "Violin" on the first system and "Vln." after it. The later
+    # parts come in another order than on the page; their boxes give the order.
+    pitches = [("C", 6), ("A", 5), ("F", 5)]
+    first = [part(f"P{k + 1}", "Violin", FIRST, TREBLE, pitches[k]) for k in range(3)]
+    later = [part(f"P{k + 4}", "Vln.", LATER, TREBLE, pitches[k]) for k in range(3)]
+    for k, p in enumerate(first + later):
+        present = FIRST if p in first else LATER
+        p.staves[0].measures[present[0]].bbox = BBox(page=0, x=0, y=100.0 * (k % 3), w=10, h=10)
+    score = Score(parts=[later[2], later[0], later[1], *first])
+    merge_split_parts(score)
+    assert len(score.parts) == 3
+    for p, (step, octave) in zip(score.parts, pitches, strict=True):
+        heads = [
+            h.pitch
+            for m in p.staves[0].measures
+            for v in m.voices
+            for e in v.events
+            for h in e.notes
+        ]
+        assert {(h.step, h.octave) for h in heads} == {(step, octave)}
+
+
 def test_unreadable_name_is_placed_by_its_neighbours() -> None:
     score = split_choir(bass_abbreviation="13.")
     merge_split_parts(score)
