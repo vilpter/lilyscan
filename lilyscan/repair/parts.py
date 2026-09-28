@@ -214,6 +214,26 @@ def _cluster(score: Score) -> list[_Cluster]:
                 join(k, target)
                 del deferred[k]
                 placed = True
+
+    # A whole system of parts with one name (three violins read "Vln." on every system
+    # after the first): none has a placed neighbour, so match them to the candidates in
+    # order, top to bottom.
+    def top(k: int) -> tuple[float, int]:
+        staff = parts[k].staves[0]
+        i = first[k]
+        box = staff.measures[i].bbox if i < len(staff.measures) else None
+        return (box.y if box is not None else float("inf"), k)
+
+    systems: dict[int, list[int]] = {}
+    for k in deferred:
+        systems.setdefault(first[k], []).append(k)
+    for ks in systems.values():
+        common = [c for c in clusters if all(c in deferred[k] for k in ks)]
+        if len(ks) > 1 and len(common) == len(ks):
+            ordered = sorted(common, key=lambda c: top(c.members[0]))
+            for k, c in zip(sorted(ks, key=top), ordered, strict=True):
+                join(k, c)
+                del deferred[k]
     for k in deferred:
         start(k)
     return clusters
