@@ -38,7 +38,9 @@ whichever result it expects to be better.
 - **LilyPond:** the editable source, with a review list of measures ranked by problems.
 
 Clicking a measure in any pane (or putting the caret on its line) highlights it in the other
-two. Edit the source, press **Save & recompile**, then download the `.ly` project, PDF, or MIDI.
+two. Edit the source, press **Save & recompile**, then download the `.ly` project, PDF, or MIDI,
+or MusicXML for other notation programs (the score as transcribed and repaired; edits made
+to the LilyPond source are not carried into it).
 Fixes Lilyscan made on its own (parts the engine split between systems, tenor clefs read
 without their 8, missed triplets, page text or chord names read as lyrics, syllables read as
 one word) are listed above the review list and noted in the source as `% fix:` comments.

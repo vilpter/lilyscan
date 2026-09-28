@@ -285,6 +285,13 @@ def test_combine_needs_finished_jobs(client: TestClient) -> None:
 
 
 @pytest.mark.lilypond
+def test_download_musicxml_is_the_repaired_score(client: TestClient, finished_job: str) -> None:
+    r = client.get(f"/api/jobs/{finished_job}/download/musicxml")
+    assert r.status_code == 200
+    assert b"<score-partwise" in r.content and b"<software>Lilyscan</software>" in r.content
+
+
+@pytest.mark.lilypond
 def test_download_omr(client: TestClient, finished_job: str) -> None:
     r = client.get(f"/api/jobs/{finished_job}/download/omr")
     assert r.status_code == 200 and r.content[:2] == b"PK"  # the zipped Audiveris project

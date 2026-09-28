@@ -321,7 +321,11 @@ function renderDownloads() {
     el("a", { href: `${base}/ly` }, ".ly project"),
     el("a", { href: `${base}/pdf` }, "PDF"),
     el("a", { href: `${base}/midi` }, "MIDI"),
-    el("a", { href: `${base}/musicxml`, title: "The engine's MusicXML, before your edits" }, "MusicXML"),
+    el(
+      "a",
+      { href: `${base}/musicxml`, title: "The score as transcribed and repaired (edits to the LilyPond source are not in it)" },
+      "MusicXML",
+    ),
     el("a", { href: `${base}/omr`, title: "The Audiveris project, to open in the Audiveris application" }, ".omr"),
   );
 }

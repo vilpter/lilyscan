@@ -330,7 +330,12 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
         candidates = {
             "pdf": [ly_root / "main.pdf"],
             "midi": [ly_root / "main.midi", ly_root / "main.mid"],
-            "musicxml": [root / name for name in _engine_run(root).get("mxl_files", [])],
+            # The score as transcribed and repaired (a combined score has only this one),
+            # else the engine's own export.
+            "musicxml": [
+                root / "score.musicxml",
+                *(root / name for name in _engine_run(root).get("mxl_files", [])),
+            ],
             # The Audiveris project, to open in the Audiveris desktop application.
             "omr": [root / name for name in _engine_run(root).get("omr_files", [])],
         }.get(kind)
