@@ -250,12 +250,33 @@ def _sharpness(mask: NDArray[np.uint8], degrees: float) -> float:
     return float((rows**2).sum())
 
 
+def _five_line_staves(mask: NDArray[np.uint8], degrees: float) -> int:
+    """How many five-line staves the page shows when turned by ``degrees``."""
+    turned = (_rotate(mask.astype(np.float32), degrees, 0.0) > 0.5).astype(np.uint8)
+    return len(_staves(_lines(turned, horizontal=True)))
+
+
 def staff_angle(gray: Image) -> float:
-    """Degrees (counterclockwise) that make the staff lines horizontal, in [-90, 90)."""
+    """Degrees (counterclockwise) that make the staff lines horizontal, in [-90, 90).
+
+    The angle that makes the ink's row profile spikiest, refined to a quarter degree.
+    Barlines and stems lined up across the staves of a choir or an orchestra can make a
+    quarter turn look spikier than the staff lines themselves, so the best angle and the
+    one a quarter turn from it are both refined, and the one showing more five-line
+    staves is kept.
+    """
     mask = _small_mask(gray, 1000)
+
+    def refine(coarse: float) -> float:
+        fine = [coarse + d / 4 for d in range(-8, 9)]
+        return max(fine, key=lambda a: _sharpness(mask, a))
+
     coarse = max(range(-90, 90, 2), key=lambda a: _sharpness(mask, a))
-    fine = [coarse + d / 4 for d in range(-8, 9)]
-    best = max(fine, key=lambda a: _sharpness(mask, a))
+    best = refine(coarse)
+    other = refine(coarse - 90 if coarse >= 0 else coarse + 90)
+    staves = _small_mask(gray)
+    if _five_line_staves(staves, other) > _five_line_staves(staves, best):
+        best = other
     return float((best + 90) % 180 - 90)
 
 
@@ -270,9 +291,15 @@ def level_staves(gray: Image) -> tuple[Image, float]:
     return f32(_rotate(gray, angle, 1.0)), angle
 
 
-# Text evidence counts once a page has this many letters and a clear lean either way.
-_MIN_LETTERS = 40
-_MIN_TEXT_LEAN = 0.01
+# Orientation evidence, in units of each cue's usual strength: a text lean of 0.01 and a
+# clef overhang of 0.2. Text counts once a page has this many letters. A page that came
+# upright needs this much evidence to be turned over (most pages come upright, and the
+# cues are noisy on pages with little text); a page that came sideways is turned over on
+# any evidence, since its quarter turn was as likely to leave it upside down as not.
+_TEXT_UNIT = 0.01
+_CLEF_UNIT = 0.2
+_MIN_LETTERS = 60
+_TURN_OVER_EVIDENCE = 2.0
 
 
 def _text_lean(mask: NDArray[np.uint8]) -> tuple[float, int]:
@@ -322,11 +349,12 @@ def _text_lean(mask: NDArray[np.uint8]) -> tuple[float, int]:
     return (lean / letters if letters else 0.0), letters
 
 
-def upside_down(gray: Image) -> bool:
-    """On a page with straight, horizontal staves: its text reads upside down or, when
-    there is too little text to tell, the clefs are at the right ends of the staves."""
+def upside_down(gray: Image, turned: bool = False) -> bool:
+    """On a page with straight, horizontal staves: its text reads upside down and its
+    clefs sit at the right ends of the staves, taken together. ``turned``: the page was
+    given a quarter turn to get here (see the evidence thresholds above)."""
     mask = _small_mask(gray)
     lean, letters = _text_lean(mask)
-    if letters >= _MIN_LETTERS and abs(lean) >= _MIN_TEXT_LEAN:
-        return lean < 0
-    return _start_weight(mask) < -0.2
+    text = lean / _TEXT_UNIT if letters >= _MIN_LETTERS else 0.0
+    evidence = text + _start_weight(mask) / _CLEF_UNIT
+    return evidence < (0.0 if turned else -_TURN_OVER_EVIDENCE)
