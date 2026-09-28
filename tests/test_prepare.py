@@ -227,6 +227,26 @@ def test_the_page_as_uploaded_is_stood_upright_too(tmp_path: Path) -> None:
     assert np.abs(pages[0] / 255.0 - upright).mean() < 0.01
 
 
+@pytest.mark.lilypond
+def test_a_dense_choir_page_is_not_turned(tmp_path: Path) -> None:
+    # The seed corpus's satb-07: lyrics under every staff and noteheads lined up down
+    # the page made a quarter turn look spikier than the staff lines, and the page was
+    # turned on its side.
+    import json
+
+    from lilyscan.prepare.image import staff_angle
+    from lilyscan.synth.corpus import build_corpus, load_spec
+
+    seed = Path(__file__).parents[1] / "eval" / "corpus" / "seed.json"
+    piece = next(s for s in load_spec(seed) if s.id == "satb-07")
+    spec = tmp_path / "spec.json"
+    spec.write_text(json.dumps({"pieces": [piece.to_dict()]}), encoding="utf-8")
+    item = build_corpus(spec, tmp_path / "corpus")[0]
+    report = prepare_image(item.input("scan"), tmp_path / "scan.png")
+    assert abs(report.rotated) < 5
+    assert abs(staff_angle(flatten_light(load_gray(item.input("scan"))))) < 5
+
+
 def test_tilted_photo_is_levelled(tmp_path: Path) -> None:
     from lilyscan.prepare.image import staff_angle
 

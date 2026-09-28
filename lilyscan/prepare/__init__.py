@@ -147,7 +147,7 @@ def prepare_page(
             report.dewarped = True
             after = curvature(displacement_samples(ink_mask(gray), interline)) / interline
     report.curvature_after = round(after, 4)
-    if upside_down(gray):
+    if upside_down(gray, turned=45 < abs(report.rotated) < 135):
         gray = f32(np.rot90(gray, 2))
         report.rotated = round((report.rotated + 360) % 360 - 180, 1)
     if clean == "auto":
