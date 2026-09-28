@@ -9,7 +9,12 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from lilyscan.runtime.config import AUDIVERIS_OCR_LANGUAGES_KEY, Settings, parse_ocr_languages
+from lilyscan.runtime.config import (
+    AUDIVERIS_OCR_LANGUAGES_KEY,
+    AUDIVERIS_STEP_TIMEOUT_KEY,
+    Settings,
+    parse_ocr_languages,
+)
 
 _CONSTANT_KEY = re.compile(r"^[A-Za-z_][\w.$]*$")
 
@@ -116,6 +121,7 @@ def run_audiveris(
     if AUDIVERIS_OCR_LANGUAGES_KEY in merged:
         raise ValueError("set OCR languages with ocr_languages, not as a raw constant")
     merged[AUDIVERIS_OCR_LANGUAGES_KEY] = parse_ocr_languages(ocr_languages or s.ocr_languages)
+    merged.setdefault(AUDIVERIS_STEP_TIMEOUT_KEY, str(s.audiveris_step_timeout_s))
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = build_command(s.audiveris_bin, inputs, out_dir, merged, sheets)
     start = time.monotonic()
