@@ -120,7 +120,7 @@ def test_combine_parts_from_two_jobs_keeps_edits_and_transposes(tmp_path: Path) 
 
 
 @pytest.mark.lilypond
-def test_combine_refuses_parts_that_do_not_line_up(tmp_path: Path) -> None:
+def test_combine_lines_up_a_part_missing_its_last_measure(tmp_path: Path) -> None:
     a = job(tmp_path / "a")
     score = load_musicxml(FIXTURE)
     short = score.model_copy(deep=True)
@@ -128,11 +128,12 @@ def test_combine_refuses_parts_that_do_not_line_up(tmp_path: Path) -> None:
         for staff in part.staves:
             staff.measures = staff.measures[:-1]
     produce(short, tmp_path / "b")
-    with pytest.raises(CombineError, match="measures"):
-        combine(
-            [Selection(a, score.parts[0].id), Selection(tmp_path / "b", score.parts[0].id)],
-            tmp_path / "c",
-        )
+    report = combine(
+        [Selection(a, score.parts[0].id), Selection(tmp_path / "b", score.parts[0].id)],
+        tmp_path / "c",
+    )
+    count = len(score.parts[0].staves[0].measures)
+    assert list(report["alignment"]["rests_added"].values()) == [[count]]
 
 
 def test_combine_needs_a_finished_job(tmp_path: Path) -> None:
