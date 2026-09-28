@@ -247,6 +247,29 @@ def test_a_dense_choir_page_is_not_turned(tmp_path: Path) -> None:
     assert abs(staff_angle(flatten_light(load_gray(item.input("scan"))))) < 5
 
 
+@pytest.mark.parametrize(
+    ("text", "clef", "turned", "expected"),
+    [
+        # Upright scans the text cue took for upside down (chord slashes and fingerings
+        # read as letters), and one with an alto clef the clef cue got wrong.
+        (-7.4, 4.7, False, False),
+        (14.5, -3.4, False, False),
+        # Both cues lean the other way, or one strongly with nothing against it.
+        (-0.8, -1.5, False, True),
+        (0.2, -3.6, False, True),
+        # Too little to turn over a page that came upright...
+        (0.0, -1.9, False, False),
+        # ...but after a quarter turn, the sign of the evidence decides.
+        (0.0, -0.3, True, True),
+        (-1.0, 1.5, True, False),
+    ],
+)
+def test_turn_over(text: float, clef: float, turned: bool, expected: bool) -> None:
+    from lilyscan.prepare.image import turn_over
+
+    assert turn_over(text, clef, turned) is expected
+
+
 def test_tilted_photo_is_levelled(tmp_path: Path) -> None:
     from lilyscan.prepare.image import staff_angle
 

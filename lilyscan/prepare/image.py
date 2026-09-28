@@ -292,14 +292,19 @@ def level_staves(gray: Image) -> tuple[Image, float]:
 
 
 # Orientation evidence, in units of each cue's usual strength: a text lean of 0.01 and a
-# clef overhang of 0.2. Text counts once a page has this many letters. A page that came
-# upright needs this much evidence to be turned over (most pages come upright, and the
-# cues are noisy on pages with little text); a page that came sideways is turned over on
-# any evidence, since its quarter turn was as likely to leave it upside down as not.
+# clef overhang of 0.2. Text counts once a page has this many letters.
+#
+# A page that came sideways is turned over on any evidence, since its quarter turn was as
+# likely to leave it upside down as not. A page that came upright usually is upright, and
+# either cue can be fooled on its own (chord slashes and fingerings read as letters; an
+# alto clef's overhang), so it is turned over only when neither cue says it is upright,
+# and both lean the other way or one does so strongly.
 _TEXT_UNIT = 0.01
 _CLEF_UNIT = 0.2
 _MIN_LETTERS = 60
-_TURN_OVER_EVIDENCE = 2.0
+_UPRIGHT_VETO = 1.5
+_BOTH_LEAN = 0.5
+_ONE_STRONG = 3.5
 
 
 def _text_lean(mask: NDArray[np.uint8]) -> tuple[float, int]:
@@ -356,5 +361,15 @@ def upside_down(gray: Image, turned: bool = False) -> bool:
     mask = _small_mask(gray)
     lean, letters = _text_lean(mask)
     text = lean / _TEXT_UNIT if letters >= _MIN_LETTERS else 0.0
-    evidence = text + _start_weight(mask) / _CLEF_UNIT
-    return evidence < (0.0 if turned else -_TURN_OVER_EVIDENCE)
+    return turn_over(text, _start_weight(mask) / _CLEF_UNIT, turned)
+
+
+def turn_over(text: float, clef: float, turned: bool) -> bool:
+    """The decision on the two cues, in units (positive: the page reads upright)."""
+    if turned:
+        return text + clef < 0
+    if text >= _UPRIGHT_VETO or clef >= _UPRIGHT_VETO:
+        return False
+    if text <= -_BOTH_LEAN and clef <= -_BOTH_LEAN:
+        return True
+    return min(text, clef) <= -_ONE_STRONG
