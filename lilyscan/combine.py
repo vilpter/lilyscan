@@ -44,6 +44,35 @@ class Selection:
     name: str | None = None  # a new instrument name
 
 
+_SHORT_NAMES = {
+    "violin": "Vln.",
+    "viola": "Vla.",
+    "violoncello": "Vc.",
+    "cello": "Vc.",
+    "double bass": "Cb.",
+    "contrabass": "Cb.",
+    "bass": "Cb.",
+    "flute": "Fl.",
+    "piano": "Pno.",
+}
+_INSTRUMENT = re.compile(
+    r"(?i)\s*(" + "|".join(sorted(_SHORT_NAMES, key=len, reverse=True)) + r")\b\s*(.*)$"
+)
+
+
+def _renamed(part: Any, name: str | None) -> Any:
+    """The part under a new name, with a matching short name (the engine's, often its
+    placeholder "Voice", no longer applies): "Violin 1" gets "Vln. 1"."""
+    if not name:
+        return part
+    match = _INSTRUMENT.match(name)
+    short = None
+    if match:
+        base, rest = _SHORT_NAMES[match[1].lower()], match[2].strip()
+        short = f"{base} {rest}" if rest else base
+    return part.model_copy(update={"name": name, "abbreviation": short})
+
+
 def _load(job: Path) -> Score:
     path = job / "ir" / "score.json"
     if not path.is_file():
@@ -127,7 +156,7 @@ def combine(
         if sel.transpose == "concert":
             part = part.model_copy(update={"transpose_semitones": None})
         intervals.append(interval)
-        part = part.model_copy(deep=True, update={"id": f"P{k}", "name": sel.name or part.name})
+        part = _renamed(part.model_copy(deep=True, update={"id": f"P{k}"}), sel.name)
         for staff in part.staves:
             for m in staff.measures:
                 m.bbox = None  # boxes belong to the source job's pages
@@ -142,7 +171,7 @@ def combine(
             raise CombineError(f"{sel.job.name} has no part {sel.part}")
         interval = _interval(sel, part)
         moved = transpose_part(part, interval) if interval is not None else part
-        accompanying.append(moved.model_copy(update={"name": sel.name or part.name}))
+        accompanying.append(_renamed(moved, sel.name))
     reference = _lengths(sources[0][1], selections[0].part)
     checked = list(zip(sources, combined.parts, strict=True))
     checked += [

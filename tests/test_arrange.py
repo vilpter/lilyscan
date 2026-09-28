@@ -135,3 +135,13 @@ def test_combine_melody_with_a_piano_accompaniment(tmp_path: Path) -> None:
     layout = (tmp_path / "out" / "ly" / "layout" / "score.ly").read_text(encoding="utf-8")
     assert "PianoStaff" in layout
     assert [p["job"] for p in report["piano_from"]] == ["v2", "vc"]
+
+
+def test_a_renamed_part_gets_a_matching_short_name() -> None:
+    from lilyscan.combine import _renamed
+
+    engine = Part(id="P1", name="Voice", abbreviation="Voice")  # Audiveris's placeholder
+    assert _renamed(engine, "Violin 1").abbreviation == "Vln. 1"
+    assert _renamed(engine, "Cello").abbreviation == "Vc."
+    assert _renamed(engine, "Basset horn").abbreviation is None
+    assert _renamed(engine, None) is engine
