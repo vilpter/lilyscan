@@ -16,6 +16,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from lilyscan.arrange import reduce_to_piano
 from lilyscan.ir.models import Pitch, Score
 from lilyscan.ir.transpose import Interval, transpose_part, transpose_pitch
 from lilyscan.lilypond.generate import (
@@ -41,6 +42,35 @@ class Selection:
     # An interval ("M2", "-m3"), or "concert" for a transposing part at sounding pitch.
     transpose: str | None = None
     name: str | None = None  # a new instrument name
+
+
+_SHORT_NAMES = {
+    "violin": "Vln.",
+    "viola": "Vla.",
+    "violoncello": "Vc.",
+    "cello": "Vc.",
+    "double bass": "Cb.",
+    "contrabass": "Cb.",
+    "bass": "Cb.",
+    "flute": "Fl.",
+    "piano": "Pno.",
+}
+_INSTRUMENT = re.compile(
+    r"(?i)\s*(" + "|".join(sorted(_SHORT_NAMES, key=len, reverse=True)) + r")\b\s*(.*)$"
+)
+
+
+def _renamed(part: Any, name: str | None) -> Any:
+    """The part under a new name, with a matching short name (the engine's, often its
+    placeholder "Voice", no longer applies): "Violin 1" gets "Vln. 1"."""
+    if not name:
+        return part
+    match = _INSTRUMENT.match(name)
+    short = None
+    if match:
+        base, rest = _SHORT_NAMES[match[1].lower()], match[2].strip()
+        short = f"{base} {rest}" if rest else base
+    return part.model_copy(update={"name": name, "abbreviation": short})
 
 
 def _load(job: Path) -> Score:
@@ -103,11 +133,17 @@ def combine(
     out: Path,
     title: str | None = None,
     settings: Settings | None = None,
+    piano: list[Selection] | None = None,
 ) -> dict[str, Any]:
-    """Write the combined job (IR, LilyPond project, QA report) under ``out``."""
+    """Write the combined job (IR, LilyPond project, QA report) under ``out``.
+
+    ``piano``: parts reduced onto a piano grand staff below the chosen parts, as the
+    accompaniment to go with them (see ``lilyscan.arrange``).
+    """
     if len(selections) < 1:
         raise CombineError("choose at least one part")
     sources = [(sel, _load(sel.job)) for sel in selections]
+    reduced = [(sel, _load(sel.job)) for sel in piano or []]
     combined = Score(title=title or "Combined score", source="combined")
     intervals: list[Interval | None] = []
     for k, (sel, score) in enumerate(sources, 1):
@@ -120,7 +156,7 @@ def combine(
         if sel.transpose == "concert":
             part = part.model_copy(update={"transpose_semitones": None})
         intervals.append(interval)
-        part = part.model_copy(deep=True, update={"id": f"P{k}", "name": sel.name or part.name})
+        part = _renamed(part.model_copy(deep=True, update={"id": f"P{k}"}), sel.name)
         for staff in part.staves:
             for m in staff.measures:
                 m.bbox = None  # boxes belong to the source job's pages
@@ -128,8 +164,20 @@ def combine(
                     for e in v.events:
                         e.bbox = None
         combined.parts.append(part)
+    accompanying = []
+    for sel, score in reduced:
+        part = next((p for p in score.parts if p.id == sel.part), None)
+        if part is None:
+            raise CombineError(f"{sel.job.name} has no part {sel.part}")
+        interval = _interval(sel, part)
+        moved = transpose_part(part, interval) if interval is not None else part
+        accompanying.append(_renamed(moved, sel.name))
     reference = _lengths(sources[0][1], selections[0].part)
-    for (sel, score), part in zip(sources, combined.parts, strict=True):
+    checked = list(zip(sources, combined.parts, strict=True))
+    checked += [
+        ((sel, score), part) for (sel, score), part in zip(reduced, accompanying, strict=True)
+    ]
+    for (sel, score), part in checked:
         lengths = _lengths(score, sel.part)
         if len(lengths) != len(reference):
             name = part.name or part.id
@@ -143,10 +191,13 @@ def combine(
                     f"measure {i + 1}: {name} is {b} quarters long, the first part {a}"
                 )
 
+    if accompanying:
+        combined.parts.append(reduce_to_piano(accompanying, combined.parts[0]))
     generated = generate_project(combined)
     plans = _plan(combined)
     files = dict(generated.files)
-    for (sel, score), plan, interval in zip(sources, plans, intervals, strict=True):
+    # The piano part, if any, is generated from the IR: it has no source of its own.
+    for (sel, score), plan, interval in zip(sources, plans[: len(sources)], intervals, strict=True):
         old = next(pv for pv in _plan(score) if pv.part.id == sel.part)
         source = sel.job / "ly" / "parts" / f"{old.slug}.ly"
         if not source.is_file():
@@ -168,5 +219,9 @@ def combine(
     report["combined_from"] = [
         {"job": sel.job.name, "part": sel.part, "transpose": sel.transpose} for sel in selections
     ]
+    if piano:
+        report["piano_from"] = [
+            {"job": sel.job.name, "part": sel.part, "transpose": sel.transpose} for sel in piano
+        ]
     (out / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8", newline="\n")
     return report

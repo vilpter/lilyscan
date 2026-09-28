@@ -251,6 +251,31 @@ def test_combine_rejects_bad_requests(client: TestClient, finished_job: str) -> 
     assert client.post("/api/scores", json=no_part).status_code == 422
     bad = {"parts": [{"job": finished_job, "part": part, "transpose": "M4"}]}
     assert client.post("/api/scores", json=bad).status_code == 422
+    # Parts for the piano accompaniment are checked the same way.
+    piano = {
+        "parts": [{"job": finished_job, "part": part}],
+        "piano": [{"job": "nope", "part": part}],
+    }
+    assert client.post("/api/scores", json=piano).status_code == 404
+
+
+@pytest.mark.lilypond
+def test_combine_with_a_piano_accompaniment(
+    client: TestClient, dispatcher: RecordingDispatcher, finished_job: str
+) -> None:
+    from lilyscan_app import tasks
+
+    part = client.get(f"/api/jobs/{finished_job}/parts").json()[0]["id"]
+    body = {
+        "title": "With piano",
+        "parts": [{"job": finished_job, "part": part}],
+        "piano": [{"job": finished_job, "part": part, "transpose": "-P8"}],
+    }
+    r = client.post("/api/scores", json=body)
+    assert r.status_code == 201, r.text
+    report = tasks.combine_job(r.json()["id"])
+    assert report["qa"]["checks"][0]["passed"]
+    assert len(report["piano_from"]) == 1
 
 
 def test_combine_needs_finished_jobs(client: TestClient) -> None:

@@ -52,6 +52,8 @@ class RerunRequest(BaseModel):
 class CombineRequest(BaseModel):
     title: str | None = None
     parts: list[CombinePart]
+    # Parts reduced onto a piano grand staff below ``parts``: an accompaniment.
+    piano: list[CombinePart] = []
 
 
 def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None = None) -> FastAPI:
@@ -137,7 +139,7 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
         """A new score from parts of finished jobs (M9); built by a pipeline worker."""
         if not body.parts:
             raise HTTPException(422, "choose at least one part")
-        for p in body.parts:
+        for p in [*body.parts, *body.piano]:
             source = jobs.get(p.job)
             if source is None:
                 raise HTTPException(404, f"job {p.job} not found")
