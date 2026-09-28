@@ -340,6 +340,8 @@ project/
 - Deterministic output: the same IR always produces byte-identical `.ly`, so diffs of the output stay meaningful.
 - Run the generated text through a formatter (python-ly, if suitable) for consistent indentation.
 
+*Done since:* **MusicXML export** (`lilyscan/ir/to_musicxml.py`). Every job writes `score.musicxml` from its IR (repairs included; combined scores and piano accompaniments too), and the MusicXML download serves it, falling back to the engine's export for older jobs. It is the inverse of the reader: all 40 corpus ground truths and fixtures read, written and read again give the same IR (page boxes, confidence and provenance aside). Voices two staves of a part share in a measure are renumbered apart. Edits made to the LilyPond source are still not reflected (LilyPond cannot export MusicXML).
+
 ### Stage 8 — Quality Checks (automated, per job)
 
 | # | Check | Method | Output |

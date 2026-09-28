@@ -11,6 +11,7 @@ from lilyscan.engine.audiveris.omr import OmrError, attach_movements, read_omr
 from lilyscan.ir.models import Score
 from lilyscan.ir.musicxml import load_musicxml
 from lilyscan.ir.ops import counts, merge_scores
+from lilyscan.ir.to_musicxml import write_musicxml
 from lilyscan.lilypond.compile import compile_ly
 from lilyscan.lilypond.generate import LOW_CONFIDENCE, LyProject, scan_measure_lines, write_project
 from lilyscan.qa.checks import CheckResult, QaReport, compile_checks, run_checks
@@ -122,7 +123,8 @@ def produce(
     settings: Settings | None = None,
     project: LyProject | None = None,
 ) -> dict[str, Any]:
-    """Write ``ir/score.json`` and the ``ly/`` project under ``root``; return the report.
+    """Write ``ir/score.json``, ``score.musicxml`` and the ``ly/`` project under ``root``;
+    return the report.
 
     ``project`` is written instead of generating one from ``score`` (the score combiner
     reuses the parts' own, possibly edited, sources).
@@ -130,6 +132,7 @@ def produce(
     ir_path = root / "ir" / "score.json"
     ir_path.parent.mkdir(parents=True, exist_ok=True)
     ir_path.write_text(score.model_dump_json(indent=1), encoding="utf-8", newline="\n")
+    write_musicxml(score, root / "score.musicxml")
 
     ly_root = root / "ly"
     if project is None:
@@ -142,6 +145,7 @@ def produce(
     qa = run_checks(score, ly_root, project, settings)
     return {
         "ir": "ir/score.json",
+        "musicxml": "score.musicxml",
         **_render(root, score, project, qa, settings),
         "counts": counts(score),
         "device": get_device().describe(),
