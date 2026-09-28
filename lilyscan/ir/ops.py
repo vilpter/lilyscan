@@ -50,6 +50,19 @@ def _rests(reference: list[Measure], offset: int) -> list[Measure]:
     return out
 
 
+def _longest(score: Score) -> list[Measure]:
+    """The measures of the score's longest staff."""
+    return max((st.measures for _, st in score.staves()), key=len, default=[])
+
+
+def _pad(score: Score) -> None:
+    """Measure rests to the end for a part that ends early: Audiveris does not pad a part
+    missing from a movement's last systems."""
+    reference = _longest(score)[:]
+    for _, staff in score.staves():
+        staff.measures += _rests(reference[len(staff.measures) :], 0)
+
+
 def _append(base: Score, extra: Score) -> None:
     """Add movement ``extra`` after ``base``, matching its parts to base's in order.
 
@@ -57,9 +70,10 @@ def _append(base: Score, extra: Score) -> None:
     (the form Audiveris gives a part missing from a system, so the part-merge repair can
     join parts the engine split between movements).
     """
-    offset = max((len(s.measures) for _, s in base.staves()), default=0)
-    base_reference = base.parts[0].staves[0].measures[:] if base.parts else []
-    extra_reference = extra.parts[0].staves[0].measures if extra.parts else []
+    _pad(base)  # so the next movement starts at the same measure in every part
+    base_reference = _longest(base)[:]
+    offset = len(base_reference)
+    extra_reference = _longest(extra)
     ids = {p.id for p in base.parts}
     parts = base.parts
     carried = {id(staff): _key_in_force(staff) for _, staff in base.staves()}
@@ -108,6 +122,7 @@ def merge_scores(scores: list[Score]) -> Score:
     base = scores[0].model_copy(deep=True)
     for extra in scores[1:]:
         _append(base, extra.model_copy(deep=True))
+    _pad(base)
     return base
 
 
