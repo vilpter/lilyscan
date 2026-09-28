@@ -45,7 +45,9 @@ one word) are listed above the review list and noted in the source as `% fix:` c
 
 **Combine parts** (on the home page) makes a new score from parts of finished jobs: say a
 violin part and a cello part scanned separately. Each part can be transposed, or taken at
-concert pitch if it is a transposing instrument. The parts must have the same measures. Your
+concert pitch if it is a transposing instrument. Parts read separately seldom have exactly the
+same measures (the engine misses or adds one now and then), so they are lined up measure by
+measure, and where a part has no measure it gets a rest that shows in the review list. Your
 edits to each part carry over, because the new score includes the parts' own LilyPond
 sources (transposition is done by LilyPond's `\transpose`, so those sources stay as
 written). The combined score is a job like any other: review it, edit it, download it.

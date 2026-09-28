@@ -12,10 +12,10 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from lilyscan.align import align_parts
 from lilyscan.arrange import reduce_to_piano
 from lilyscan.ir.models import Pitch, Score
 from lilyscan.ir.transpose import Interval, transpose_part, transpose_pitch
@@ -29,6 +29,9 @@ from lilyscan.lilypond.generate import (
 from lilyscan.lilypond.notation import absolute_pitch
 from lilyscan.pipeline import produce
 from lilyscan.runtime.config import Settings
+
+# A part that has no measure for more than this share of the score is not lined up.
+MAX_FILLED = 0.25
 
 
 class CombineError(ValueError):
@@ -78,17 +81,6 @@ def _load(job: Path) -> Score:
     if not path.is_file():
         raise CombineError(f"{job.name} has no finished score")
     return Score.model_validate_json(path.read_text(encoding="utf-8"))
-
-
-def _lengths(score: Score, part_id: str) -> list[Fraction | None]:
-    part = next(p for p in score.parts if p.id == part_id)
-    out: list[Fraction | None] = []
-    length: Fraction | None = None
-    for m in part.staves[0].measures:
-        if m.time is not None:
-            length = m.time.measure_length
-        out.append(length)
-    return out
 
 
 def _rename(text: str, names: dict[str, str]) -> str:
@@ -172,24 +164,21 @@ def combine(
         interval = _interval(sel, part)
         moved = transpose_part(part, interval) if interval is not None else part
         accompanying.append(_renamed(moved, sel.name))
-    reference = _lengths(sources[0][1], selections[0].part)
-    checked = list(zip(sources, combined.parts, strict=True))
-    checked += [
-        ((sel, score), part) for (sel, score), part in zip(reduced, accompanying, strict=True)
-    ]
-    for (sel, score), part in checked:
-        lengths = _lengths(score, sel.part)
-        if len(lengths) != len(reference):
-            name = part.name or part.id
+    # Parts read separately seldom have exactly the same measures: line them up, with
+    # a flagged rest where a part has no measure, unless a part hardly lines up at all.
+    everything = [*combined.parts, *accompanying]
+    lined_up, alignment = align_parts(everything)
+    names = [p.name or p.id for p in everything]
+    for k, gaps in enumerate(alignment.filled):
+        if len(gaps) > MAX_FILLED * alignment.measures:
             raise CombineError(
-                f"{name} has {len(lengths)} measures, the first part {len(reference)}"
+                f"{names[k]} has {len(gaps)} of {alignment.measures} measures that do not "
+                f"line up with {names[alignment.reference]}: is it the same piece?"
             )
-        for i, (a, b) in enumerate(zip(reference, lengths, strict=True)):
-            if a != b:
-                name = part.name or part.id
-                raise CombineError(
-                    f"measure {i + 1}: {name} is {b} quarters long, the first part {a}"
-                )
+    combined.parts = lined_up[: len(combined.parts)]
+    accompanying = lined_up[len(combined.parts) :]
+    # A part with rests put in no longer matches its own LilyPond source.
+    regenerated = {k for k, gaps in enumerate(alignment.filled[: len(sources)]) if gaps}
 
     if accompanying:
         combined.parts.append(reduce_to_piano(accompanying, combined.parts[0]))
@@ -197,7 +186,11 @@ def combine(
     plans = _plan(combined)
     files = dict(generated.files)
     # The piano part, if any, is generated from the IR: it has no source of its own.
-    for (sel, score), plan, interval in zip(sources, plans[: len(sources)], intervals, strict=True):
+    for k, ((sel, score), plan, interval) in enumerate(
+        zip(sources, plans[: len(sources)], intervals, strict=True)
+    ):
+        if k in regenerated:
+            continue
         old = next(pv for pv in _plan(score) if pv.part.id == sel.part)
         source = sel.job / "ly" / "parts" / f"{old.slug}.ly"
         if not source.is_file():
@@ -219,6 +212,14 @@ def combine(
     report["combined_from"] = [
         {"job": sel.job.name, "part": sel.part, "transpose": sel.transpose} for sel in selections
     ]
+    if alignment.changed:
+        report["alignment"] = {
+            "measures": alignment.measures,
+            "reference": names[alignment.reference],
+            "rests_added": {
+                names[k]: [c + 1 for c in gaps] for k, gaps in enumerate(alignment.filled) if gaps
+            },
+        }
     if piano:
         report["piano_from"] = [
             {"job": sel.job.name, "part": sel.part, "transpose": sel.transpose} for sel in piano
