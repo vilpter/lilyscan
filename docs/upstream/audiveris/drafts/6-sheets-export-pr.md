@@ -1,5 +1,4 @@
-<!-- Draft pull request for Audiveris/audiveris (base: development). Not posted: needs the owner's OK.
-     Branch: vilpter/audiveris fix/sheets-export-names, commit 8197b075f (not pushed yet). -->
+<!-- Posted as Audiveris/audiveris#1088 (2026-09-28, owner's OK), from vilpter/audiveris fix/sheets-export-names (8197b075f). -->
 
 **Title:** Name exported movements by their rank among the exported scores
 

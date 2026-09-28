@@ -126,7 +126,7 @@ If this environment cannot push to `vilpter/audiveris` or cannot use `gh`, save 
 
 ### 6. Batch export with `-sheets` keeps only the last movement
 
-- **Status:** fixed on `vilpter/audiveris` branch `fix/sheets-export-names` (commit 8197b075f, not pushed yet). The pull request, which carries the report, is drafted in `drafts/6-sheets-export-pr.md`, awaiting the owner's OK. No issue found upstream (#533 is related: movements in batch mode).
+- **Status:** pull request [#1088](https://github.com/Audiveris/audiveris/pull/1088) opened (owner's OK) from `vilpter/audiveris` branch `fix/sheets-export-names`; it carries the report (`drafts/6-sheets-export-pr.md`). No issue found upstream (#533 is related: movements in batch mode).
 - **Input:** `repro/two-movements.pdf`, one page with two movements, engraved by LilyPond 2.26.0 from `repro/two-movements.ly`. `-batch -export` gives `mvt1` and `mvt2`; adding `-sheets 1` gives a single `two-movements.mvtnull.mxl` holding movement 2, and with the opus option the export fails (`ZipException: duplicate entry`). Reproduced on 5.11.0 and on `development` (c5381487d).
 - **Cause:** with `-sheets`, `CLI` exports a temporary list of scores, and `Score.getId()` (the rank in `book.getScores()`) is null for them. `Book.getScoreExportPaths`, `Book.export` and `OpusExporter.export` then name every movement `.mvtnull`.
 - **Fix:** name a score by its rank among the exported scores, with the `.mvt#` suffix only when several are exported (`Book.getScoreName`, plus one line in `OpusExporter`). Other callers export `book.getScores()`, so their names are unchanged.
