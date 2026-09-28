@@ -47,9 +47,9 @@ def invalid_sheets(log: str) -> list[int]:
     return sorted({int(m[1]) for m in _INVALID_SHEET.finditer(log)})
 
 
-# A sheet whose processing threw ("WARN [pages#3] Book.java:2044 | Error processing stub
-# java.lang.NullPointerException ..."): that too makes the whole book fail to export.
-_CRASHED_SHEET = re.compile(r"\[\S*#(\d+)\]\s+\S+\.java:\d+\s+\|\s+Error processing stub")
+# A sheet whose processing threw: "WARN [pages#3] Book 2044 | Error processing stub ..." on
+# the console ("Book.java:2044" in the log file). That too fails the whole book's export.
+_CRASHED_SHEET = re.compile(r"\[\S*#(\d+)\]\s+\S+(?:\.java:|\s+)\d+\s+\|\s+Error processing stub")
 
 
 def failed_sheets(log: str) -> list[int]:

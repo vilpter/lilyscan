@@ -28,6 +28,9 @@ def test_invalid_sheets_and_ranges() -> None:
         "Caused by: java.lang.NullPointerException: ... Measure.purgeVoices() ...\n"
     )
     assert failed_sheets(log + crashed) == [2, 3, 6]
+    # The same on the console, which the runner captures: no ".java:" there.
+    console = "WARN  [pages#4]                      Book 2044 | Error processing stub java.lang.X\n"
+    assert failed_sheets(console) == [4]
     assert sheet_ranges([1, 3, 4, 5, 7, 8]) == "1,3-5,7-8"
     assert sheet_ranges([4]) == "4"
 
