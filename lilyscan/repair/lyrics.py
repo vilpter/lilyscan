@@ -24,7 +24,10 @@ TEXT_RULE = "lyric-text"
 VERSE_RULE = "lyric-verse"
 
 _PAGE_TEXT = re.compile(
-    r"^(v?\d+(\.\d+)+|www\..+|.+\.(org|com|net)|©.*|\(c\).*|copyright.*)$", re.IGNORECASE
+    r"^(v?\d+(\.\d+)+|www\..+|.+\.(org|com|net)|©.*|\(c\).*|copyright.*"
+    # The watermark scanning apps print at the foot of the page ("Scanned by CamScanner").
+    r"|scanned|camscanner|turboscan|tinyscanner|scanbot|genius ?scan|adobe ?scan)$",
+    re.IGNORECASE,
 )
 _VOWELS = set("aeiouyAEIOUYàáâèéêìíòóôùú")
 # Share of a line's syllables that must read as chord names for it to be a chord line.
