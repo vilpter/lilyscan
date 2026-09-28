@@ -224,6 +224,7 @@ Audiveris expects clean, flat, scan-like pages. This stage turns every raster in
 - Failure messages from Audiveris steps (for example `StepException: No system found` on inputs with no recognizable staff) are extracted from the log into the job error.
 - Outputs, written flat into `<dir>`: `<book>.omr`, `<book>.mxl` (per-movement files may appear for multi-movement books), and `<book>-<timestamp>.log`. The runner also records the command, wall time, and exit status in `engine/run.json`. Everything is stored in the artifact store.
 - **Failure handling:** a crash or timeout on one sheet must not fail the whole book. Record which sheets failed and surface them in the job report.
+  - In 5.11.0 one sheet flagged invalid (no staves found) or failing (an exception) fails the whole book's export. The job then reads the book again from a copy without those pages, and records them in `engine/run.json` (`skipped_sheets`). It does not use `-sheets`: with it, 5.11.0 writes every movement to one `BOOK.mvtnull.mxl`, each overwriting the last, which lost most of two real books (upstream bug 6 in `docs/upstream/audiveris`). Sheets are then numbered without the skipped pages, so the born-digital PDF repairs (Stage 4), which match sheets to PDF pages, are left out.
 - Never modify Audiveris behavior except through documented options (D6).
 
 ### Stage 3 — Engine Import (`.omr` + MusicXML → IR)

@@ -188,3 +188,30 @@ def test_voices_with_rest_and_note_at_same_onset_compare() -> None:
     gt = score(measure(0, a, b))
     pred = score(measure(0, b, a))
     assert compare(gt, pred).measure_accuracy == 1.0
+
+
+def test_merge_pads_a_part_a_movement_left_short() -> None:
+    # The second part is missing from the first movement's last system, and Audiveris
+    # ends it there: it is given rests to the movement's end before the next one.
+    first = Score(
+        parts=[
+            Part(
+                id="P1",
+                staves=[
+                    Staff(number=1, measures=[measure(i, [n("A", 4, 0, 2)]) for i in range(3)])
+                ],
+            ),
+            Part(
+                id="P2",
+                staves=[
+                    Staff(number=1, measures=[measure(i, [n("C", 4, 0, 2)]) for i in range(2)])
+                ],
+            ),
+        ]
+    )
+    merged = merge_scores([first, first])
+    for _, staff in merged.staves():
+        assert [m.index for m in staff.measures] == list(range(6))
+    short = merged.parts[1].staves[0].measures
+    assert short[2].voices[0].events[0].measure_rest
+    assert short[3].voices[0].events[0].pitches[0].label == "C4"
