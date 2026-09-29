@@ -475,6 +475,45 @@ def test_short_measure_in_every_voice_is_left_alone() -> None:
     assert repair_rhythm(score) == []
 
 
+def test_the_same_dot_missed_in_every_staff_is_restored() -> None:
+    # Homorhythm read as q e h (3.5 beats) in every staff: half a beat short is no
+    # phrase-end measure, and each staff needs the same dot on its first note.
+    bars = [line(*FULL), line("quarter", "eighth", "half"), line(*FULL)]
+    score = rhythm_score(bars, [list(b) for b in bars], [list(b) for b in bars])
+    repairs = repair_rhythm(score)
+    assert [r.measures for r in repairs] == [["2"], ["2"], ["2"]]
+    for part in score.parts:
+        events = part.staves[0].measures[1].voices[0].events
+        assert [e.dots for e in events] == [1, 0, 0]
+        assert [e.offset for e in events] == [0, Fraction(3, 2), 2]
+
+
+def test_missed_rests_are_put_where_the_notes_stand() -> None:
+    # Pizzicato quarters on beats 1 and 3, their rests not seen: the notes stand where
+    # beats 1 and 3 fall across the measure.
+    notes = line("quarter", "quarter")
+    for e, x in zip(notes, (40.0, 220.0), strict=True):
+        e.bbox = BBox(page=0, x=x, y=0, w=12, h=10)
+    score = rhythm_score([line(*FULL), notes, line(*FULL)])
+    score.parts[0].staves[0].measures[1].bbox = BBox(page=0, x=0, y=0, w=400, h=40)
+    repairs = repair_rhythm(score)
+    assert [(r.detail, r.measures) for r in repairs] == [
+        ("Part 1: rests to fill the measure", ["2"])
+    ]
+    events = score.parts[0].staves[0].measures[1].voices[0].events
+    assert [(e.kind, e.offset) for e in events] == [
+        ("note", 0),
+        ("rest", 1),
+        ("note", 2),
+        ("rest", 3),
+    ]
+
+
+def test_rests_are_not_put_in_without_page_positions() -> None:
+    score = rhythm_score([line(*FULL), line("quarter", "quarter"), line(*FULL)])
+    assert repair_rhythm(score) == []
+
+
 def test_pickup_is_not_filled() -> None:
     score = rhythm_score(
         [line("half"), line(*FULL), line(*FULL)],
