@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -113,6 +114,15 @@ def compile_ly(
     out_dir = out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     base = out_dir / source.stem
+    # Outputs of an earlier run must not pass for this one's: a run that writes no PDF
+    # (a file LilyPond cannot replace, say) would otherwise leave the old one in place.
+    locked: list[Diagnostic] = []
+    for old in _outputs(out_dir, source.stem, (*formats, "mid", "midi")):
+        try:
+            old.unlink()
+        except OSError:  # open in another program (Windows)
+            locked.append(Diagnostic("error", f"cannot replace {old.name}: is it open?"))
+    started = time.time()
 
     # The PostScript backend (PDF/PNG) and the SVG backend need separate runs.
     runs = [[f"--{f}" for f in formats if f != "svg"]]
@@ -146,9 +156,23 @@ def compile_ly(
             break
 
     # Each run reports the same source diagnostics; keep each one once.
-    diagnostics = list(dict.fromkeys(parse_diagnostics(log)))
-    outputs = sorted(p for p in out_dir.glob(f"{source.stem}*") if p.suffix.lstrip(".") in formats)
+    diagnostics = list(dict.fromkeys(parse_diagnostics(log))) + locked
+    outputs = [
+        p for p in _outputs(out_dir, source.stem, formats) if p.stat().st_mtime >= started - 1
+    ]
+    for fmt in formats:
+        if not any(p.suffix == f".{fmt}" for p in outputs):
+            diagnostics.append(Diagnostic("error", f"LilyPond wrote no {fmt.upper()} file"))
     return CompileResult(returncode, log, diagnostics, outputs)
+
+
+def _outputs(out_dir: Path, stem: str, suffixes: Sequence[str]) -> list[Path]:
+    """Files LilyPond writes for a source: ``stem.ext`` and ``stem-*.ext`` (pages, books)."""
+    return sorted(
+        p
+        for p in out_dir.glob(f"{stem}*")
+        if p.suffix.lstrip(".") in suffixes and (p.stem == stem or p.stem.startswith(f"{stem}-"))
+    )
 
 
 def lilypond_tool(tool: str, settings: Settings | None = None) -> list[str]:
