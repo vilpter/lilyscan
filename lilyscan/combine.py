@@ -28,6 +28,7 @@ from lilyscan.lilypond.generate import (
 )
 from lilyscan.lilypond.notation import absolute_pitch
 from lilyscan.pipeline import produce
+from lilyscan.repair.keys import ensemble_keys, may_transpose
 from lilyscan.runtime.config import Settings
 
 # A part that has no measure for more than this share of the score is not lined up.
@@ -177,8 +178,17 @@ def combine(
             )
     combined.parts = lined_up[: len(combined.parts)]
     accompanying = lined_up[len(combined.parts) :]
-    # A part with rests put in no longer matches its own LilyPond source.
+    # One or two parts reading another key than the rest at the same measures (a smudged
+    # or misread key signature) take the others' key; a part the user transposes, or
+    # one that may be a transposing instrument, keeps its own.
+    keeps = [
+        sel.transpose is not None or may_transpose(p, p.staves[0])
+        for sel, p in zip([*selections, *(piano or [])], lined_up, strict=True)
+    ]
+    rekeyed = ensemble_keys(lined_up, keeps)
+    # A part with rests put in, or respelled, no longer matches its own LilyPond source.
     regenerated = {k for k, gaps in enumerate(alignment.filled[: len(sources)]) if gaps}
+    regenerated |= {k for k in rekeyed if k < len(sources)}
 
     if accompanying:
         combined.parts.append(reduce_to_piano(accompanying, combined.parts[0]))
@@ -220,6 +230,9 @@ def combine(
                 names[k]: [c + 1 for c in gaps] for k, gaps in enumerate(alignment.filled) if gaps
             },
         }
+    if rekeyed:
+        # Parts set to the key the others read, by the measures they were respelled in.
+        report["keys"] = {names[k]: measures for k, measures in rekeyed.items()}
     if piano:
         report["piano_from"] = [
             {"job": sel.job.name, "part": sel.part, "transpose": sel.transpose} for sel in piano
