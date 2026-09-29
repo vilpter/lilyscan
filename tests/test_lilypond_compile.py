@@ -77,6 +77,20 @@ def test_compile_reports_syntax_error(tmp_path: Path) -> None:
     assert result.errors
 
 
+@pytest.mark.lilypond
+def test_a_run_that_writes_no_pdf_leaves_no_old_one(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "empty.pdf").write_bytes(b"%PDF from an earlier run")
+    (out / "empty.mid").write_bytes(b"MThd")
+    src = tmp_path / "empty.ly"
+    src.write_text(f'\\version "{LILYPOND_VERSION}"\n', encoding="utf-8")  # no music
+    result = compile_ly(src, out, ("pdf",))
+    assert not result.ok and result.outputs == []
+    assert [d.message for d in result.errors] == ["LilyPond wrote no PDF file"]
+    assert not (out / "empty.pdf").exists() and not (out / "empty.mid").exists()
+
+
 def test_programming_errors_are_warnings() -> None:
     [d] = parse_diagnostics("programming error: Multi measure rest seems misplaced.")
     assert d.is_internal and not d.is_error
