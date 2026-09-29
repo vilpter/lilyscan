@@ -177,8 +177,10 @@ def _targets(
             for stretch in staff:
                 readings = _readings(stretch)
                 own = _vote(readings)
-                follows = key in (readings[0], own) or (most and not keep)
-                if key is not None and readings and follows:
+                # A stretch that starts after a key change in the last system has no
+                # reading of its own at a system start.
+                follows = bool(readings) and (key in (readings[0], own) or (most and not keep))
+                if key is not None and follows:
                     targets[id(stretch)] = key
                 elif own is not None:
                     targets[id(stretch)] = own
