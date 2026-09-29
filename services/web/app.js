@@ -318,7 +318,8 @@ function renderBadges(qa) {
 function renderDownloads() {
   const base = `/api/jobs/${state.id}/download`;
   $("downloads").replaceChildren(
-    el("a", { href: `${base}/ly` }, ".ly project"),
+    el("a", { href: `${base}/ly`, title: "One LilyPond file: the score and, when there are several, each part" }, ".ly"),
+    el("a", { href: `${base}/ly-project`, title: "The editable project: one file per part, as in the editor (zip)" }, ".ly project"),
     el("a", { href: `${base}/pdf` }, "PDF"),
     el("a", { href: `${base}/midi` }, "MIDI"),
     el(

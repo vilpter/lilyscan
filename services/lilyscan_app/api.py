@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from lilyscan.ir.models import Score
 from lilyscan.ir.transpose import Interval
+from lilyscan.lilypond.single import single_file
 from lilyscan.pipeline import SOURCE_MAP
 from lilyscan.runtime.config import (
     AUDIVERIS_VERSION,
@@ -54,6 +55,21 @@ class CombineRequest(BaseModel):
     parts: list[CombinePart]
     # Parts reduced onto a piano grand staff below ``parts``: an accompaniment.
     piano: list[CombinePart] = []
+
+
+def _title(root: Path) -> str | None:
+    """The job's score title, if it has one."""
+    path = root / "ir" / "score.json"
+    if not path.is_file():
+        return None
+    title = json.loads(path.read_text(encoding="utf-8")).get("title")
+    return title if isinstance(title, str) else None
+
+
+def _file_name(title: str | None) -> str | None:
+    """A title as a plain file name (LilyPond names its output files after it)."""
+    name = re.sub(r"[^A-Za-z0-9 ._'-]+", "", title or "").strip(" .")
+    return re.sub(r"\s+", " ", name)[:80] or None
 
 
 def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None = None) -> FastAPI:
@@ -316,6 +332,22 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
         root = _job_root(job_id, jobs)
         ly_root = root / "ly"
         if kind == "ly":
+            # One file engraving the score and, when there are several, each part: built
+            # from the project as it is now, so edits made in the review are in it.
+            files = {
+                p.relative_to(ly_root).as_posix(): p.read_text(encoding="utf-8")
+                for p in sorted(ly_root.rglob("*.ly"))
+                if "svg" not in p.relative_to(ly_root).parts
+            }
+            if "main.ly" not in files:
+                raise HTTPException(404, "no LilyPond source for this job")
+            name = _file_name(_title(root)) or f"lilyscan-{job_id}"
+            return Response(
+                single_file(files),
+                media_type="text/x-lilypond; charset=utf-8",
+                headers={"Content-Disposition": f'attachment; filename="{name}.ly"'},
+            )
+        if kind == "ly-project":
             buffer = io.BytesIO()
             with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
                 for p in sorted(ly_root.rglob("*")):

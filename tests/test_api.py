@@ -198,7 +198,11 @@ def test_downloads(client: TestClient, finished_job: str) -> None:
     import zipfile
 
     base = f"/api/jobs/{finished_job}/download"
-    archive = client.get(f"{base}/ly")
+    single = client.get(f"{base}/ly")
+    assert single.status_code == 200
+    assert single.headers["content-disposition"].endswith('.ly"')
+    assert "\\include" not in single.text and "\\score" in single.text
+    archive = client.get(f"{base}/ly-project")
     assert archive.status_code == 200
     names = zipfile.ZipFile(io.BytesIO(archive.content)).namelist()
     assert f"lilyscan-{finished_job}/main.ly" in names
