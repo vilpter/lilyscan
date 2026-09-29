@@ -11,7 +11,7 @@ from pathlib import Path
 
 from lilyscan.engine.audiveris.runner import audiveris_version
 from lilyscan.lilypond.compile import HELLO_WORLD, compile_ly, lilypond_version
-from lilyscan.runtime.config import AUDIVERIS_VERSION, LILYPOND_VERSION
+from lilyscan.runtime.config import AUDIVERIS_VERSION, LILYPOND_VERSION, Settings
 from lilyscan.runtime.device import get_device
 
 
@@ -54,14 +54,22 @@ def _cmd_selftest(args: argparse.Namespace) -> int:
         return 0 if result.ok else 1
 
 
+def _serve_settings(data: str) -> Settings:
+    """Settings for ``serve``, also put in the environment: the job steps running in the
+    background read their settings from it, so they must see the same data folder."""
+    import os
+
+    os.environ["LILYSCAN_DATA_DIR"] = str(Path(data).resolve())
+    os.environ["LILYSCAN_DISPATCH"] = "inline"
+    return Settings.from_env()
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
     """API + web UI in one process; jobs run in a background thread (no Redis needed)."""
-    import dataclasses
     import os
 
     import uvicorn
 
-    from lilyscan.runtime.config import Settings
     from lilyscan_app.api import create_app
 
     # Single-machine convenience: find a local Audiveris install and OCR models.
@@ -76,9 +84,7 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     if "TESSDATA_PREFIX" not in os.environ and local_tessdata.is_dir():
         os.environ["TESSDATA_PREFIX"] = str(local_tessdata)
 
-    settings = dataclasses.replace(
-        Settings.from_env(), dispatch="inline", data_dir=Path(args.data).resolve()
-    )
+    settings = _serve_settings(args.data)
     print(f"Lilyscan at http://{args.host}:{args.port}/ (data in {settings.data_dir})")
     uvicorn.run(create_app(settings), host=args.host, port=args.port, log_level="warning")
     return 0

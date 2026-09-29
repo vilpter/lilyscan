@@ -320,3 +320,19 @@ def test_rerun_with_other_settings(
     assert again["options"] == {"ocr_languages": "ita", "prepare": False, "rerun_of": new["id"]}
     bad = client.post(f"/api/jobs/{old['id']}/rerun", json={"ocr_languages": "x y"})
     assert bad.status_code == 422
+
+
+def test_serve_gives_the_background_steps_its_data_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # `lilyscan serve --data X`: the job steps read their settings from the environment,
+    # so they must find X there, not the default ./data.
+    from lilyscan.cli import _serve_settings
+    from lilyscan.runtime.config import Settings
+
+    monkeypatch.delenv("LILYSCAN_DATA_DIR", raising=False)
+    monkeypatch.delenv("LILYSCAN_DISPATCH", raising=False)
+    settings = _serve_settings(str(tmp_path / "jobs"))
+    assert settings.data_dir == (tmp_path / "jobs").resolve()
+    assert settings.dispatch == "inline"
+    assert Settings.from_env().data_dir == settings.data_dir
