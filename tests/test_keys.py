@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from fractions import Fraction
+from pathlib import Path
+
+import pytest
 
 from lilyscan.engine.audiveris.omr import OmrBook, OmrSheet, OmrSystem, Stack
 from lilyscan.ir.models import (
     Barline,
+    Clef,
     Event,
     KeySignature,
     Measure,
@@ -20,7 +24,7 @@ from lilyscan.ir.models import (
 )
 from lilyscan.ir.musicxml import MULTI_REST
 from lilyscan.ir.ops import merge_scores
-from lilyscan.repair.keys import consistent_keys, key_alter
+from lilyscan.repair.keys import consistent_keys, ensemble_keys, key_alter
 
 
 def book(*systems: int, movements: tuple[int, ...] = (0,)) -> OmrBook:
@@ -229,3 +233,61 @@ def test_measures_added_for_a_multi_measure_rest_do_not_move_the_system_starts()
     consistent_keys(s, book(2, 2, 2))
     assert keys(s) == [(0, 3)]
     assert pitches(s.parts[0].staves[0].measures[3]) == ["C#5"]
+
+
+def test_a_bass_clef_part_reading_another_key_throughout_is_misread() -> None:
+    # Three staves read three sharps; the cello (bass clef) reads none on every system:
+    # its key signature is smudged. A bass-clef part does not transpose.
+    s = ensemble([3, 3, 3], [3, 3, 3], [3, 3, 3], [0, 0, 0])
+    cello = s.parts[3].staves[0]
+    cello.measures[0].clefs = [Clef(sign="F", line=4)]
+    log = consistent_keys(s, book(1, 1, 1))
+    assert [r.part for r in log] == ["P4"]
+    assert in_force(cello) == [3, 3, 3]
+    assert all(pitches(m) == ["G#5"] for m in cello.measures)
+
+
+def test_combined_parts_that_read_another_key_take_the_others() -> None:
+    # Separate files combined: the viola read one sharp throughout, the others three.
+    parts = ensemble([3, 3, 3], [3, 3, 3], [1, 1, 1], [3, 3, 3]).parts
+    changed = ensemble_keys(parts, [False] * 4)
+    assert changed == {2: ["1", "2", "3"]}
+    assert in_force(parts[2].staves[0]) == [3, 3, 3]
+    assert all(pitches(m) == ["G#5"] for m in parts[2].staves[0].measures)
+
+
+def test_combined_parts_keep_their_keys_without_a_clear_majority_or_when_transposing() -> None:
+    split = ensemble([3, 3, 3], [3, 3, 3], [1, 1, 1], [1, 1, 1]).parts
+    assert ensemble_keys(split, [False] * 4) == {}
+    clarinet = ensemble([3, 3, 3], [3, 3, 3], [5, 5, 5], [3, 3, 3]).parts
+    assert ensemble_keys(clarinet, [False, False, True, False]) == {}
+    assert in_force(clarinet[2].staves[0]) == [5, 5, 5]
+
+
+@pytest.mark.lilypond
+def test_combine_sets_a_part_read_in_another_key_to_the_others(tmp_path: Path) -> None:
+    from lilyscan.combine import Selection, combine
+    from lilyscan.pipeline import produce
+
+    parts = ensemble([3, 3, 3], [3, 3, 3], [1, 1, 1]).parts
+    selections = []
+    for p, name in zip(parts, ["Violin 1", "Violin 2", "Viola"], strict=True):
+        root = tmp_path / name
+        produce(Score(title="Test", parts=[p]), root)
+        selections.append(Selection(root, p.id, name=name))
+    report = combine(selections, tmp_path / "combined")
+    assert report["keys"] == {"Viola": ["1", "2", "3"]}
+    score = Score.model_validate_json(
+        (tmp_path / "combined" / "ir" / "score.json").read_text(encoding="utf-8")
+    )
+    assert all(pitches(m) == ["G#5"] for m in score.parts[2].staves[0].measures)
+    # Respelled, so written from the IR rather than copied from the viola's own source.
+    assert "gis''" in (tmp_path / "combined" / "ly" / "parts" / "viola.ly").read_text()
+
+
+def test_a_key_change_a_measure_off_is_left_to_the_part() -> None:
+    # The viola changes key one measure before the others: more likely lined up a little
+    # wrong than misread, so it is left as read.
+    parts = ensemble([1, 1, 3, 3], [1, 1, 3, 3], [1, 3, 3, 3], [1, 1, 3, 3]).parts
+    assert ensemble_keys(parts, [False] * 4) == {}
+    assert in_force(parts[2].staves[0]) == [1, 3, 3, 3]

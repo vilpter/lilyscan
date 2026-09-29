@@ -18,11 +18,12 @@ key throughout and keep their own vote.
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import dataclass
 
 from lilyscan.engine.audiveris.omr import OmrBook
-from lilyscan.ir.models import KeySignature, Measure, Pitch, Provenance, Score, Staff
+from lilyscan.ir.models import KeySignature, Measure, Part, Pitch, Provenance, Score, Staff
 from lilyscan.ir.musicxml import added_rest, written_measures
 from lilyscan.repair import Repair
 
@@ -30,6 +31,32 @@ RULE = "key-signature"
 _SHARPS = "FCGDAEB"
 _FLATS = "BEADGCF"
 _DOUBLE_BARS = frozenset({"light-light", "light-heavy", "heavy-light", "heavy-heavy"})
+# Instruments written in another key than they sound, and ones written as they sound.
+_TRANSPOSING = re.compile(
+    r"clar|\bcl\b|trump|\btpt|\btr\b|horn|\bhn\b|\bcor\b|sax|cornet|flug|"
+    r"\bin [a-g](?:b|#|s)?\b",
+    re.IGNORECASE,
+)
+_CONCERT = re.compile(
+    r"viol|vln|vla|cell|\bvc\b|bass|flute|\bfl\b|oboe|\bob\b|bassoon|\bbsn\b|"
+    r"piano|pno|organ|harp|guitar|recorder|trombone|\btbn\b|tuba",
+    re.IGNORECASE,
+)
+
+
+def may_transpose(part: Part, staff: Staff) -> bool:
+    """Whether a staff that reads another key than the rest of the piece could be a
+    transposing instrument, which would mean it is right to. Transposing instruments are
+    written in treble clef; an alto, tenor or bass clef, or a name like Viola, says the
+    part sounds as written. Audiveris names a part it cannot name "Voice"."""
+    if part.transpose_semitones:
+        return True
+    names = " ".join(n for n in (part.name, part.abbreviation) if n and n != "Voice")
+    if _TRANSPOSING.search(names):
+        return True
+    if _CONCERT.search(names):
+        return False
+    return not any(c.sign in ("C", "F") for m in staff.measures for c in m.clefs)
 
 
 def key_alter(fifths: int, step: str) -> int:
@@ -118,8 +145,14 @@ def _vote(readings: list[int]) -> int | None:
     return best
 
 
-def _targets(stretches: list[list[list[_Segment]]], pieces: list[int]) -> dict[int, int]:
-    """The key each stretch of each staff should be in, by the stretch's ``id``."""
+def _targets(
+    stretches: list[list[list[_Segment]]], pieces: list[int], keeps: list[bool]
+) -> dict[int, int]:
+    """The key each stretch of each staff should be in, by the stretch's ``id``.
+
+    ``keeps[k]``: staff ``k`` could be a transposing instrument, so it keeps a key it
+    reads throughout. Another staff takes the piece's key when most staves read it.
+    """
 
     def piece(stretch: list[_Segment]) -> int:
         start = stretch[0].measures[0].index
@@ -127,16 +160,25 @@ def _targets(stretches: list[list[list[_Segment]]], pieces: list[int]) -> dict[i
 
     targets: dict[int, int] = {}
     for p in {piece(st) for staff in stretches for st in staff}:
-        in_piece = [[st for st in staff if piece(st) == p] for staff in stretches]
-        in_piece = [staff for staff in in_piece if staff]
+        staves = [
+            (keep, [st for st in staff if piece(st) == p])
+            for keep, staff in zip(keeps, stretches, strict=True)
+        ]
+        in_piece = [(keep, staff) for keep, staff in staves if staff]
         # The staves vote together only when none of them changes key in the piece.
-        together = all(len(staff) == 1 for staff in in_piece)
-        key = _vote([r for staff in in_piece for r in _readings(staff[0])]) if together else None
-        for staff in in_piece:
+        together = all(len(staff) == 1 for _, staff in in_piece)
+        readings_all = [r for _, staff in in_piece for r in _readings(staff[0])]
+        key = _vote(readings_all) if together else None
+        # One or two staves reading another key throughout, against most of the others:
+        # misread, unless the staff could be a transposing instrument.
+        agree = sum(1 for _, staff in in_piece if _vote(_readings(staff[0])) == key)
+        most = key is not None and agree >= 2 and agree > len(in_piece) - agree
+        for keep, staff in in_piece:
             for stretch in staff:
                 readings = _readings(stretch)
                 own = _vote(readings)
-                if key is not None and readings and key in (readings[0], own):
+                follows = key in (readings[0], own) or (most and not keep)
+                if key is not None and readings and follows:
                     targets[id(stretch)] = key
                 elif own is not None:
                     targets[id(stretch)] = own
@@ -176,7 +218,8 @@ def consistent_keys(score: Score, book: OmrBook) -> list[Repair]:
     starts, movements = _layout(book)
     staves = [(part, staff) for part in score.parts for staff in part.staves]
     stretches = [_stretches(staff, starts, movements) for _, staff in staves]
-    targets = _targets(stretches, sorted(movements))
+    keeps = [may_transpose(part, staff) for part, staff in staves]
+    targets = _targets(stretches, sorted(movements), keeps)
     repairs: list[Repair] = []
     for (part, staff), own in zip(staves, stretches, strict=True):
         first: list[str] = []  # where each corrected system starts
@@ -220,3 +263,70 @@ def _drop_restated_keys(staff: Staff, movements: set[int]) -> None:
             m.key = None
         else:
             fifths = m.key.fifths
+
+
+def ensemble_keys(parts: list[Part], keeps: list[bool]) -> dict[int, list[str]]:
+    """Parts of a combined score, lined up measure by measure, where one or two read
+    another key than the others at the same measures: set to the others' key, with the
+    notes it alters respelled. ``keeps[k]``: part ``k`` transposes (or may), so its key
+    is its own. Returns the measures changed, by part.
+
+    A stretch of disagreement that borders a change of the others' key is left alone: a
+    key change a few measures off is more likely a part lined up a little wrong than a
+    misread key signature.
+    """
+    voters = [k for k, keep in enumerate(keeps) if not keep]
+    if len(voters) < 3:
+        return {}
+    in_force: dict[int, list[int]] = {}
+    for k in voters:
+        fifths, keys = 0, []
+        for m in parts[k].staves[0].measures:
+            if m.key is not None:
+                fifths = m.key.fifths
+            keys.append(fifths)
+        in_force[k] = keys
+    columns = min(len(v) for v in in_force.values())
+    majority: list[int | None] = []
+    for c in range(columns):
+        (key, n), *_ = Counter(in_force[k][c] for k in voters).most_common()
+        majority.append(key if n >= 2 and n > len(voters) - n else None)
+    turns = {c for c in range(1, columns) if majority[c] != majority[c - 1]}
+    changed: dict[int, list[str]] = {}
+    targets: dict[int, list[int]] = {k: list(v) for k, v in in_force.items()}
+    for k in voters:
+        c = 0
+        while c < columns:
+            if majority[c] is None or in_force[k][c] == majority[c]:
+                c += 1
+                continue
+            end = c
+            while (
+                end + 1 < columns
+                and majority[end + 1] == majority[c]
+                and (in_force[k][end + 1] != majority[c])
+            ):
+                end += 1
+            if not any(t in turns for t in range(c, end + 2)):
+                for col in range(c, end + 1):
+                    old, target = in_force[k][col], majority[col]
+                    assert target is not None
+                    targets[k][col] = target
+                    for staff in parts[k].staves:
+                        if col < len(staff.measures):
+                            _respell(staff.measures[col], old, target)
+                    m = parts[k].staves[0].measures[col]
+                    changed.setdefault(k, []).append(m.number or str(m.index + 1))
+            c = end + 1
+    for k in changed:
+        for staff in parts[k].staves:
+            previous = None
+            for c, m in enumerate(staff.measures[:columns]):
+                key = targets[k][c]
+                if key != previous:
+                    mode = m.key.mode if m.key is not None else None
+                    m.key = KeySignature(fifths=key, mode=mode)
+                elif m.key is not None:
+                    m.key = None
+                previous = key
+    return changed
