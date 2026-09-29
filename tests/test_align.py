@@ -86,6 +86,28 @@ def test_parts_that_line_up_are_left_alone() -> None:
     assert [onsets(p) for p in aligned] == [onsets(p) for p in parts]
 
 
+def test_parts_as_long_as_each_other_pair_measure_for_measure() -> None:
+    # Different instruments play different rhythms, and a stretch of one part can look
+    # like another's shifted by a measure. That is no reason to shift the part (a gap on
+    # each side): parts as long as each other have the same measures.
+    other = PIECE[:4] + PIECE[5:11] + [PIECE[4]] + PIECE[11:]
+    parts = [part("A", PIECE), part("B", other), part("C", PIECE)]
+    aligned, alignment = align_parts(parts)
+    assert not alignment.changed and alignment.measures == 12
+    assert onsets(aligned[1]) == other
+
+
+def test_the_reference_is_the_longest_count_two_parts_share() -> None:
+    # Two parts of 12 measures, two that each missed a different measure: the short ones
+    # get a rest where they miss it, and no part gets a measure the others lack.
+    short_a = PIECE[:3] + PIECE[4:]
+    short_b = PIECE[:8] + PIECE[9:]
+    parts = [part("A", short_a), part("B", PIECE), part("C", short_b), part("D", PIECE)]
+    _, alignment = align_parts(parts)
+    assert alignment.measures == 12
+    assert alignment.filled == [[3], [], [8], []]
+
+
 def test_a_part_without_a_time_signature_takes_the_references() -> None:
     parts = [part("A", PIECE), part("B", PIECE), part("C", PIECE, time=False)]
     (_, _, c), _ = align_parts(parts)
