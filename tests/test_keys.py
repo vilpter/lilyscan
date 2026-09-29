@@ -291,3 +291,16 @@ def test_a_key_change_a_measure_off_is_left_to_the_part() -> None:
     parts = ensemble([1, 1, 3, 3], [1, 1, 3, 3], [1, 3, 3, 3], [1, 1, 3, 3]).parts
     assert ensemble_keys(parts, [False] * 4) == {}
     assert in_force(parts[2].staves[0]) == [1, 3, 3, 3]
+
+
+def test_a_key_change_in_the_last_system_has_no_system_reading() -> None:
+    # Two systems of two measures; the key changes in mid-system on the last one, so the
+    # stretch after the change starts at no system: nothing to vote on, and no crash.
+    s = score(
+        measure(0, 1, ("F", 1, False)),
+        measure(1, None, ("F", 1, False)),
+        measure(2, 1, ("F", 1, False)),
+        measure(3, 3, ("C", 1, False)),
+    )
+    assert consistent_keys(s, book(2, 2)) == []
+    assert keys(s) == [(0, 1), (2, 1), (3, 3)]  # as read
