@@ -2,13 +2,17 @@
 
 The engine reads each part on its own, and now and then drops a measure (a missed
 barline) or adds one (a stray barline), so the parts of one piece seldom have exactly
-the same measures. Each part is aligned to a reference part (the one whose measure count
-most parts share, then the most confident) by dynamic programming over its measures:
+the same measures. Each part is aligned to a reference part: the longest measure count
+that at least two parts share (a part more often misses a measure than gains one), then
+the most confident.
 
-- measures match cheaply when they have the same onsets (Jaccard distance over the
-  onset positions of all voices), both rest throughout, and agree on the landmarks all
-  parts share: double, final and repeat barlines, and changes of key or time;
-- skipping a measure in either part costs a fixed amount.
+A part as long as the reference pairs with it measure for measure. Otherwise only the
+shorter of the two gets gaps, exactly as many as it is short: a part misses measures or
+has extra ones, not both, and different instruments' rhythms differ too much to trade a
+pair of gaps for a mismatch. Where the gaps go is found by dynamic programming: measures
+match cheaply when they have the same onsets (Jaccard distance over the onset positions
+of all voices), both rest throughout, and agree on the landmarks all parts share:
+double, final and repeat barlines, and changes of key or time.
 
 Where a part has no measure for a column of the combined score, it gets a whole-measure
 rest with no confidence, so the review list shows it. A part that read no time
@@ -23,7 +27,6 @@ from fractions import Fraction
 
 from lilyscan.ir.models import Barline, Event, Measure, Part, Staff, Voice
 
-GAP = 1.0
 _LANDMARK = frozenset({"light-light", "light-heavy", "heavy-light", "heavy-heavy"})
 
 
@@ -67,34 +70,38 @@ def _cost(a: Measure, b: Measure) -> float:
     return rhythm + marks
 
 
-def _pairs(ref: list[Measure], other: list[Measure]) -> list[tuple[int | None, int | None]]:
-    """Needleman-Wunsch: (reference measure, other measure) pairs, None for a gap."""
-    n, m = len(ref), len(other)
-    score = [[0.0] * (m + 1) for _ in range(n + 1)]
+def _fit(long: list[Measure], short: list[Measure]) -> list[tuple[int, int | None]]:
+    """``short`` matched in order to ``len(short)`` measures of ``long`` at the least cost:
+    (``long`` measure, ``short`` measure or None) for every measure of ``long``."""
+    n, m = len(long), len(short)
+    inf = float("inf")
+    best = [[inf] * (m + 1) for _ in range(n + 1)]
+    best[0][0] = 0.0
     for i in range(1, n + 1):
-        score[i][0] = i * GAP
-    for j in range(1, m + 1):
-        score[0][j] = j * GAP
-    for i in range(1, n + 1):
-        for j in range(1, m + 1):
-            score[i][j] = min(
-                score[i - 1][j - 1] + _cost(ref[i - 1], other[j - 1]),
-                score[i - 1][j] + GAP,
-                score[i][j - 1] + GAP,
-            )
-    out: list[tuple[int | None, int | None]] = []
+        for j in range(max(0, m - (n - i)), min(i, m) + 1):
+            skip = best[i - 1][j]  # long[i - 1] has no partner in short
+            take = best[i - 1][j - 1] + _cost(long[i - 1], short[j - 1]) if j else inf
+            best[i][j] = min(skip, take)
+    out: list[tuple[int, int | None]] = []
     i, j = n, m
-    while i or j:
-        if i and j and score[i][j] == score[i - 1][j - 1] + _cost(ref[i - 1], other[j - 1]):
+    while i:
+        if j and best[i][j] == best[i - 1][j - 1] + _cost(long[i - 1], short[j - 1]):
             out.append((i - 1, j - 1))
-            i, j = i - 1, j - 1
-        elif i and score[i][j] == score[i - 1][j] + GAP:
-            out.append((i - 1, None))
-            i -= 1
-        else:
-            out.append((None, j - 1))
             j -= 1
+        else:
+            out.append((i - 1, None))
+        i -= 1
     return out[::-1]
+
+
+def _pairs(ref: list[Measure], other: list[Measure]) -> list[tuple[int | None, int | None]]:
+    """(reference measure, other measure) pairs, None for a gap; only the shorter of the
+    two has gaps."""
+    if len(ref) == len(other):
+        return [(i, i) for i in range(len(ref))]
+    if len(ref) > len(other):
+        return list(_fit(ref, other))
+    return [(r, o) for o, r in _fit(other, ref)]
 
 
 def _mean_confidence(part: Part) -> float:
@@ -110,9 +117,12 @@ def _mean_confidence(part: Part) -> float:
 
 
 def choose_reference(parts: list[Part]) -> int:
+    """The longest measure count at least two parts share (the median one when none is
+    shared), then the most confident part of that length."""
     counts = [len(p.staves[0].measures) for p in parts]
-    common = Counter(counts).most_common(1)[0][0]
-    candidates = [k for k, c in enumerate(counts) if c == common]
+    shared = [c for c, n in Counter(counts).items() if n > 1]
+    length = max(shared) if shared else sorted(counts)[len(counts) // 2]
+    candidates = [k for k, c in enumerate(counts) if c == length]
     return max(candidates, key=lambda k: _mean_confidence(parts[k]))
 
 
