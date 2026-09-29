@@ -1,210 +1,282 @@
 # Lilyscan
 
-Sheet music (PDF, scans, phone photos) to editable, well-structured LilyPond, built
-around the [Audiveris](https://github.com/Audiveris/audiveris) OMR engine.
-The design is in [docs/design.md](docs/design.md).
+Sheet music in, editable LilyPond out. Lilyscan takes a born-digital PDF, a scan, or a phone
+photo of printed music, reads it with the [Audiveris](https://github.com/Audiveris/audiveris)
+optical music recognition (OMR) engine, repairs what the engine commonly gets wrong, and
+writes a clean LilyPond project with the full score and every part. A browser UI shows the
+page, the engraved result and the source side by side, so the measures that need a human
+look can be found, fixed and recompiled in a minute.
 
-**Status:** early development, tested on generated and public-domain scores but not yet on
-real-world scans and phone photos. It runs end to end on one machine. Done: the engine
-wrapper, evaluation harness, LilyPond generator and checks, page geometry, review UI,
-repairs of the engine's output with a calibrated confidence, the photo and scan front-end,
-born-digital PDF rendering, and the score combiner. On the evaluation corpora about 83% of
-measures come out exactly right overall (PDF 89-92%, PNG 83-88%, scans 83%, photos 72-74%);
-see `eval/results/` and the status log in [docs/design.md](docs/design.md).
+![Reviewing a transcribed scan: the page as the engine read it, the engraved result, and the LilyPond source with the review list](docs/images/review.png)
 
-## Pinned toolchain
+**Status:** working end to end on one machine, in daily use on a library of real scanned
+string parts. On the evaluation corpora about 83% of measures come out exactly right before
+any human review (born-digital PDFs 89-92%, PNGs 83-88%, scans 83%, phone photos 72-74%);
+see `eval/results/` and the status log in [docs/design.md](docs/design.md). What Audiveris
+misreads is reported and fixed upstream where possible (see
+[docs/upstream/audiveris](docs/upstream/audiveris/README.md)).
 
-| Tool | Version | Where |
+## What it does
+
+- **Reads any kind of page.** Born-digital PDFs are rendered sharply at 400 DPI, and their
+  printed tuplet numbers are used to check the rhythm. Photos and scans are straightened
+  first: the page is found and seen head-on, uneven light is evened out, sideways or
+  upside-down pages are turned upright, and curled or skewed staff lines are made straight.
+  A scan is also read as uploaded, and Lilyscan keeps whichever result it expects to be
+  better.
+- **Repairs the engine's common mistakes** and says so: parts split between systems,
+  key signatures misread on one system or in one part, tenor clefs read without their 8,
+  missed triplets, dots and rests, multi-measure rests, page text or chord names read as
+  lyrics, syllables read as one word. Each fix is listed in the review and noted in the
+  source as a `% fix:` comment.
+- **Tells you where to look.** Every note gets a calibrated confidence (a note at 0.7 is
+  right about 70% of the time). Notes below 0.5 are marked in the source as `%{ ?? %}`, and a
+  review list ranks the measures by what is wrong with them.
+- **Writes real LilyPond.** One variable per staff, one line per measure with a bar check
+  and a `% m. N` comment, absolute pitches, and layouts for the score and each part. The
+  `.ly` download is a single file that engraves the score and each part.
+- **Combines parts** read separately (a violin part and a cello part scanned on their own)
+  into one score, lined up measure by measure, with transposition and concert pitch for
+  transposing instruments. Parts can also be **reduced onto a piano accompaniment** below a
+  melody part.
+- **Exports** PDF, MIDI, MusicXML (for other notation programs) and the Audiveris project.
+
+## How it works
+
+A job goes through these stages (the design, and why each exists, is in
+[docs/design.md](docs/design.md)):
+
+| Stage | What happens | Code |
 |---|---|---|
-| LilyPond | 2.26.0 | `lilyscan/runtime/config.py`, `services/worker/Dockerfile` |
-| Audiveris | 5.11.0 | `lilyscan/runtime/config.py`, `services/audiveris-worker/Dockerfile` |
-| Python | 3.12 | `pyproject.toml` |
+| 0. Ingest | Every page of every upload, in order, becomes one book for the engine | `lilyscan/ingest/` |
+| 1. Prepare | Photos and scans are found, straightened, turned upright and cleaned | `lilyscan/prepare/` |
+| 2. Engine | Audiveris 5.11.0 transcribes the book (batch mode; a failed page is left out and the rest read again) | `lilyscan/engine/audiveris/runner.py` |
+| 3. Import | The exported MusicXML becomes Lilyscan's score model, with page positions and grades from the Audiveris project | `lilyscan/ir/musicxml.py`, `lilyscan/engine/audiveris/omr.py` |
+| 4. Vector oracle | Born-digital PDFs: glyphs read from the PDF itself check tuplets | `lilyscan/vector/` |
+| 5. Repair | Rule-based repairs, then Lilyscan's calibrated confidence | `lilyscan/repair/` |
+| 6. Score model | Parts, staves, measures, voices, events, with provenance for every change | `lilyscan/ir/models.py` |
+| 7. LilyPond | The editable project, compiled to PDF, MIDI and SVG | `lilyscan/lilypond/` |
+| 8. Checks | Compiles (Q1), bar checks (Q2), measure durations (Q3), ranges (Q4), parts line up (Q5) | `lilyscan/qa/` |
 
-Changing a pin is its own change: update both places, then re-run the eval harness.
+Combining parts (`lilyscan/combine.py`) aligns the parts measure by measure
+(`lilyscan/align.py`), lets parts that disagree on the key vote, optionally reduces some of
+them to a piano accompaniment (`lilyscan/arrange.py`), and produces a new job.
 
-## Review UI
+## Project layout
 
-Open the app in a browser (port 8000 by default) to upload a PDF, scans, or phone photos,
-follow the job, and review the result in three panes. Pages are prepared for the engine
-first (unless you untick the option). Born-digital PDFs are rendered sharply at 400 DPI, and
-the triplets they print are used to check the rhythm. Photos and scans are straightened: the
-page is found and seen head-on, uneven light is evened out, sideways or upside-down pages
-are turned upright, and curled or skewed staff lines are made straight. A scan is also transcribed as uploaded, and Lilyscan keeps
-whichever result it expects to be better.
+```
+lilyscan/            the library: pipeline stages (above), CLI (cli.py), evaluation
+  evaluation/        corpus scoring (harness.py, compare.py) and confidence fitting
+  synth/             the generated evaluation corpus (music, engraving, scan and photo simulation)
+  runtime/           pinned tool versions, settings from the environment, compute device
+services/
+  lilyscan_app/      FastAPI app (api.py), job store (SQLite), job steps (tasks.py), dispatch
+  web/               the browser UI (plain HTML, CSS and JavaScript, no build step)
+  api/, worker/, audiveris-worker/   Dockerfiles for the homelab deployment
+eval/                corpus specs (seed.json, repertoire.json) and committed results
+docs/                design.md (design and status log), upstream/audiveris (bug reports and fixes)
+tests/               pytest suite
+scripts/             maintenance scripts (engine smoke test, .omr fixtures)
+docker-compose.yml   the homelab deployment
+```
 
-- **Source:** the page as the engine read it, every note boxed by confidence and measures
-  that need attention outlined.
-- **Engraved:** the LilyPond output.
-- **LilyPond:** the editable source, with a review list of measures ranked by problems.
+## Install
 
-Clicking a measure in any pane (or putting the caret on its line) highlights it in the other
-two. Edit the source, press **Save & recompile**, then download the `.ly` project, PDF, or MIDI,
-or MusicXML for other notation programs (the score as transcribed and repaired; edits made
-to the LilyPond source are not carried into it).
-Fixes Lilyscan made on its own (parts the engine split between systems, tenor clefs read
-without their 8, missed triplets, page text or chord names read as lyrics, syllables read as
-one word) are listed above the review list and noted in the source as `% fix:` comments.
+Lilyscan runs on Windows and Linux (macOS should work, but is untested). You need:
 
-**Combine parts** (on the home page) makes a new score from parts of finished jobs: say a
-violin part and a cello part scanned separately. Each part can be transposed, or taken at
-concert pitch if it is a transposing instrument. Parts read separately seldom have exactly the
-same measures (the engine misses or adds one now and then), so they are lined up measure by
-measure, and where a part has no measure it gets a rest that shows in the review list. Your
-edits to each part carry over, because the new score includes the parts' own LilyPond
-sources (transposition is done by LilyPond's `\transpose`, so those sources stay as
-written). The combined score is a job like any other: review it, edit it, download it.
+| Tool | Version | Notes |
+|---|---|---|
+| Python | 3.12 | managed by [uv](https://docs.astral.sh/uv/) |
+| [LilyPond](https://lilypond.org/download.html) | 2.26.0 | `lilypond` on the `PATH`, or `LILYPOND_BIN` |
+| [Audiveris](https://github.com/Audiveris/audiveris/releases/tag/5.11.0) | 5.11.0 | the installer bundles its Java runtime; point `AUDIVERIS_BIN` at its executable (found automatically in `C:\Program Files\Audiveris` on Windows) |
+| Tesseract language models | [tessdata](https://github.com/tesseract-ocr/tessdata) (not `tessdata_fast`) | `eng`, `lat`, `deu` and `fra` by default, in `%LOCALAPPDATA%\lilyscan\tessdata` on Windows (found automatically) or any folder named by `TESSDATA_PREFIX`. Without them Audiveris reads no lyrics or titles |
 
-A part can also go **in the piano accompaniment** instead of on its own staff: the chosen
-parts are reduced onto a piano grand staff below the others. That turns an ensemble
-arrangement into a melody with piano: say the violin 1 part, with violin 2 and viola on the
-piano's upper staff and cello and bass on its lower one. Each part goes to the staff for the
-register it sounds in (a double bass an octave below where it is written); parts playing the
-same rhythm merge into chords, and others keep voices of their own.
+Audiveris needs the full models with the legacy engine: `tessdata_fast` and distribution
+`tesseract-ocr-*` packages do not work. The versions are pinned: Lilyscan is tested against
+exactly these (`lilyscan/runtime/config.py`).
 
-To try it on one machine without Docker or Redis (jobs run inside the server process):
+Then:
+
+```bash
+git clone https://github.com/vilpter/lilyscan.git
+cd lilyscan
+uv sync --all-extras
+uv run lilyscan versions
+uv run lilyscan selftest
+```
+
+`versions` compares the installed LilyPond and Audiveris with the pinned ones; `selftest`
+compiles a small score. For the homelab (Docker) deployment you need none of this, only
+Docker (below).
+
+## Start
+
+On one machine, with jobs run inside the server process (no Redis or Docker):
 
 ```bash
 uv run lilyscan serve
 ```
 
-It needs LilyPond and Audiveris installed locally; on Windows it finds a standard Audiveris
-install and OCR models in `%LOCALAPPDATA%\lilyscan\tessdata`.
+Then open <http://localhost:8000/>. `--port` changes the port and `--data` the folder where
+jobs are kept (default `./data`).
 
-## Run (homelab)
-
-Images are published to GHCR from `main`:
+In the homelab, with the published images (the API on port 8000, the Audiveris engine and the
+pipeline in their own workers, and a Redis-compatible queue):
 
 ```bash
 docker compose pull
-```
-
-```bash
 docker compose up -d
 ```
 
-Or build locally with `docker compose up -d --build`. Pin a specific build with
-`LILYSCAN_TAG=sha-<commit>`.
+Build locally with `docker compose up -d --build`, pin a build with `LILYSCAN_TAG=sha-<commit>`,
+and change the port with `LILYSCAN_PORT`. With an NVIDIA GPU and the NVIDIA Container Toolkit:
+`docker compose --profile gpu up -d --scale worker=0`. The services:
 
-The API listens on port 8000 (override with `LILYSCAN_PORT`). With an NVIDIA GPU and the
-NVIDIA Container Toolkit installed:
+- `api`: FastAPI, the web UI and the job API (`/api/jobs`).
+- `worker`: the pipeline (LilyPond, OpenCV, ONNX Runtime); `worker-cuda` under the `gpu` profile.
+- `audiveris`: Audiveris 5.11.0 behind a worker on the `engine` queue. Its JVM heap is capped by
+  `AUDIVERIS_MAX_HEAP` (default `3G`).
+- `redis`: the job queue, served by Valkey (BSD-3, Redis-protocol compatible).
+
+## Use
+
+### Transcribe
+
+![The home page: upload, combine parts, and the job list](docs/images/home.png)
+
+1. **Upload** a PDF or page images on the home page (on a phone this can open the camera).
+   Pages are prepared for the engine unless you untick the option. The OCR languages for
+   lyrics and text can be changed per upload.
+2. **Follow** the job: preparing pages, the engine (about a minute a page), repairs, LilyPond
+   and checks. A page Audiveris cannot read is left out, and the job's report says which.
+3. **Review** in three panes. **Source** shows the page as the engine read it, every note
+   boxed green, amber or red by confidence and the measures that need attention outlined.
+   **Engraved** shows the LilyPond output. **LilyPond** is the editable source, with the
+   review list of measures ranked by problems. Clicking a measure in any pane, or putting the
+   caret on its line, highlights it in the other two. The badges Q1-Q5 show the checks.
+4. **Edit** the source and press **Save & recompile**.
+5. **Download** the result:
+   - `.ly`: one file that engraves the score and each part. Compiling `piece.ly` gives
+     `piece-score.pdf` and one PDF per part.
+   - `.ly project`: the editable project (a file per part), as a zip.
+   - PDF and MIDI of the score.
+   - MusicXML: the score as transcribed and repaired, for other notation programs. Edits to
+     the LilyPond source are not in it.
+   - `.omr`: the Audiveris project, to open in the Audiveris application.
+
+**Re-run** repeats a job with other settings (OCR languages, page straightening).
+
+### Combine parts
+
+![A soprano line with the alto, tenor and bass reduced onto a piano accompaniment](docs/images/piano.png)
+
+**Combine parts** on the home page makes a new score from parts of finished jobs: say a
+violin part and a cello part scanned separately.
+
+- Each part can be transposed, or taken at concert pitch if it is a transposing instrument.
+- Parts read separately seldom have exactly the same measures (the engine misses or adds one
+  now and then), so they are lined up measure by measure. Where a part has no measure it gets
+  a rest that shows in the review list. Parts that disagree on the key signature (one read
+  wrongly throughout) take the key the others read.
+- Your edits to each part carry over: the new score includes the parts' own LilyPond sources,
+  and transposition is done by LilyPond's `\transpose`, so those sources stay as written.
+- A part can go **in the piano accompaniment** instead of on its own staff. The chosen parts
+  are reduced onto a piano grand staff below the others, turning an ensemble arrangement into
+  a melody with piano. Each part goes to the staff for the register it sounds in (a double
+  bass an octave below where it is written). Parts playing the same rhythm merge into chords;
+  others keep voices of their own.
+
+The combined score is a job like any other: review it, edit it, download it.
+
+### Command line
 
 ```bash
-docker compose --profile gpu up -d --scale worker=0
+uv run lilyscan convert score.mxl --out out/score
 ```
 
-Services:
+`convert` turns a MusicXML file (for example Audiveris output) into a LilyPond project with a
+QA report. The other commands: `serve` (above), `versions`, `selftest`, `device` (the compute
+device used), `corpus` and `eval` (below). `uv run lilyscan <command> --help` shows the options.
 
-- `api`: FastAPI, upload and job status (`/api/jobs`).
-- `worker`: pipeline worker (LilyPond, OpenCV, ONNX Runtime). `worker-cuda` under the `gpu` profile.
-- `audiveris`: Audiveris 5.11.0 behind an RQ worker on the `engine` queue. JVM heap is capped
-  by `AUDIVERIS_MAX_HEAP` (default `3G`). An engine run may take the larger of
-  `AUDIVERIS_TIMEOUT_S` (default 900) and `AUDIVERIS_TIMEOUT_PER_PAGE_S` (default 240) per
-  page, so long scores are not cut off. One step on one sheet may take up to
-  `AUDIVERIS_STEP_TIMEOUT_S` (default 300; Audiveris's own default is 120).
-- `redis`: job queue, served by Valkey (BSD-3, Redis-protocol compatible).
+### What a job keeps
 
-### OCR languages
+A finished job's folder (under `data/jobs/<id>/`) holds:
 
-Lyrics and text are recognized in English, Latin, German, and French by default. To add
-languages, list their [Tesseract codes](https://github.com/tesseract-ocr/tessdata) in
-`LILYSCAN_OCR_LANGUAGES` (for example in a `.env` file next to `docker-compose.yml`):
+- `prepared/`: `pages.tif` (every page as given to the engine, in upload order), `uploaded.tif`
+  when some page is a scan, and `report.json` (what was done to each page, quality warnings).
+- `engine/`: the Audiveris project, its MusicXML and log, and `run.json` (the command, which
+  pages were left out and why, and which reading was kept).
+- `ir/score.json`: the score model, with page boxes and confidence per event.
+- `ly/`: the LilyPond project (`main.ly`, `parts/`, `layout/`) and the compiled PDF and MIDI.
+- `score.musicxml`, `overlays/page-N.png` (each page with the notes boxed by confidence), and
+  `report.json` (pages, engine run, geometry, repairs, checks Q1-Q5).
 
-```bash
-LILYSCAN_OCR_LANGUAGES=eng+lat+deu+fra+ita+spa
-```
+### Configuration
 
-The `audiveris` service downloads missing models at startup into the `tessdata-cache`
-volume, where custom `*.traineddata` models can also be placed. A single job can override
-the languages with the `ocr_languages` form field when uploading.
+Settings come from the environment:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `LILYSCAN_DATA_DIR` | `data` | where jobs are kept (`serve --data` sets it) |
+| `LILYSCAN_OCR_LANGUAGES` | `eng+lat+deu+fra` | Tesseract codes for lyrics and text; the Docker engine downloads missing models at startup |
+| `LILYPOND_BIN`, `AUDIVERIS_BIN` | `lilypond`, `audiveris` | the tools' executables |
+| `TESSDATA_PREFIX` | | the folder with the Tesseract models |
+| `AUDIVERIS_TIMEOUT_S`, `AUDIVERIS_TIMEOUT_PER_PAGE_S` | 900, 240 | an engine run may take the larger of the two (the second per page) |
+| `AUDIVERIS_STEP_TIMEOUT_S` | 300 | one engine step on one page (Audiveris's own default is 120) |
+| `LILYPOND_TIMEOUT_S` | 120 | one LilyPond compile |
+| `LILYSCAN_DISPATCH` | `rq` | `rq` (Redis workers) or `inline` (in the server process; `serve` sets it) |
 
 ## Develop
 
 ```bash
 uv sync --all-extras
 uv run pytest -m "not gpu and not engine"
-uv run ruff check . && uv run mypy
-uv run lilyscan device
-uv run lilyscan selftest
+uv run ruff check . && uv run ruff format --check . && uv run mypy lilyscan services
 ```
 
-Convert a MusicXML file (for example Audiveris output) into an editable LilyPond project
-with a QA report (Q1-Q5):
-
-```bash
-uv run lilyscan convert score.mxl --out out/score
-```
+Tests marked `lilypond` need LilyPond, `engine` tests need Audiveris (`AUDIVERIS_BIN` and
+`TESSDATA_PREFIX`), and `gpu` tests need a CUDA device. Missing tools cause a skip, not a
+failure. Each change goes on a branch and a pull request; CI runs the tests, the images and a
+LilyPond-next check. Changing a pinned tool version is a change of its own: update
+`lilyscan/runtime/config.py` and the Dockerfiles, then re-run the evaluation.
 
 ### Evaluation
 
-The seed corpus is generated from `eval/corpus/seed.json` (random-but-valid music with exact
-MusicXML ground truth, engraved with LilyPond, then degraded to simulated scans and photos).
-Build it, then score Audiveris on every piece and input variant:
+Two corpora measure every change against ground truth. The seed corpus is generated from
+`eval/corpus/seed.json`: random but valid music with exact MusicXML, engraved with LilyPond,
+then degraded to simulated scans and photos. The repertoire corpus holds excerpts of
+public-domain works from music21's bundled corpus (`eval/corpus/repertoire.json`), fetched
+from the installed package, with each work's rights recorded in the manifest.
 
 ```bash
 uv run lilyscan corpus build
+uv run lilyscan corpus build --spec eval/corpus/repertoire.json --out eval/corpus/repertoire
 ```
 
 ```bash
-uv run lilyscan eval run --label my-run --lilypond
+uv run lilyscan eval run --repair --prepare --label my-run
+uv run lilyscan eval run --corpus eval/corpus/repertoire --repair --prepare --label my-run-rep
 ```
 
-Results go to `eval/results/<label>/` (`summary.md`, `results.json`); engine output is cached
-in `eval/work/`. The summary reports exact-measure accuracy, edit rate, note F1, lyric and
-chord accuracy, how many engine events were located on the page, and how well the engine's
-confidence is calibrated. `--lilypond` also runs the full pipeline on each engine output and
-reports how often it compiles (Q1) and passes bar checks (Q2). `--repair` applies the Stage 5
-repair rules and Lilyscan's confidence before scoring, so a rule can be measured against the
-same cached engine output; the summary lists every repair made. `--prepare` sends scans and
-photos through Stage 1 first (new engine runs, cached separately) and applies the same
-choice between prepared and uploaded scans as a job; the summary adds a row per input type
-for pages that passed the quality gate. New engine runs need Audiveris and its OCR models
-(`AUDIVERIS_BIN`, `TESSDATA_PREFIX`); without the models Audiveris reads no text at all.
+Results go to `eval/results/<label>/` (`summary.md`, `results.json`), and Audiveris's output is
+cached in `eval/work/`, so later runs only re-score. The summary reports exact-measure
+accuracy, edit rate, note F1, lyric and chord accuracy, how many engine events were located
+on the page, and how well confidence is calibrated.
 
-Lilyscan's confidence is a small model fitted on both corpora. After changing a repair rule
-or adding corpus pieces, refit it (this rewrites `lilyscan/repair/confidence.json` and prints
-the out-of-fold calibration error per corpus):
+- `--repair` applies Lilyscan's repairs and confidence before scoring, and lists every repair.
+- `--prepare` sends scans and photos through Stage 1 first, as a job does.
+- `--lilypond` also generates LilyPond and reports how often it compiles (Q1) and passes bar
+  checks (Q2).
+- New engine runs need Audiveris and its OCR models (`AUDIVERIS_BIN`, `TESSDATA_PREFIX`).
+
+After changing a repair rule or adding corpus pieces, refit the confidence model (it rewrites
+`lilyscan/repair/confidence.json` and prints the calibration error per corpus):
 
 ```bash
 uv run lilyscan eval calibrate
 ```
 
-A second corpus holds real repertoire: excerpts of public-domain works from music21's bundled
-corpus (`eval/corpus/repertoire.json`). The encodings are not committed; the build fetches them
-from the installed music21 package and records each work's rights statement in the manifest.
-Evaluate it separately from the generated pieces:
-
-```bash
-uv run lilyscan corpus build --spec eval/corpus/repertoire.json --out eval/corpus/repertoire
-```
-
-```bash
-uv run lilyscan eval run --corpus eval/corpus/repertoire --label my-repertoire-run --lilypond
-```
-
-### Job outputs
-
-A finished job's folder holds `prepared/` (`pages.tif`, every page of the job as given to
-the engine, in upload order; `uploaded.tif` when some page is a scan; and `report.json` with
-what was done to each page and any quality warnings), `ir/score.json` (the internal model, with page
-boxes and confidence per event), the LilyPond project in `ly/` (`main.ly`, `parts/`,
-`layout/`, plus the compiled PDF and MIDI), `report.json` (Stage 1 pages, the engine run and
-any alternative it was chosen over, geometry, repairs, QA checks Q1-Q5), and
-`overlays/page-N.png`: each page as the engine saw it, with every note boxed in green, amber,
-or red by confidence. Confidence is Lilyscan's estimate that the note is right, calibrated on
-the evaluation corpora (a note at 0.7 is right about 70% of the time), not the engine's raw
-grade. Notes below 0.5 are also marked in the LilyPond source as `%{ ?? conf=... %}`, so
-`grep "??"` lists them.
-
-Tests marked `lilypond` need LilyPond (`LILYPOND_BIN`, default `lilypond`); `engine` tests
-need Audiveris (`AUDIVERIS_BIN`, default `audiveris`); `gpu` tests need a CUDA device. Missing
-tools cause a skip, not a failure.
-
-To run the `engine` tests against a local Audiveris install, point `AUDIVERIS_BIN` at its
-executable and `TESSDATA_PREFIX` at a folder containing `eng.traineddata` from
-[tesseract-ocr/tessdata](https://github.com/tesseract-ocr/tessdata). Audiveris needs the full
-models with the legacy engine; `tessdata_fast` and distribution `tesseract-ocr-*` packages do
-not work.
-
 ## License
 
-AGPL-3.0-or-later. See [LICENSE](LICENSE).
+AGPL-3.0-or-later, like Audiveris. See [LICENSE](LICENSE). Every model, dataset and library
+Lilyscan uses must be AGPL-compatible ([docs/design.md](docs/design.md), decision D12).
