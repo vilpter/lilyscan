@@ -308,7 +308,7 @@ Each repair records its provenance and before/after values in the IR, so the UI 
 Keep a **project-owned IR**, a typed pydantic model. Don't generate LilyPond directly from engine output.
 
 - **Hierarchy:** Score → Parts → Staves → Measures → Voices → Events (note/chord/rest/grace).
-- **Attachments:** articulations, dynamics, lyrics, chord symbols.
+- **Attachments:** articulations, dynamics, lyrics, chord symbols. Bowings (up-bow, down-bow, MusicXML `<technical>` marks) are kept with the articulations; the piano reduction leaves them out.
 - **Every event carries:**
   - Source bbox (page, coordinates in the original upload)
   - Confidence
