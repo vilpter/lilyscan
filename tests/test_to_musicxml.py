@@ -6,6 +6,7 @@ import json
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree as ET
 
 from lilyscan.arrange import reduce_to_piano
 from lilyscan.ir.models import (
@@ -23,6 +24,7 @@ from lilyscan.ir.models import (
 )
 from lilyscan.ir.musicxml import load_musicxml, parse_musicxml
 from lilyscan.ir.to_musicxml import to_musicxml, write_musicxml
+from lilyscan.lilypond.generate import generate_project
 
 FIXTURE = Path(__file__).parent / "fixtures" / "features.musicxml"
 
@@ -81,6 +83,23 @@ def test_voices_shared_by_two_staves_are_told_apart() -> None:
         "C3", "D3", "E3", "F3",
     ]  # fmt: skip
     assert back.parts[1].staves[0].measures[0].voices[0].number != lower.voices[0].number
+
+
+def test_bowings_are_written_as_technical_marks_and_engraved() -> None:
+    violin = one_staff("V", "Violin", Clef(sign="G", line=2), ["D5", "E5", "F5", "G5"])
+    first, second, *_ = violin.staves[0].measures[0].voices[0].events
+    first.articulations = ["accent", "down-bow"]
+    second.articulations = ["up-bow"]
+    xml = to_musicxml(Score(parts=[violin]))
+    notes = ET.fromstring(xml).findall(".//note")
+    assert [x.tag for x in notes[0].findall("notations/articulations/*")] == ["accent"]
+    assert [x.tag for x in notes[0].findall("notations/technical/*")] == ["down-bow"]
+    assert [x.tag for x in notes[1].findall("notations/*/*")] == ["up-bow"]
+    back = parse_musicxml(xml)
+    events = back.parts[0].staves[0].measures[0].voices[0].events
+    assert [e.articulations for e in events[:2]] == [["accent", "down-bow"], ["up-bow"]]
+    music = generate_project(back).files["parts/violin.ly"]
+    assert "d''4->\\downbow" in music and "e''4\\upbow" in music
 
 
 def test_a_transposing_part_keeps_its_transposition(tmp_path: Path) -> None:

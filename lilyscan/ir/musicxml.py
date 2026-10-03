@@ -16,6 +16,7 @@ from typing import Literal, cast
 from xml.etree import ElementTree as ET
 
 from lilyscan.ir.models import (
+    BOWINGS,
     Barline,
     ChordSymbol,
     Clef,
@@ -409,6 +410,7 @@ def _event(
             )
         )
     articulations = [a.tag for a in el.findall("notations/articulations/*")]
+    articulations += [t.tag for t in el.findall("notations/technical/*") if t.tag in BOWINGS]
     if el.find("notations/fermata") is not None:
         articulations.append("fermata")
     return Event(

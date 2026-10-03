@@ -90,6 +90,18 @@ def test_same_rhythm_becomes_chords_and_the_bass_sounds_an_octave_lower() -> Non
     assert sounding_shift(bass) == -12 and sounding_shift(cello) == 0
 
 
+def test_the_piano_gets_no_bowings() -> None:
+    viola = part("P1", "Viola", ALTO, [ev(0, 2, "G4"), ev(2, 2, "A4")], [ev(0, 4, "G4")])
+    first, second = viola.staves[0].measures[0].voices[0].events
+    first.articulations = ["up-bow", "accent"]
+    second.articulations = ["down-bow"]
+
+    piano = reduce_to_piano([viola], melody())
+
+    events = piano.staves[0].measures[0].voices[0].events
+    assert [e.articulations for e in events] == [["accent"], []]
+
+
 def test_different_rhythms_keep_their_own_voices_and_rests_drop_out() -> None:
     violin2 = part(
         "P1", "Violin 2", TREBLE,

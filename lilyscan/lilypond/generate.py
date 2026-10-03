@@ -172,6 +172,8 @@ _ARTICULATIONS = {
     "detached-legato": "-_",
     "spiccato": "\\staccatissimo",
     "fermata": "\\fermata",
+    "up-bow": "\\upbow",
+    "down-bow": "\\downbow",
 }
 
 
