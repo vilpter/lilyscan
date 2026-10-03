@@ -38,6 +38,9 @@ class MusicXMLError(ValueError):
     pass
 
 
+# The part name (and abbreviation) Audiveris gives a part whose name it did not read.
+ENGINE_PLACEHOLDER = "Voice"
+
 # The provenance rule on the measures the reader adds for a multi-measure rest written
 # as one measure: they have no place of their own on the page.
 MULTI_REST = "multi-rest"
@@ -164,7 +167,10 @@ def parse_musicxml(data: bytes, source: str = "musicxml") -> Score:
     part_info: dict[str, tuple[str | None, str | None]] = {}
     for sp in root.findall("part-list/score-part"):
         pid = sp.get("id", "")
-        part_info[pid] = (_text(sp, "part-name"), _text(sp, "part-abbreviation"))
+        name, abbr = _text(sp, "part-name"), _text(sp, "part-abbreviation")
+        if source == "audiveris":  # its name for a part it could not name: none was read
+            name, abbr = (None if x == ENGINE_PLACEHOLDER else x for x in (name, abbr))
+        part_info[pid] = (name, abbr)
 
     for part_el in root.findall("part"):
         pid = part_el.get("id", f"P{len(score.parts) + 1}")

@@ -210,3 +210,17 @@ def test_a_multi_measure_rest_with_its_measures_written_out_is_kept() -> None:
     body = rested(["2", "3", "4"]) + f'<measure number="5">{PLAYED}</measure>'
     score = parse_musicxml(rests_doc(body))
     assert [m.number for m in score.parts[0].staves[0].measures] == ["1", "2", "3", "4", "5"]
+
+
+def test_the_engines_name_for_an_unnamed_part_is_no_name() -> None:
+    xml = doc(
+        '<score-part id="P1"><part-name>Voice</part-name><part-abbreviation>Voice'
+        '</part-abbreviation></score-part><score-part id="P2"><part-name>Violin</part-name>'
+        "</score-part>",
+        '<part id="P1"><measure number="1">' + PLAYED + "</measure></part>"
+        '<part id="P2"><measure number="1">' + PLAYED + "</measure></part>",
+    )
+    engine = parse_musicxml(xml, source="audiveris")
+    assert [(p.name, p.abbreviation) for p in engine.parts] == [(None, None), ("Violin", None)]
+    # A file from elsewhere keeps its names: there a part may well be called "Voice".
+    assert parse_musicxml(xml).parts[0].name == "Voice"
