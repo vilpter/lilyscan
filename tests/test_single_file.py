@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -9,7 +10,8 @@ import pytest
 from lilyscan.ir.musicxml import parse_musicxml
 from lilyscan.lilypond.compile import compile_ly
 from lilyscan.lilypond.generate import generate_project
-from lilyscan.lilypond.single import single_file
+from lilyscan.lilypond.single import MERGE_RESTS, PART_LAYOUT, part_score, single_file
+from lilyscan.runtime.config import Settings
 
 
 def score(*names: str) -> bytes:
@@ -46,6 +48,48 @@ def test_one_file_with_a_book_for_the_score_and_each_part() -> None:
     assert 'instrument = "Viola"' in text
     assert text.count("skipBars = ##t") == 2  # the parts, not the score
     assert text.index("violinOneMusic = {") < text.index("\\book {")
+    # The parts join their runs of whole-measure rests; the score keeps every measure.
+    assert text.count("mergeFullBarRests =") == 1
+    assert text.index("mergeFullBarRests =") < text.index("\\book {")
+    score_book, *part_books = text.split("\\book {")[1:]
+    assert "\\mergeFullBarRests" not in score_book
+    assert "\\mergeFullBarRests \\violinOneMusic" in part_books[0]
+    assert "\\mergeFullBarRests \\violaMusic" in part_books[1]
+
+
+def test_a_piano_part_keeps_its_rests_measure_by_measure() -> None:
+    layout = (
+        "\\score {\n  <<\n    \\new PianoStaff <<\n"
+        '      \\new Staff \\new Voice = "pianoUpperVoice" \\pianoUpperMusic\n'
+        '      \\new Staff \\new Voice = "pianoLowerVoice" \\pianoLowerMusic\n'
+        "    >>\n  >>\n  \\layout { }\n}"
+    )
+    assert part_score(layout) == layout.replace("\\layout { }", PART_LAYOUT)
+
+
+@pytest.mark.lilypond
+def test_runs_of_whole_measure_rests_are_merged(tmp_path: Path) -> None:
+    src = tmp_path / "rests.ly"
+    music = (
+        r"\time 4/4 R1 | R1 | R1 | c'1 | R1 | \bar " + '"||"' + r" R1 | R1 | "
+        r"\time 3/4 R2. | R2. | R2. -\fermata |"
+    )
+    display = f"\\displayLilyMusic \\mergeFullBarRests {{ {music} }}"
+    src.write_text(f'\\version "2.26.0"\n{MERGE_RESTS}\n{display}\n', encoding="utf-8")
+    lilypond = Settings.from_env().lilypond_bin
+    run = subprocess.run(
+        [lilypond, "--loglevel=WARNING", "-dbackend=null", "-o", str(tmp_path / "rests"), str(src)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert run.returncode == 0, run.stderr
+    shown = " ".join(run.stdout.split())
+    # Three measures as one; the lone one stays; the \bar and the time change end runs;
+    # a rest with a mark (a fermata) is not merged into the run.
+    assert "R1*3 | c'1 | R1 |" in shown
+    assert "R1*2 |" in shown
+    assert "R2.*2 | R2.\\fermata |" in shown.replace("R2. \\fermata", "R2.\\fermata")
 
 
 def test_a_single_part_is_its_score() -> None:
