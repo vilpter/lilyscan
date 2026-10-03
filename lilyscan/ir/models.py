@@ -98,6 +98,11 @@ class NoteHead(_Model):
     accidental_shown: bool = False
 
 
+# Bowings: MusicXML <technical> marks that ``Event.articulations`` keeps with the
+# articulations proper (MusicXML names, like the rest).
+BOWINGS = frozenset({"up-bow", "down-bow"})
+
+
 class Event(_Model):
     """A note, chord, or rest in one voice.
 

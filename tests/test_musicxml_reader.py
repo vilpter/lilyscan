@@ -104,6 +104,24 @@ def test_grace_tuplet_articulation_barline() -> None:
     assert (m2.right_barline.style, m2.right_barline.repeat) == ("light-heavy", "backward")
 
 
+def test_bowings_are_kept_with_the_articulations() -> None:
+    marks = (
+        "<notations><technical><up-bow/><fingering>1</fingering></technical>"
+        "<articulations><accent/></articulations></notations>"
+    )
+    xml = doc(
+        '<score-part id="P1"><part-name>Violin</part-name></score-part>',
+        '<part id="P1"><measure number="1"><attributes><divisions>1</divisions></attributes>'
+        + note("D", 5, 2, "half", marks)
+        + note("E", 5, 2, "half", "<notations><technical><down-bow/></technical></notations>")
+        + "</measure></part>",
+    )
+    up, down = parse_musicxml(xml).parts[0].staves[0].measures[0].voices[0].events
+    # Bowings, but not other technical marks such as fingerings.
+    assert up.articulations == ["accent", "up-bow"]
+    assert down.articulations == ["down-bow"]
+
+
 PIANO = doc(
     '<score-part id="P1"><part-name>Piano</part-name></score-part>',
     """<part id="P1"><measure number="1">

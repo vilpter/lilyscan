@@ -14,7 +14,17 @@ from fractions import Fraction
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from lilyscan.ir.models import Barline, ChordSymbol, Clef, Event, Measure, NoteHead, Part, Score
+from lilyscan.ir.models import (
+    BOWINGS,
+    Barline,
+    ChordSymbol,
+    Clef,
+    Event,
+    Measure,
+    NoteHead,
+    Part,
+    Score,
+)
 from lilyscan.ir.transpose import Interval
 
 _DEFAULT_LINE = {"G": 2, "F": 4, "C": 3}
@@ -216,9 +226,14 @@ def _note(
         _sub(notations, "tuplet", type=tuplet_mark)
     marks = [a for a in e.articulations if a != "fermata" and _SAFE_TAG.match(a)]
     if marks and not chord:
-        arts = _sub(notations, "articulations")
-        for a in marks:
-            _sub(arts, a)
+        if articulations := [a for a in marks if a not in BOWINGS]:
+            arts = _sub(notations, "articulations")
+            for a in articulations:
+                _sub(arts, a)
+        if bowings := [a for a in marks if a in BOWINGS]:
+            technical = _sub(notations, "technical")
+            for a in bowings:
+                _sub(technical, a)
     if "fermata" in e.articulations and not chord:
         _sub(notations, "fermata")
     if len(notations):

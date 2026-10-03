@@ -15,7 +15,7 @@ import re
 from fractions import Fraction
 from statistics import median
 
-from lilyscan.ir.models import Clef, Event, Measure, NoteHead, Part, Staff, Voice
+from lilyscan.ir.models import BOWINGS, Clef, Event, Measure, NoteHead, Part, Staff, Voice
 from lilyscan.ir.transpose import Interval, transpose_part
 
 MIDDLE_C = 60
@@ -73,7 +73,8 @@ def _chord(events: list[Event]) -> Event:
                 heads[key] = h.model_copy(deep=True)
     notes = sorted(heads.values(), key=lambda h: h.pitch.midi)
     confidences = [e.confidence for e in events if e.confidence is not None]
-    articulations = sorted({a for e in events for a in e.articulations})
+    # Bowings tell a string player which way to draw the bow: not for the piano.
+    articulations = sorted({a for e in events for a in e.articulations if a not in BOWINGS})
     return first.model_copy(
         deep=True,
         update={
