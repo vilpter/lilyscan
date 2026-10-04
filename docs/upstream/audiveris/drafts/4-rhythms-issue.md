@@ -1,4 +1,4 @@
-<!-- Draft for Audiveris/audiveris issues. Not posted: needs the owner's OK. -->
+<!-- Not posted, and superseded by 4-system-start-pr.md: the cause turned out to be in BarsRetriever, not MeasuresBuilder. -->
 
 **Title:** RHYTHMS fails with a NullPointerException when the parts of a system have different numbers of measures
 
