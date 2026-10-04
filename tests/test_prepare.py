@@ -254,9 +254,15 @@ def test_a_dense_choir_page_is_not_turned(tmp_path: Path) -> None:
         # read as letters), and one with an alto clef the clef cue got wrong.
         (-7.4, 4.7, False, False),
         (14.5, -3.4, False, False),
+        # Upright string parts: a bass clef with too little text to count, and handwriting
+        # the text cue took for upside down with a clef cue too weak to veto it.
+        (0.0, -4.55, False, False),
+        (-3.93, 1.46, False, False),
+        (-4.63, 0.61, False, False),
         # Both cues lean the other way, or one strongly with nothing against it.
         (-0.8, -1.5, False, True),
-        (0.2, -3.6, False, True),
+        (0.2, -5.2, False, True),
+        (-5.1, 0.0, False, True),
         # Too little to turn over a page that came upright...
         (0.0, -1.9, False, False),
         # ...but after a quarter turn, the sign of the evidence decides.
