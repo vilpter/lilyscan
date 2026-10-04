@@ -1,4 +1,4 @@
-<!-- Draft for an Audiveris pull request (problem set 1 of discussion #1089). Replaces 4-rhythms-issue.md, which was never posted. -->
+<!-- Posted as Audiveris/audiveris#1109 (2026-10-03, owner's OK), from vilpter/audiveris fix/system-measure-counts (247a3711f). -->
 
 **Title:** Do not let a part name on one staff hide the start of its system
 

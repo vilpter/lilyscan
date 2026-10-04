@@ -1,4 +1,4 @@
-<!-- Draft for an Audiveris pull request (problem set 3 of discussion #1089: weak heads overlapping a real one). -->
+<!-- Posted as Audiveris/audiveris#1111 (2026-10-03, owner's OK), from vilpter/audiveris fix/overlapping-heads (a8a008df8). -->
 
 **Title:** Keep one head of the same pitch on a stem
 

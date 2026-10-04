@@ -1,4 +1,4 @@
-<!-- Draft for an Audiveris pull request (problem set 2 of discussion #1089: clef or key read differently per system). -->
+<!-- Posted as Audiveris/audiveris#1110 (2026-10-03, owner's OK), from vilpter/audiveris fix/weak-header-clefs (d3c65691e). -->
 
 **Title:** Keep a weak header clef that its staff shows clearly on other systems
 
@@ -36,7 +36,7 @@ Audiveris -batch -export -output out -- satb-01.pdf
 | `satb-07.pdf` | 17 header clefs dropped; 7 key changes the page does not have | 15 kept; 5 key changes left |
 | [no-clef.png](https://github.com/vilpter/lilyscan/raw/main/docs/upstream/audiveris/repro/no-clef.png), staves that print no clef (as in #997) | no clef registered | no clef registered |
 
-- **Other inputs:** the same 156 inputs as above (39 pages of [Lilyscan](https://github.com/vilpter/lilyscan)'s evaluation corpus, each as PDF, PNG, a simulated scan and a simulated photo). The new pass acts only on a staff left without a header clef, and `development` leaves such staves on 37 of the inputs.
+- **Other inputs:** 156 inputs: 39 pages of [Lilyscan](https://github.com/vilpter/lilyscan)'s evaluation corpus, each as PDF, PNG, a simulated scan and a simulated photo. The new pass acts only on a staff left without a header clef, and `development` leaves such staves on 37 of the inputs.
   - **Exports:** this branch changes the export of 22 of those 37; the other 15 are identical.
   - **Clef and key changes:** the 37 pages print 2. `development` exports 58, this branch 38; 10 pages lose all of their spurious ones.
   - **Scores:** against the ground truth, notes and measures are equal or better on every one (note F1 on `satb-07.pdf` goes from 0.276 to 0.338).
