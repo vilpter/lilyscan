@@ -19,6 +19,8 @@ Lilyscan runs Audiveris 5.11.0 as its engine and hit each bug below while being 
 
 Audiveris `development` needs **Java 25** (`theMinJavaVersion = 25` in `gradle.properties`); its CI uses Zulu 25 on `ubuntu-latest`.
 
+Windows works too: unpack a JDK 25 zip, set `JAVA_HOME` to it, and use `gradlew.bat installDist -x test`; the runnable build is in `app/build/install/app`. Upstream stores the Java sources with CRLF line endings: keep them (`git ls-files --eol`), or a one-line change shows as the whole file.
+
 ```bash
 java -version    # need 25
 # If missing, a JDK 25 tarball (Temurin shown; Zulu is what upstream CI uses):
@@ -113,8 +115,11 @@ If this environment cannot push to `vilpter/audiveris` or cannot use `gh`, save 
       at org.audiveris.omr.sheet.rhythm.PageRhythm.process(PageRhythm.java:248)
       at org.audiveris.omr.sheet.rhythm.RhythmsStep.doit(RhythmsStep.java:192)
   ```
-- **Where to start:** `Voices.refineSystem` around line 430: which lookup yields the null measure (a part or staff with no measure in that stack?). `Voices.java` has not changed since 5.11.0 on `development`.
-- **Note:** this came from an older Lilyscan Stage 1, so the exact image in `repro/` is the input that crashed. Confirm it still crashes on `development` before digging in.
+- **Cause (found 2026-10-03):**
+  - In system 2, the bass staff's short name "B." sits on its lines, so those lines are traced 39 pixels left of the start bar line.
+  - `BarsRetriever.detectStartColumns` rejects the system's start column when any one staff's lines start before it.
+  - The "B" stem becomes a bar line. `MeasuresBuilder` copies the others' start bar line into that staff, and the bass part gets one measure more.
+- **Fix:** branch `fix/system-measure-counts`. The start column is rejected only when the lines start before it on half the staves or more. This is problem set 1 of the discussion; the pull request carries the report (`drafts/4-system-start-pr.md`).
 
 ### 5. A small solo staff above a grand staff: systems split in two (recognition, not a crash): needs a public repro
 
@@ -132,6 +137,26 @@ If this environment cannot push to `vilpter/audiveris` or cannot use `gh`, save 
 - **Fix:** name a score by its rank among the exported scores, with the `.mvt#` suffix only when several are exported (`Book.getScoreName`, plus one line in `OpusExporter`). Other callers export `book.getScores()`, so their names are unchanged.
 - **Checked:** the repro with and without `-sheets` and with opus; a later-page selection; 9 other inputs without `-sheets` give identical files; `./gradlew test` passes (216 tests).
 - **Lilyscan works around it** by re-reading a book from a copy without the pages that failed, instead of using `-sheets` (#66).
+
+### 7-9. The other problem sets of discussion #1089
+
+The owner approved pull requests for the four problem sets (2026-10-03): measure counts within a system (bug 4 above), clef/key per system, weak overlapping heads, and noise read as slurs/ties. Each pull request carries its report, with a public input in `repro/`:
+
+- **7. Clef/key per system** (`drafts/7-weak-header-clef-pr.md`, branch `fix/weak-header-clefs`):
+  - Upstream #998 drops any header clef graded below 0.65. On `development` that removes real clefs, even on clean engravings (`repro/satb-01.pdf`, `repro/satb-07.pdf`), and their staves lose their key signatures.
+  - The fix keeps a weak clef of a kind its staff shows clearly on other systems.
+  - `repro/no-clef.png` checks that a staff printing no clef still gets none (#997).
+- **8. Same note twice on a stem** (`drafts/8-same-pitch-heads-pr.md`, branch `fix/overlapping-heads`):
+  - Heads of the same duration on one stem support each other, so overlapping duplicates are never excluded.
+  - The fix excludes two heads of the same pitch on one stem.
+  - Input: `repro/quartet-06-photo.png`.
+  - Not addressed: a weak head a step away, which looks like a chord second.
+- **9. Slurs and ties along staff lines** (`drafts/9-slurs-along-lines-pr.md`, branch `fix/staff-line-arcs`):
+  - Residue of thick lines between heads on a line becomes slur candidates.
+  - The fix discards a candidate whose central half lies on a staff line.
+  - Input: `repro/repeated-notes-scan.png`, made by `repro/degrade.py` from `repro/repeated-notes.ly`.
+
+The side-effect check for each: the evaluation corpus (39 pages, each as PDF, PNG, simulated scan and photo: 156 inputs; the 30 generated ones are AGPL, the 9 repertoire pages come from the music21 corpus and are not republished), on `development` and on the branch, comparing the exported MusicXML.
 
 ## Finding more bugs
 
