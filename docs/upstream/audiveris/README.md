@@ -156,6 +156,11 @@ The owner approved pull requests for the four problem sets (2026-10-03): measure
   - The fix discards a candidate whose central half lies on a staff line.
   - Input: `repro/repeated-notes-scan.png`, made by `repro/degrade.py` from `repro/repeated-notes.ly`.
 
+- **10. The last measure of a system lost** (`drafts/10-last-measure-pr.md`, branch `fix/last-measure`). Found in a library of string parts; not one of the four problem sets.
+  - When nothing is recognised in a system's last measure, `MeasureFixer` takes the empty stack for the courtesy area past the last bar line, and the export skips it, final bar line included.
+  - The fix keeps an empty last stack that a bar line closes.
+  - Input: `repro/last-measure-scan.png` (from `last-measure.ly` via `degrade.py`).
+
 The side-effect check for each: the evaluation corpus (39 pages, each as PDF, PNG, simulated scan and photo: 156 inputs; the 30 generated ones are AGPL, the 9 repertoire pages come from the music21 corpus and are not republished), on `development` and on the branch, comparing the exported MusicXML.
 
 ## Finding more bugs
