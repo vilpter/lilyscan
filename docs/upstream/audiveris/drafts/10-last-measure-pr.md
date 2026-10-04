@@ -1,4 +1,4 @@
-<!-- Draft for an Audiveris pull request: the last measure of a system is dropped when nothing is recognised in it. From vilpter/audiveris fix/last-measure (0b9de9f97). -->
+<!-- Posted as Audiveris/audiveris#1113 (2026-10-03, owner's OK), from vilpter/audiveris fix/last-measure (0b9de9f97). -->
 
 **Title:** Keep the last measure of a system when a bar line closes it
 
