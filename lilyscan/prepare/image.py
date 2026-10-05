@@ -296,15 +296,17 @@ def level_staves(gray: Image) -> tuple[Image, float]:
 #
 # A page that came sideways is turned over on any evidence, since its quarter turn was as
 # likely to leave it upside down as not. A page that came upright usually is upright, and
-# either cue can be fooled on its own (chord slashes and fingerings read as letters; an
-# alto clef's overhang), so it is turned over only when neither cue says it is upright,
-# and both lean the other way or one does so strongly.
+# either cue can be fooled on its own (chord slashes, fingerings and handwriting read as
+# letters; an alto clef's overhang, or a bass clef's lack of one), so it is turned over
+# only when neither cue says it is upright, and both lean the other way or one does so
+# strongly. Upright string parts in a scanned library lean up to 4.6 units the wrong way on
+# one cue alone.
 _TEXT_UNIT = 0.01
 _CLEF_UNIT = 0.2
 _MIN_LETTERS = 60
 _UPRIGHT_VETO = 1.5
 _BOTH_LEAN = 0.5
-_ONE_STRONG = 3.5
+_ONE_STRONG = 5.0
 
 
 def _text_lean(mask: NDArray[np.uint8]) -> tuple[float, int]:
