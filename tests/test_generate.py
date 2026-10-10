@@ -221,9 +221,9 @@ def test_first_and_second_endings_get_volta_brackets(tmp_path: Path) -> None:
         elif current is not None and line.strip():
             by_measure.setdefault(current, line)
     assert "repeatCommands" not in by_measure["3"]
-    assert "\\set Score.repeatCommands = #'((volta \"1.\"))" in by_measure["4"]
+    assert '\\set Score.repeatCommands = #\'((volta "1."))' in by_measure["4"]
     assert '\\bar ":|."' in by_measure["4"]
-    assert "#'((volta #f) (volta \"2.\"))" in by_measure["5"]
+    assert '#\'((volta #f) (volta "2."))' in by_measure["5"]
     assert "#'((volta #f))" in by_measure["6"]
     assert "repeatCommands" not in by_measure["1"] + by_measure["2"]
 
