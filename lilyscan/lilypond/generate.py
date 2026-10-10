@@ -636,26 +636,52 @@ def _part_file(
     return "\n".join(out).rstrip() + "\n"
 
 
+# Characters of an instrument name that fit LilyPond's default indent on one line.
+_NAME_LINE = 10
+_ROLE = re.compile(r"\s*\(.*\)\s*$")
+
+
+def _instrument_name(text: str) -> str:
+    """An instrument name as LilyPond takes it: a string, or, when it is too long to fit the
+    indent before the first system ("Violin 1 (melody)"), its words wrapped into a centred
+    column. A longer name would run past the left edge of the page."""
+    lines: list[str] = []
+    for word in text.split():
+        if lines and len(lines[-1]) + 1 + len(word) <= _NAME_LINE:
+            lines[-1] += " " + word
+        else:
+            lines.append(word)
+    if len(lines) <= 1:
+        return lily_string(text)
+    return "\\markup \\center-column { " + " ".join(lily_string(line) for line in lines) + " }"
+
+
+def _short_name(text: str) -> str:
+    """A short instrument name without its role in parentheses ("Vln. 1 (melody)" is "Vln. 1"):
+    later systems have no indent, so a short name has to stay short."""
+    return _ROLE.sub("", text) or text
+
+
 def _staff_block(pv: PartVars, indent: str, with_names: bool = True) -> list[str]:
     part = pv.part
     name = part.name or ""
-    short = part.abbreviation or ""
+    short = _short_name(part.abbreviation or "")
     lines: list[str] = []
     multi = len(pv.staves) > 1
     inner = indent + "  " if multi else indent
     if multi:
         lines.append(f"{indent}\\new PianoStaff \\with {{")
         if with_names and name:
-            lines.append(f"{indent}  instrumentName = {lily_string(name)}")
+            lines.append(f"{indent}  instrumentName = {_instrument_name(name)}")
         if with_names and short:
-            lines.append(f"{indent}  shortInstrumentName = {lily_string(short)}")
+            lines.append(f"{indent}  shortInstrumentName = {_instrument_name(short)}")
         lines.append(f"{indent}}} <<")
     for staff, sv in zip(part.staves, pv.staves, strict=True):
         with_block = []
         if not multi and with_names and name:
-            with_block.append(f"instrumentName = {lily_string(name)}")
+            with_block.append(f"instrumentName = {_instrument_name(name)}")
         if not multi and with_names and short:
-            with_block.append(f"shortInstrumentName = {lily_string(short)}")
+            with_block.append(f"shortInstrumentName = {_instrument_name(short)}")
         opening = f"{inner}\\new Staff"
         if with_block:
             opening += " \\with { " + " ".join(with_block) + " }"

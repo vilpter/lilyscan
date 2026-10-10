@@ -153,3 +153,14 @@ def test_misread_measure_still_compiles_cleanly(tmp_path: Path) -> None:
     report = run_checks(score, tmp_path, project)
     assert report.check("Q1").passed and report.check("Q2").passed
     assert not report.check("Q3").passed  # the rhythm problem is still reported
+
+
+def test_short_name_drops_the_role_and_long_names_wrap() -> None:
+    from lilyscan.lilypond.generate import _instrument_name, _short_name
+
+    assert _short_name("Vln. 1 (melody)") == "Vln. 1"
+    assert _short_name("Vla.") == "Vla."
+    assert _instrument_name("Violoncello") == '"Violoncello"'  # one word: nothing to wrap
+    assert (
+        _instrument_name("Viola (Fiddle 1)") == r'\markup \center-column { "Viola" "(Fiddle 1)" }'
+    )

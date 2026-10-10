@@ -338,6 +338,7 @@ project/
 - **Absolute / `\fixed` pitch entry** (D4).
 - **Bar checks `|` after every measure**, plus `% m. 12` comments every measure (or every 4), so a human editor can navigate.
 - Emit the `\key`, `\time`, `\clef`, `\partial`, `\tempo`, `\transposition`, and `\set Staff.instrumentName` commands.
+- **Instrument names fit the page.** A name too long for the indent before the first system (over 10 characters, such as `Violin 1 (melody)`) is wrapped into a centred column of its words; LilyPond does not widen the indent, so it would run past the page's left edge. A short name drops a role in parentheses (`Vln. 1`), since later systems have no indent. A part book's header keeps the whole name.
 - **Low-confidence events are marked inline** with a comment, e.g. `% ?? conf=0.42 bbox=p2:(812,340)`. **Repaired events are marked** with `% fix: <rule>`. Both are greppable.
 - Deterministic output: the same IR always produces byte-identical `.ly`, so diffs of the output stay meaningful.
 - Run the generated text through a formatter (python-ly, if suitable) for consistent indentation.

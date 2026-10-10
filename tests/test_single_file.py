@@ -112,3 +112,27 @@ def test_it_compiles_to_the_score_and_each_part(tmp_path: Path) -> None:
         "duet-viola.pdf",
         "duet-violin-1.pdf",
     ]
+
+
+def test_a_long_name_is_wrapped_on_the_staff_and_whole_in_the_header() -> None:
+    # "Violin 1 (melody)" does not fit the indent before the first system: it runs past the
+    # page's left edge. It is wrapped into a column; the part book's header keeps it whole.
+    text = single_file(
+        generate_project(parse_musicxml(score("Violin 1 (melody)", "Cello and Bass"))).files
+    )
+    assert r'instrumentName = \markup \center-column { "Violin 1" "(melody)" }' in text
+    assert r'instrumentName = \markup \center-column { "Cello and" "Bass" }' in text
+    assert 'instrument = "Violin 1 (melody)"' in text and 'instrument = "Cello and Bass"' in text
+
+
+@pytest.mark.lilypond
+def test_wrapped_names_compile(tmp_path: Path) -> None:
+    src = tmp_path / "duet.ly"
+    src.write_text(
+        single_file(
+            generate_project(parse_musicxml(score("Violin 3 (Fiddle 2 harmony)", "Viola"))).files
+        ),
+        encoding="utf-8",
+    )
+    result = compile_ly(src, tmp_path / "out", ("pdf",))
+    assert result.ok, result.log

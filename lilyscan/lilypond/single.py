@@ -21,7 +21,11 @@ from collections.abc import Mapping
 _INCLUDE = re.compile(r'^[ \t]*\\include[ \t]+"([^"]+)"[ \t]*\n?', re.M)
 _VERSION = re.compile(r'^[ \t]*\\version[ \t]+"[^"]*"[ \t]*\n?', re.M)
 _HEADER = re.compile(r"^\\header \{\n.*?^\}\n", re.M | re.S)
-_INSTRUMENT = re.compile(r'\binstrumentName = ("(?:[^"\\]|\\.)*")')
+_STRING = r'"(?:[^"\\]|\\.)*"'
+# A name as generated: a string, or a long one wrapped into a column of strings.
+_INSTRUMENT = re.compile(
+    r"\binstrumentName = (" + _STRING + r"|\\markup \\center-column \{ (?:" + _STRING + r" )+\})"
+)
 _PART_LAYOUT = re.compile(r"^layout/part-(.+)\.ly$")
 
 # A part's layout: consecutive whole-measure rests as one multi-measure rest.
@@ -94,6 +98,14 @@ def book(suffix: str, score: str, header: str | None = None) -> str:
     return "\n".join(lines)
 
 
+def _one_line(name: str) -> str:
+    """A generated instrument name as one string, for a part book's header: a wrapped
+    name's lines joined by spaces."""
+    if not name.startswith("\\markup"):
+        return name
+    return '"' + " ".join(line[1:-1] for line in re.findall(_STRING, name)) + '"'
+
+
 def single_file(files: Mapping[str, str]) -> str:
     """The project in ``files`` (relative path -> text, as generated) as one file."""
     main = files["main.ly"]
@@ -117,6 +129,6 @@ def single_file(files: Mapping[str, str]) -> str:
     for slug in parts:
         layout = files[f"layout/part-{slug}.ly"]
         name = _INSTRUMENT.search(layout)
-        instrument = f"instrument = {name[1]}" if name else None
+        instrument = f"instrument = {_one_line(name[1])}" if name else None
         books.append(book(slug, part_score(_body(layout)), instrument))
     return "\n".join([*out, MERGE_RESTS, "", "\n\n".join(books), ""])
