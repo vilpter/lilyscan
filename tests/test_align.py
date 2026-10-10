@@ -121,6 +121,38 @@ def test_a_missing_first_measure_keeps_the_opening_clef() -> None:
     assert b.staves[0].measures[0].clefs[0].sign == "G"
 
 
+def test_a_rest_among_like_measures_goes_last_and_they_are_flagged() -> None:
+    # Three measures alike; part B has two. The rest could go in any of the three places
+    # at the same cost: it goes last, and B's measures there are flagged as unsure.
+    like = [1, 3]
+    full = part("A", PIECE[:4] + [like] * 3 + PIECE[4:9])
+    short = part("B", PIECE[:4] + [like] * 2 + PIECE[4:9])
+    for e in (e for m in short.staves[0].measures for v in m.voices for e in v.events):
+        e.confidence = 0.9
+    (_, b, _), alignment = align_parts(
+        [full, short, part("C", PIECE[:4] + [like] * 3 + PIECE[4:9])]
+    )
+    assert alignment.filled == [[], [6], []]
+    assert alignment.unsure == [[], [(4, 6)], []]
+    confidences = [{e.confidence for v in m.voices for e in v.events} for m in b.staves[0].measures]
+    assert confidences[3] == {0.9} and confidences[7] == {0.9}
+    assert confidences[4] == confidences[5] == {1 / 3} and confidences[6] == {0.0}
+    # The part as read keeps its confidence.
+    assert {e.confidence for v in short.staves[0].measures[4].voices for e in v.events} == {0.9}
+
+
+def test_a_lost_last_measure_is_the_last_one_missing() -> None:
+    # The engine lost the last measure, and with it the final bar line. The last two
+    # measures are alike, but only the final bar line's place fits: the rest goes last,
+    # and its place is not in doubt.
+    piece = [*PIECE[:10], [4], [4]]
+    short = part("B", piece[:11])
+    short.staves[0].measures[-1].right_barline = None
+    _, alignment = align_parts([part("A", piece), short, part("C", piece)])
+    assert alignment.filled == [[], [11], []]
+    assert alignment.unsure == [[], [], []]
+
+
 def job(root: Path, p: Part) -> Path:
     produce(Score(title="Test", parts=[p]), root)
     return root
@@ -135,6 +167,19 @@ def test_combine_lines_up_parts_and_reports_the_rests(tmp_path: Path) -> None:
     )
     assert report["qa"]["checks"][0]["passed"], report["qa"]  # compiles
     assert report["alignment"]["rests_added"] == {"Viola": [8]}
+    assert "placement_unsure" not in report["alignment"]
+
+
+@pytest.mark.lilypond
+def test_combine_reports_where_a_rest_could_as_well_go(tmp_path: Path) -> None:
+    like = [1, 3]
+    a = job(tmp_path / "a", part("P1", PIECE[:4] + [like] * 3 + PIECE[4:9]))
+    b = job(tmp_path / "b", part("P1", PIECE[:4] + [like] * 2 + PIECE[4:9]))
+    report = combine(
+        [Selection(a, "P1", name="Violin"), Selection(b, "P1", name="Viola")], tmp_path / "c"
+    )
+    assert report["alignment"]["rests_added"] == {"Viola": [7]}
+    assert report["alignment"]["placement_unsure"] == {"Viola": [[5, 7]]}
 
 
 @pytest.mark.lilypond

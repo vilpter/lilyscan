@@ -230,6 +230,15 @@ def combine(
                 names[k]: [c + 1 for c in gaps] for k, gaps in enumerate(alignment.filled) if gaps
             },
         }
+        unsure = {
+            names[k]: [[first + 1, last + 1] for first, last in ranges]
+            for k, ranges in enumerate(alignment.unsure)
+            if ranges
+        }
+        if unsure:
+            # Measures where the rest (or the extra measure) could as well have gone: the
+            # part's notes there may be a measure off, and have low confidence.
+            report["alignment"]["placement_unsure"] = unsure
     if rekeyed:
         # Parts set to the key the others read, by the measures they were respelled in.
         report["keys"] = {names[k]: measures for k, measures in rekeyed.items()}

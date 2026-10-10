@@ -37,6 +37,10 @@ class Alignment:
     measures: int  # columns of the combined score
     filled: list[list[int]] = field(default_factory=list)  # column indices given a rest
     reference: int = 0
+    # Per part, column ranges (first, last) where a rest it was given, or a measure the
+    # others lack, could have gone at about the same cost: the part's measures there may
+    # be a column off.
+    unsure: list[list[tuple[int, int]]] = field(default_factory=list)
 
     @property
     def changed(self) -> bool:
@@ -70,38 +74,72 @@ def _cost(a: Measure, b: Measure) -> float:
     return rhythm + marks
 
 
-def _fit(long: list[Measure], short: list[Measure]) -> list[tuple[int, int | None]]:
+# Two placements of a gap whose costs differ by less than this are as good as each other.
+_UNSURE = 0.1
+
+
+def _fit(
+    long: list[Measure], short: list[Measure]
+) -> tuple[list[tuple[int, int | None]], list[tuple[int, int]]]:
     """``short`` matched in order to ``len(short)`` measures of ``long`` at the least cost:
-    (``long`` measure, ``short`` measure or None) for every measure of ``long``."""
+    (``long`` measure, ``short`` measure or None) for every measure of ``long``.
+
+    Of placements that cost the same, the gaps go as late as possible: a part read short
+    has most often lost its last measure. Also returns, for each gap, the first and last
+    measure of ``long`` where it costs about as little."""
     n, m = len(long), len(short)
     inf = float("inf")
+    cost = {
+        (i, j): _cost(long[i], short[j])
+        for i in range(n)
+        for j in range(max(0, i - (n - m)), min(i, m - 1) + 1)
+    }
+    # best[i][j]: long[:i] with short[:j]; rest[i][j]: long[i:] with short[j:].
     best = [[inf] * (m + 1) for _ in range(n + 1)]
     best[0][0] = 0.0
     for i in range(1, n + 1):
         for j in range(max(0, m - (n - i)), min(i, m) + 1):
-            skip = best[i - 1][j]  # long[i - 1] has no partner in short
-            take = best[i - 1][j - 1] + _cost(long[i - 1], short[j - 1]) if j else inf
-            best[i][j] = min(skip, take)
+            take = best[i - 1][j - 1] + cost[(i - 1, j - 1)] if j else inf
+            best[i][j] = min(best[i - 1][j], take)  # skip: long[i - 1] has no partner
+    rest = [[inf] * (m + 1) for _ in range(n + 1)]
+    rest[n][m] = 0.0
+    for i in range(n - 1, -1, -1):
+        for j in range(max(0, i - (n - m)), min(i, m) + 1):
+            take = cost[(i, j)] + rest[i + 1][j + 1] if j < m else inf
+            rest[i][j] = min(rest[i + 1][j], take)
     out: list[tuple[int, int | None]] = []
-    i, j = n, m
-    while i:
-        if j and best[i][j] == best[i - 1][j - 1] + _cost(long[i - 1], short[j - 1]):
-            out.append((i - 1, j - 1))
-            j -= 1
+    j = 0
+    for i in range(n):  # matching as early as the cost allows puts the gaps late
+        if j < m and rest[i][j] == cost[(i, j)] + rest[i + 1][j + 1]:
+            out.append((i, j))
+            j += 1
         else:
-            out.append((i - 1, None))
-        i -= 1
-    return out[::-1]
+            out.append((i, None))
+    gaps = [i for i, s in out if s is None]
+    spans = []
+    for k, chosen in enumerate(gaps):  # gap k at long[p] leaves p - k measures before it
+        near = [
+            p
+            for p in range(k, n - (len(gaps) - k) + 1)
+            if best[p][p - k] + rest[p + 1][p - k] <= rest[0][0] + _UNSURE
+        ]
+        spans.append((min(near, default=chosen), max(near, default=chosen)))
+    return out, spans
 
 
-def _pairs(ref: list[Measure], other: list[Measure]) -> list[tuple[int | None, int | None]]:
+def _pairs(
+    ref: list[Measure], other: list[Measure]
+) -> tuple[list[tuple[int | None, int | None]], list[tuple[int, int]]]:
     """(reference measure, other measure) pairs, None for a gap; only the shorter of the
-    two has gaps."""
+    two has gaps. Also, for each gap, the measures it could go between at about the same
+    cost, as indices of the longer part's measures."""
     if len(ref) == len(other):
-        return [(i, i) for i in range(len(ref))]
+        return [(i, i) for i in range(len(ref))], []
     if len(ref) > len(other):
-        return list(_fit(ref, other))
-    return [(r, o) for o, r in _fit(other, ref)]
+        pairs, spans = _fit(ref, other)
+        return list(pairs), spans
+    pairs, spans = _fit(other, ref)
+    return [(r, o) for o, r in pairs], spans
 
 
 def _mean_confidence(part: Part) -> float:
@@ -154,6 +192,9 @@ def align_parts(parts: list[Part]) -> tuple[list[Part], Alignment]:
     columns: list[list[int | None]] = [[None] * len(parts) for _ in ref]
     for c in range(len(ref)):
         columns[c][ref_k] = c
+    # Per part, unsure spans in the longer part's measures: the reference's when the part
+    # is short, the part's own when it has measures the reference lacks.
+    spans: dict[int, tuple[bool, list[tuple[int, int]]]] = {}
     for k, part in enumerate(parts):
         if k == ref_k:
             continue
@@ -161,7 +202,9 @@ def align_parts(parts: list[Part]) -> tuple[list[Part], Alignment]:
         # (measures the reference lacks) stay where they are, empty for this part.
         grown: list[list[int | None]] = []
         c = 0
-        for r, o in _pairs(ref, part.staves[0].measures):
+        pairs, near = _pairs(ref, part.staves[0].measures)
+        spans[k] = (len(ref) > len(part.staves[0].measures), near)
+        for r, o in pairs:
             if r is None:  # a measure the reference lacks
                 column: list[int | None] = [None] * len(parts)
                 column[k] = o
@@ -209,4 +252,55 @@ def align_parts(parts: list[Part]) -> tuple[list[Part], Alignment]:
                 head.time = head.time or first.time
             staves.append(Staff(number=st.number, measures=measures))
         aligned.append(part.model_copy(update={"staves": staves}))
-    return aligned, Alignment(len(columns), filled, ref_k)
+    unsure = _unsure_columns(columns, ref_k, spans, len(parts))
+    for k, ranges in enumerate(unsure):
+        for start, end in ranges:
+            _doubt(aligned[k], start, end, filled[k])
+    return aligned, Alignment(len(columns), filled, ref_k, unsure)
+
+
+def _unsure_columns(
+    columns: list[list[int | None]],
+    ref_k: int,
+    spans: dict[int, tuple[bool, list[tuple[int, int]]]],
+    count: int,
+) -> list[list[tuple[int, int]]]:
+    """The spans of measures as column ranges, for the spans of more than one measure."""
+    out: list[list[tuple[int, int]]] = [[] for _ in range(count)]
+    for k, (short, near) in spans.items():
+        owner = ref_k if short else k
+        column_of = {col[owner]: c for c, col in enumerate(columns) if col[owner] is not None}
+        for first, last in near:
+            if last > first and first in column_of and last in column_of:
+                out[k].append((column_of[first], column_of[last]))
+    return out
+
+
+def _doubt(part: Part, first: int, last: int, filled: list[int]) -> None:
+    """The part's notes in columns ``first``..``last`` are in the right column only if the
+    gap among them is where alignment put it, one place of ``last - first + 1``: their
+    confidence is at most that chance."""
+    chance = 1.0 / (last - first + 1)
+    for st in part.staves:
+        for m in st.measures[first : last + 1]:
+            if m.index in filled:
+                continue
+            # The measure is the part's own copy; its voices and events are still shared
+            # with the part as read.
+            m.voices = [
+                v.model_copy(
+                    update={
+                        "events": [
+                            e.model_copy(
+                                update={
+                                    "confidence": chance
+                                    if e.confidence is None
+                                    else min(e.confidence, chance)
+                                }
+                            )
+                            for e in v.events
+                        ]
+                    }
+                )
+                for v in m.voices
+            ]
