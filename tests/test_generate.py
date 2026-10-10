@@ -164,3 +164,74 @@ def test_short_name_drops_the_role_and_long_names_wrap() -> None:
     assert (
         _instrument_name("Viola (Fiddle 1)") == r'\markup \center-column { "Viola" "(Fiddle 1)" }'
     )
+
+
+def _endings_score(tmp_path: Path) -> Path:
+    """Six measures of 2/4: a repeat with a first ending (m. 4) and a second (m. 5)."""
+
+    def measure(n: int, pitch: str, left: str = "", right: str = "") -> str:
+        attributes = (
+            "<attributes><divisions>1</divisions><key><fifths>0</fifths></key>"
+            "<time><beats>2</beats><beat-type>4</beat-type></time>"
+            "<clef><sign>G</sign><line>2</line></clef></attributes>"
+            if n == 1
+            else ""
+        )
+        note = (
+            f"<note><pitch><step>{pitch}</step><octave>4</octave></pitch>"
+            "<duration>2</duration><type>half</type></note>"
+        )
+        return f'<measure number="{n}">{left}{attributes}{note}{right}</measure>'
+
+    repeat_start = '<barline location="left"><repeat direction="forward"/></barline>'
+    first = '<barline location="left"><ending number="1" type="start"/></barline>'
+    first_end = (
+        '<barline location="right"><bar-style>light-heavy</bar-style>'
+        '<ending number="1" type="stop"/><repeat direction="backward"/></barline>'
+    )
+    second = '<barline location="left"><ending number="2" type="start"/></barline>'
+    second_end = '<barline location="right"><ending number="2" type="discontinue"/></barline>'
+    final = '<barline location="right"><bar-style>light-heavy</bar-style></barline>'
+    measures = [
+        measure(1, "C"),
+        measure(2, "D"),
+        measure(3, "E", left=repeat_start),
+        measure(4, "F", left=first, right=first_end),
+        measure(5, "G", left=second, right=second_end),
+        measure(6, "C", right=final),
+    ]
+    path = tmp_path / "endings.musicxml"
+    path.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="4.0"><part-list>'
+        '<score-part id="P1"><part-name>Flute</part-name></score-part></part-list>'
+        f'<part id="P1">{"".join(measures)}</part></score-partwise>',
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_first_and_second_endings_get_volta_brackets(tmp_path: Path) -> None:
+    score = load_musicxml(_endings_score(tmp_path))
+    music = generate_project(score).files["parts/flute.ly"]
+    by_measure: dict[str, str] = {}
+    current = None
+    for line in music.splitlines():
+        if line.strip().startswith("% m."):
+            current = line.split()[-1]
+        elif current is not None and line.strip():
+            by_measure.setdefault(current, line)
+    assert "repeatCommands" not in by_measure["3"]
+    assert "\\set Score.repeatCommands = #'((volta \"1.\"))" in by_measure["4"]
+    assert '\\bar ":|."' in by_measure["4"]
+    assert "#'((volta #f) (volta \"2.\"))" in by_measure["5"]
+    assert "#'((volta #f))" in by_measure["6"]
+    assert "repeatCommands" not in by_measure["1"] + by_measure["2"]
+
+
+@pytest.mark.lilypond
+def test_endings_compile(tmp_path: Path) -> None:
+    score = load_musicxml(_endings_score(tmp_path))
+    project = write_project(score, tmp_path / "ly")
+    report = run_checks(score, tmp_path / "ly", project)
+    assert report.check("Q1").passed, report.check("Q1").details
+    assert report.check("Q2").passed, report.check("Q2").details

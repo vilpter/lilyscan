@@ -359,6 +359,21 @@ def _barline_command(b: Barline | None, left: bool) -> str | None:
     }.get(b.style)
 
 
+def _volta_label(number: str) -> str:
+    """An ending's numbers as printed over its bracket: "1" as "1.", "1, 2" as "1., 2."."""
+    numbers = re.findall(r"\d+", number)
+    if numbers:
+        return ", ".join(f"{n}." for n in numbers)
+    return re.sub(r"[^\w ,.-]", "", number).strip()
+
+
+def _volta_command(commands: list[str]) -> str:
+    """Start or end volta brackets where the music is: the measures are written one by
+    one with their own bar lines, so the brackets are set by hand rather than with
+    ``\\repeat volta`` and ``\\alternative``."""
+    return "\\set Score.repeatCommands = #'(" + " ".join(commands) + ")"
+
+
 def _grace_leads(score: Score) -> dict[int, list[str]]:
     """Per measure index, the longest run of grace notes that opens the measure in any staff.
 
@@ -438,8 +453,21 @@ def _staff_music(
     length: Fraction | None = None
     overridden = False
     pickup = Fraction(0)
+    in_ending = closing = False  # in a first or second ending; it ended with the last measure
     for m in measures:
         prefix: list[str] = []
+        volta: list[str] = []
+        if closing:
+            volta.append("(volta #f)")
+            in_ending = closing = False
+        left = m.left_barline
+        if left is not None and left.ending and left.ending_type in (None, "start"):
+            if in_ending:
+                volta.append("(volta #f)")
+            volta.append(f'(volta "{_volta_label(left.ending)}")')
+            in_ending = True
+        if volta:
+            prefix.append(_volta_command(volta))
         if m.left_barline is not None:
             cmd = _barline_command(m.left_barline, left=True)
             if cmd:
@@ -489,6 +517,11 @@ def _staff_music(
         text = " ".join(t for t in [*prefix, body] if t)
         lines.append(f"  {text} |" + (f" {suffix}" if suffix else ""))
         numbers.append(label)
+        right = m.right_barline
+        if in_ending and right is not None and right.ending_type in ("stop", "discontinue"):
+            closing = True
+    if in_ending and lines:
+        lines[-1] += " " + _volta_command(["(volta #f)"])
     return lines, numbers
 
 
