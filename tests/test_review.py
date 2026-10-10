@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from lilyscan.ir.musicxml import load_musicxml
-from lilyscan.lilypond.generate import generate_project, scan_measure_lines
+from lilyscan.lilypond.generate import drop_lyrics, generate_project, scan_measure_lines
 from lilyscan.pipeline import convert_file, recompile
 from lilyscan.qa.checks import CheckResult, QaReport
 from lilyscan.review import build_review
@@ -93,3 +93,28 @@ def test_recompile_after_edit_updates_checks_and_review(tmp_path: Path) -> None:
     assert (flagged["part"], flagged["number"]) == ("P1", "2")
     assert "b'2" in voice.read_text(encoding="utf-8").splitlines()[flagged["line"] - 1]
     assert report["lilypond"]["svg"] and (tmp_path / report["lilypond"]["svg"][0]).is_file()
+
+
+@pytest.mark.lilypond
+def test_dropping_an_instruments_lyrics_clears_the_lyrics_check(tmp_path: Path) -> None:
+    violin = tmp_path / "violin.musicxml"
+    violin.write_text(
+        FIXTURE.read_text(encoding="utf-8").replace(
+            "<part-name>Voice</part-name><part-abbreviation>Vo.</part-abbreviation>",
+            "<part-name>Violin</part-name><part-abbreviation>Vln.</part-abbreviation>",
+        ),
+        encoding="utf-8",
+    )
+    out = tmp_path / "job"
+    report = convert_file(violin, out)
+    q9 = next(c for c in report["qa"]["checks"] if c["id"] == "Q9")
+    assert not q9["passed"] and q9["details"][0]["voices"] == ["violinVoice"]
+    for path in (out / "ly" / "layout").glob("*.ly"):
+        path.write_text(drop_lyrics(path.read_text(encoding="utf-8"), {"violinVoice"}))
+
+    report = recompile(out)
+
+    checks = {c["id"]: c for c in report["qa"]["checks"]}
+    assert checks["Q1"]["passed"] and checks["Q9"]["passed"]
+    assert "lyricsto" not in (out / "ly" / "layout" / "score.ly").read_text(encoding="utf-8")
+    assert "violinVerseOne = " in (out / "ly" / "parts" / "violin.ly").read_text(encoding="utf-8")

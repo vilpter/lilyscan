@@ -118,6 +118,32 @@ def scan_measure_lines(
     return found
 
 
+# A layout line engraving one verse under a voice: \new Lyrics \lyricsto "voice" \verse
+_LYRICS_LINE = re.compile(r'^[ \t]*\\new Lyrics \\lyricsto "([^"]+)" \\\w+[ \t]*(?:\n|$)', re.M)
+
+
+def voice_name(music: str) -> str:
+    """The Voice context a staff's music variable is engraved in (``violinIMusic`` is
+    engraved as ``violinIVoice``)."""
+    return music.removesuffix("Music") + "Voice"
+
+
+def engraved_lyrics(files: dict[str, str]) -> set[str]:
+    """The voices whose lyrics the layout files engrave."""
+    return {
+        m.group(1)
+        for rel, text in files.items()
+        if rel.startswith("layout/")
+        for m in _LYRICS_LINE.finditer(text)
+    }
+
+
+def drop_lyrics(text: str, voices: set[str]) -> str:
+    """A layout file without the lines that engrave these voices' lyrics (the verses
+    stay defined in the part's file)."""
+    return _LYRICS_LINE.sub(lambda m: "" if m.group(1) in voices else m.group(0), text)
+
+
 def _identifier(text: str) -> str:
     """LilyPond identifiers are letters only: 'Violin II' -> 'violinII', 'P1' -> 'pOne'."""
     words = re.findall(r"[A-Za-z]+|\d", text)

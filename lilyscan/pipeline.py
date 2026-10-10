@@ -14,7 +14,13 @@ from lilyscan.ir.ops import counts, merge_scores
 from lilyscan.ir.to_musicxml import write_musicxml
 from lilyscan.lilypond.compile import compile_ly
 from lilyscan.lilypond.generate import LOW_CONFIDENCE, LyProject, scan_measure_lines, write_project
-from lilyscan.qa.checks import CheckResult, QaReport, compile_checks, run_checks
+from lilyscan.qa.checks import (
+    CheckResult,
+    QaReport,
+    compile_checks,
+    lyrics_after_edit,
+    run_checks,
+)
 from lilyscan.repair import apply_repairs
 from lilyscan.repair.confidence import calibrate_confidence
 from lilyscan.review import build_review
@@ -190,7 +196,8 @@ def recompile(root: Path, settings: Settings | None = None) -> dict[str, Any]:
     """After the user edits ``ly/``: recompile (Q1, Q2), re-render, refresh the review.
 
     Q3-Q5 describe the recognized music (the IR), which editing the LilyPond source
-    does not change, so their last results are kept.
+    does not change, so their last results are kept. Q9 keeps the instrumental parts
+    whose lyrics the source still engraves.
     """
     ly_root = root / "ly"
     score = Score.model_validate_json((root / "ir" / "score.json").read_text(encoding="utf-8"))
@@ -210,6 +217,7 @@ def recompile(root: Path, settings: Settings | None = None) -> dict[str, Any]:
     report_path = root / "report.json"
     report: dict[str, Any] = json.loads(report_path.read_text(encoding="utf-8"))
     kept = [CheckResult(**c) for c in report["qa"]["checks"] if c["id"] not in ("Q1", "Q2")]
+    kept = [lyrics_after_edit(c, files) if c.id == "Q9" else c for c in kept]
     outputs = [p.relative_to(ly_root.resolve()).as_posix() for p in compiled.outputs]
     outputs += [name for name in ("main.midi", "main.mid") if (ly_root / name).is_file()]
     qa = QaReport(checks=sorted([q1, q2, *kept], key=lambda c: c.id), outputs=outputs)

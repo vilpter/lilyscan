@@ -193,6 +193,41 @@ def test_edits_and_recompile_wait_for_a_busy_job(
 
 
 @pytest.mark.lilypond
+def test_drop_the_lyrics_of_an_instrumental_part(
+    client: TestClient, finished_job: str, tmp_path: Path, dispatcher: RecordingDispatcher
+) -> None:
+    import json
+
+    from lilyscan_app.jobs import JobStatus, JobStore, job_dir
+
+    root = job_dir(tmp_path, finished_job)
+    # The fixture is a piano piece: give it a part the lyrics check (Q9) has found.
+    report = json.loads((root / "report.json").read_text(encoding="utf-8"))
+    for check in report["qa"]["checks"]:
+        if check["id"] == "Q9":
+            check["details"] = [{"part": "P1", "name": "Piano", "voices": ["pianoUpperVoice"]}]
+    (root / "report.json").write_text(json.dumps(report), encoding="utf-8")
+    layout = root / "ly" / "layout" / "score.ly"
+    lines = layout.read_text(encoding="utf-8").splitlines(keepends=True)
+    at = next(i for i, line in enumerate(lines) if '"pianoUpperVoice"' in line) + 1
+    lines.insert(at, '      \\new Lyrics \\lyricsto "pianoUpperVoice" \\pianoUpperVerseOne\n')
+    layout.write_text("".join(lines), encoding="utf-8")
+    url = f"/api/jobs/{finished_job}/drop-lyrics"
+
+    assert client.post(url, json={"part": "P9"}).status_code == 404
+    store = JobStore(tmp_path)
+    store.update(finished_job, status=JobStatus.RUNNING)
+    assert client.post(url, json={"part": "P1"}).status_code == 409
+    store.update(finished_job, status=JobStatus.DONE)
+    store.close()
+
+    response = client.post(url, json={"part": "P1"})
+    assert response.status_code == 202 and response.json()["stage"] == "recompile"
+    assert "lyricsto" not in layout.read_text(encoding="utf-8")
+    assert dispatcher.recompiled == [finished_job]
+
+
+@pytest.mark.lilypond
 def test_downloads(client: TestClient, finished_job: str) -> None:
     import io
     import zipfile

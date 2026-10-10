@@ -56,7 +56,7 @@ A job goes through these stages (the design, and why each exists, is in
 | 5. Repair | Rule-based repairs, then Lilyscan's calibrated confidence | `lilyscan/repair/` |
 | 6. Score model | Parts, staves, measures, voices, events, with provenance for every change | `lilyscan/ir/models.py` |
 | 7. LilyPond | The editable project, compiled to PDF, MIDI and SVG | `lilyscan/lilypond/` |
-| 8. Checks | Compiles (Q1), bar checks (Q2), measure durations (Q3), ranges (Q4), parts line up (Q5) | `lilyscan/qa/` |
+| 8. Checks | Compiles (Q1), bar checks (Q2), measure durations (Q3), ranges (Q4), parts line up (Q5), no lyrics in instrumental parts (Q9) | `lilyscan/qa/` |
 
 Combining parts (`lilyscan/combine.py`) aligns the parts measure by measure
 (`lilyscan/align.py`), lets parts that disagree on the key vote, optionally reduces some of
@@ -153,7 +153,9 @@ and change the port with `LILYSCAN_PORT`. With an NVIDIA GPU and the NVIDIA Cont
    boxed green, amber or red by confidence and the measures that need attention outlined.
    **Engraved** shows the LilyPond output. **LilyPond** is the editable source, with the
    review list of measures ranked by problems. Clicking a measure in any pane, or putting the
-   caret on its line, highlights it in the other two. The badges Q1-Q5 show the checks.
+   caret on its line, highlights it in the other two. The badges Q1-Q5 and Q9 show the checks.
+   When a part named for an instrument has lyrics (Q9), usually a title or a note read as
+   lyrics, **Drop these lyrics** stops engraving them.
 4. **Edit** the source and press **Save & recompile**.
 5. **Download** the result:
    - `.ly`: one file that engraves the score and each part. Compiling `piece.ly` gives
@@ -209,7 +211,7 @@ A finished job's folder (under `data/jobs/<id>/`) holds:
 - `ir/score.json`: the score model, with page boxes and confidence per event.
 - `ly/`: the LilyPond project (`main.ly`, `parts/`, `layout/`) and the compiled PDF and MIDI.
 - `score.musicxml`, `overlays/page-N.png` (each page with the notes boxed by confidence), and
-  `report.json` (pages, engine run, geometry, repairs, checks Q1-Q5).
+  `report.json` (pages, engine run, geometry, repairs, checks Q1-Q5 and Q9).
 
 ### Configuration
 

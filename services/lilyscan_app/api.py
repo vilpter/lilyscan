@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from lilyscan.ir.models import Score
 from lilyscan.ir.transpose import Interval
+from lilyscan.lilypond.generate import drop_lyrics
 from lilyscan.lilypond.single import single_file
 from lilyscan.pipeline import SOURCE_MAP
 from lilyscan.runtime.config import (
@@ -48,6 +49,10 @@ class CombinePart(BaseModel):
 class RerunRequest(BaseModel):
     ocr_languages: str | None = None  # None: keep the job's
     straighten: bool | None = None
+
+
+class DropLyricsRequest(BaseModel):
+    part: str  # a part the lyrics check (Q9) found
 
 
 class CombineRequest(BaseModel):
@@ -321,6 +326,36 @@ def create_app(settings: Settings | None = None, dispatcher: Dispatcher | None =
             raise HTTPException(409, "the job is busy")
         if not (root / "report.json").is_file():
             raise HTTPException(409, "nothing to recompile yet")
+        jobs.update(job_id, status=JobStatus.QUEUED, stage="recompile")
+        dispatch.recompile(job_id)
+        refreshed = jobs.get(job_id)
+        assert refreshed is not None
+        return refreshed.to_dict()
+
+    @app.post("/api/jobs/{job_id}/drop-lyrics", status_code=202)
+    def drop_part_lyrics(
+        job_id: str, body: DropLyricsRequest, jobs: Store, dispatch: Disp
+    ) -> dict[str, Any]:
+        """Stop engraving the lyrics of an instrumental part (Q9), then recompile. The
+        verses stay defined in the part's file, so the edit can be undone by hand."""
+        root = _job_root(job_id, jobs)
+        job = jobs.get(job_id)
+        if job is not None and job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+            raise HTTPException(409, "the job is busy")
+        report_path = root / "report.json"
+        if not report_path.is_file():
+            raise HTTPException(409, "nothing to edit yet")
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        check = next((c for c in report["qa"]["checks"] if c["id"] == "Q9"), None)
+        found = next((d for d in (check or {}).get("details", []) if d["part"] == body.part), None)
+        if found is None:
+            raise HTTPException(404, "no lyrics to drop in this part")
+        voices = set(found["voices"])
+        for path in sorted((root / "ly" / "layout").glob("*.ly")):
+            text = path.read_text(encoding="utf-8")
+            edited = drop_lyrics(text, voices)
+            if edited != text:
+                path.write_text(edited, encoding="utf-8", newline="\n")
         jobs.update(job_id, status=JobStatus.QUEUED, stage="recompile")
         dispatch.recompile(job_id)
         refreshed = jobs.get(job_id)

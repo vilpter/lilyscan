@@ -301,6 +301,7 @@ async function loadReview() {
   renderSource(review);
   renderNotes(review);
   renderRepairs(review);
+  renderLyricsCheck(review);
   renderReviewList(review);
   await Promise.all([renderScore(review), loadFiles(review)]);
   if (state.selected && state.byId.has(state.selected)) select(state.selected);
@@ -584,6 +585,47 @@ function renderRepairs(review) {
     el("strong", {}, `Repaired automatically (${repairs.length})`),
     el("ul", {}, ...repairs.map((r) => el("li", {}, el("span", { class: "kind" }, r.rule), ` · ${r.detail}`))),
   );
+}
+
+// Q9: lyrics in a part named for an instrument, usually a title or a note read as lyrics.
+function renderLyricsCheck(review) {
+  const check = ((review.qa && review.qa.checks) || []).find((c) => c.id === "Q9");
+  const found = (check && check.details) || [];
+  const where = (ms) => (ms.length <= 6 ? ms.join(", ") : `${ms.slice(0, 5).join(", ")} and ${ms.length - 5} more`);
+  $("lyrics-check").hidden = !found.length;
+  $("lyrics-check").replaceChildren(
+    el("strong", {}, "Lyrics in instrumental parts"),
+    el("div", {}, "Instruments rarely have words: these may be text read as lyrics."),
+    el(
+      "ul",
+      {},
+      ...found.map((d) =>
+        el(
+          "li",
+          {},
+          `${d.name}: ${d.events} syllable(s), m. ${where(d.measures)} `,
+          el("button", { type: "button", onclick: () => dropLyrics(d.part) }, "Drop these lyrics"),
+        ),
+      ),
+    ),
+  );
+}
+
+async function dropLyrics(part) {
+  if (state.dirty.size) {
+    showError("Save your edits first: dropping lyrics edits the source and recompiles.");
+    return;
+  }
+  try {
+    await api(`/api/jobs/${state.id}/drop-lyrics`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ part }),
+    });
+    pollJob();
+  } catch (err) {
+    showError(`Dropping the lyrics failed: ${err.message}`);
+  }
 }
 
 function renderReviewList(review) {

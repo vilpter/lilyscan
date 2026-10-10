@@ -358,6 +358,7 @@ project/
 | Q6 | Visual round-trip | Render the generated `.ly` to PNG, **run Audiveris on the rendering**, import it to IR, and diff per measure against the job IR. Engraved LilyPond output is near-ideal input, so a disagreement usually points to a real source error rather than an engine error | Per-measure diff score |
 | Q7 | Engine agreement (optional) | Run a second engine (oemer, an opt-in extra under D12, or a transformer OMR model whose license meets D12) and compare IRs measure by measure | Disagreement heat map |
 | Q8 | Audio spot-check | Generate MIDI via `\midi {}`; playback in the UI | For human review (not automated) |
+| Q9 | Lyrics in instrumental parts | A part named for an instrument that does not sing (strings, woodwinds, brass; not keyboards, guitars or a name a voice could have, such as "Bass") has lyrics: usually a title, a tempo or a performance note read as lyrics | Parts and measures; the review UI's **Drop these lyrics** stops engraving them and recompiles |
 
 *M8 finding: Q6 measured and not shipped.* On the scan corpus (1,017 measures, 157 wrong against the ground truth), re-reading the engraved output with Audiveris flagged the wrong measures less well than the review list already does. The review list flags measures with low calibrated confidence, a failing rhythm or range check, or a repair.
 

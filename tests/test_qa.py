@@ -8,6 +8,7 @@ import pytest
 from lilyscan.ir.models import (
     Barline,
     Event,
+    Lyric,
     Measure,
     NoteHead,
     Part,
@@ -18,11 +19,15 @@ from lilyscan.ir.models import (
     Voice,
 )
 from lilyscan.ir.musicxml import load_musicxml
-from lilyscan.lilypond.generate import write_project
+from lilyscan.lilypond.generate import LyProject, drop_lyrics, write_project
 from lilyscan.qa.checks import (
+    CheckResult,
     alignment_check,
     compile_checks,
     instrument_range,
+    is_instrumental,
+    lyrics_after_edit,
+    lyrics_check,
     range_check,
     rhythm_check,
 )
@@ -101,3 +106,48 @@ def test_bar_check_failures_map_to_measures(tmp_path: Path) -> None:
     q1, q2, _ = compile_checks(tmp_path, project)
     assert q1.passed and not q2.passed
     assert {(d["part"], d["measure"]) for d in q2.details} >= {("P1", "1")}
+
+
+def test_lyrics_check_flags_instruments_that_do_not_sing() -> None:
+    def sung(name: str, part_id: str, abbreviation: str | None = None) -> Part:
+        event = note("C", 5, 0, 4)
+        event.lyrics = [Lyric(text="Allegro")]
+        return Part(
+            id=part_id,
+            name=name,
+            abbreviation=abbreviation,
+            staves=[staff([note("C", 5, 0, 4)], [event])],
+        )
+
+    parts = [
+        sung("Violin I", "P1"),
+        sung("Voice", "P2"),
+        sung("Piano", "P3"),
+        sung("Double Bass", "P4"),
+        sung("Bass", "P5"),
+        sung("", "P6", abbreviation="Vla."),
+        Part(id="P7", name="Viola", staves=[staff([note("C", 4, 0, 4)])]),
+    ]
+    project = LyProject(
+        files={},
+        measure_lines={},
+        staff_vars={"violinIMusic": ("P1", 1), "doubleBassMusic": ("P4", 1)},
+    )
+    result = lyrics_check(Score(parts=parts), project)
+    assert not result.passed
+    assert [d["part"] for d in result.details] == ["P1", "P4", "P6"]
+    first = result.details[0]
+    assert (first["name"], first["events"], first["measures"]) == ("Violin I", 1, ["2"])
+    assert first["voices"] == ["violinIVoice"]
+    assert is_instrumental(Part(id="X", name="Vc."))
+    assert not is_instrumental(Part(id="X", name="Alto"))
+
+
+def test_lyrics_check_after_the_lyrics_are_dropped() -> None:
+    found = [{"part": "P1", "name": "Violin", "voices": ["violinVoice"]}]
+    layout = '    \\new Lyrics \\lyricsto "violinVoice" \\violinVerseOne\n'
+    check = CheckResult("Q9", "lyrics in instrumental parts", passed=False, details=found)
+    assert not lyrics_after_edit(check, {"layout/score.ly": layout}).passed
+    edited = {"layout/score.ly": drop_lyrics(layout, {"violinVoice"})}
+    assert edited["layout/score.ly"] == ""
+    assert lyrics_after_edit(check, edited).passed
