@@ -455,7 +455,40 @@ def corpus_excerpt(spec: PieceSpec) -> stream.Score:
     composer = original.composer if original is not None else None
     fallback = spec.work.split("/")[0].replace("_", " ").title()
     excerpt.metadata = metadata.Metadata(title=title, composer=composer or fallback)
+    instruments_from_names(excerpt)
     return excerpt
+
+
+def instruments_from_names(score: stream.Score) -> None:
+    """Give a part named for an instrument that instrument and a short name to match,
+    when the work left it with music21's default piano. A Humdrum source (Haydn's
+    quartets) names its parts but not their instruments, and every staff after the first
+    system was engraved "Pno"; now "Violin 1" gets a violin and "Vln. 1"."""
+    from music21 import instrument
+    from music21.exceptions21 import InstrumentException
+
+    for part in score.parts:
+        current = part.getInstrument(returnDefault=False)
+        name = (part.partName or "").strip()
+        if not name or not isinstance(current, instrument.Piano) or _KEYBOARD.search(name):
+            continue
+        try:
+            found = instrument.fromString(name)
+        except InstrumentException:
+            continue
+        if isinstance(found, instrument.Piano) or not found.instrumentAbbreviation:
+            continue
+        number = re.search(r"\s(\d+|[IVX]+)$", name)
+        short = f"{found.instrumentAbbreviation}." + (f" {number[1]}" if number else "")
+        found.partName = name
+        found.partAbbreviation = found.instrumentAbbreviation = short
+        for old in list(part.recurse().getElementsByClass(instrument.Instrument)):
+            old.activeSite.remove(old)
+        part.insert(0, found)
+        part.partAbbreviation = short
+
+
+_KEYBOARD = re.compile(r"piano|pno|keyboard|organ|harpsichord|cembalo", re.I)
 
 
 def corpus_rights(work: str) -> str:

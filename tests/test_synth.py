@@ -97,3 +97,20 @@ def test_lilyscan_engraver_writes_one_page(tmp_path: Path) -> None:
     result = engrave(fixture, tmp_path, engraver="lilyscan")
     assert (result.pdf.name, result.png.name) == ("score.pdf", "score.png")
     assert (tmp_path / "ly" / "main.ly").is_file()
+
+
+def test_parts_named_for_instruments_lose_the_default_piano() -> None:
+    from music21 import instrument, note, stream
+
+    from lilyscan.synth.generate import instruments_from_names
+
+    score = stream.Score()
+    for name in ("Violin 1", "Viola", "Piano", "Choir"):
+        part = stream.Part()
+        part.partName = name
+        part.insert(0, instrument.Piano())  # what music21 gives a part a work left bare
+        part.append(note.Note("C4"))
+        score.append(part)
+    instruments_from_names(score)
+    got = [(p.partAbbreviation, type(p.getInstrument()).__name__) for p in score.parts]
+    assert got == [("Vln. 1", "Violin"), ("Vla.", "Viola"), ("Pno", "Piano"), ("Ch.", "Choir")]
