@@ -1,14 +1,16 @@
-"""Quality checks Q1-Q5 (design doc, Stage 8).
+"""Quality checks Q1-Q5 and Q9 (design doc, Stage 8).
 
 Q1 compiles       the generated project compiles without errors
 Q2 bar checks     no bar-check warnings, each mapped back to part/staff/measure
 Q3 rhythm         every voice fills its measure (pickup and its complement excepted)
 Q4 pitch range    notes inside the practical range of the part's instrument
 Q5 alignment      all staves have the same measures and barline structure
+Q9 lyrics         no lyrics in a part named for an instrument that does not sing
 """
 
 from __future__ import annotations
 
+import difflib
 import re
 from dataclasses import asdict, dataclass, field
 from fractions import Fraction
@@ -17,7 +19,7 @@ from typing import Any
 
 from lilyscan.ir.models import Part, Score
 from lilyscan.lilypond.compile import CompileResult, compile_ly
-from lilyscan.lilypond.generate import LyProject
+from lilyscan.lilypond.generate import LyProject, engraved_lyrics, voice_name
 from lilyscan.runtime.config import Settings
 
 
@@ -252,6 +254,104 @@ def alignment_check(score: Score) -> CheckResult:
     )
 
 
+# --- Q9 ------------------------------------------------------------------------
+
+# Instruments that do not sing. Keyboards and guitars are left out (songbooks and
+# hymnals print the words with them), and so is a name a voice could have ("Bass").
+INSTRUMENTS = re.compile(
+    r"piccolo|flute|\bfl\.|oboe|\bob\.|clarinet|\bcl\.|bassoon|fagott|\bbsn|horn|\bhn\."
+    r"|trumpet|\btpt|\btrp|trombone|\btbn|tuba|violin|\bvln|\bvn\.|viola|\bvla|cello|\bvc\."
+    r"|\bvlc|contrabass|double bass|\bcb\.|\bdb\.",
+    re.I,
+)
+VOICES = re.compile(
+    r"soprano|alto|tenor|baritone|voice|vocal|choir|chorus|(?<!double )\bbass\b", re.I
+)
+
+
+# Instruments' names, for names OCR misread by a letter ("Celio", "Vrolin").
+_INSTRUMENT_WORDS = (
+    "piccolo", "flute", "oboe", "clarinet", "bassoon", "trumpet", "trombone",
+    "violin", "viola", "cello", "violoncello", "contrabass", "fiddle",
+)  # fmt: skip
+# The name Audiveris gives a one-staff part whose name it could not read.
+_PLACEHOLDER = "voice"
+
+
+def _instrument_name(name: str) -> bool | None:
+    """True for an instrument's name, False for a voice's, None when it says neither."""
+    if VOICES.search(name):
+        return False
+    if INSTRUMENTS.search(name):
+        return True
+    words = re.findall(r"[^\W\d_]{4,}", name.lower())
+    if any(difflib.get_close_matches(w, _INSTRUMENT_WORDS, n=1, cutoff=0.8) for w in words):
+        return True
+    return None
+
+
+def is_instrumental(part: Part) -> bool:
+    """The part is named for an instrument, and not for a voice. Its name decides; its
+    abbreviation only when the name says neither or is the engine's placeholder."""
+    for label in (part.name, part.abbreviation):
+        if not label or label.strip().lower() == _PLACEHOLDER:
+            continue
+        verdict = _instrument_name(label)
+        if verdict is not None:
+            return verdict
+    return False
+
+
+def lyrics_check(score: Score, project: LyProject) -> CheckResult:
+    """Lyrics in an instrumental part are usually text the engine read as lyrics (a
+    title, a performance note, a rehearsal mark). Each part found lists the voices whose
+    lyrics would be dropped (``drop_lyrics``)."""
+    voices = {key: voice_name(music) for music, key in project.staff_vars.items()}
+    found = []
+    for part in score.parts:
+        if not is_instrumental(part):
+            continue
+        measures: list[str] = []
+        staves: list[int] = []
+        events = 0
+        for staff in part.staves:
+            for m in staff.measures:
+                n = sum(1 for v in m.voices for e in v.events if e.lyrics)
+                if n:
+                    events += n
+                    measures.append(m.number or str(m.index + 1))
+                    if staff.number not in staves:
+                        staves.append(staff.number)
+        if events:
+            found.append(
+                {
+                    "part": part.id,
+                    "name": part.name or part.abbreviation or part.id,
+                    "events": events,
+                    "measures": measures,
+                    "voices": [voices[(part.id, n)] for n in staves if (part.id, n) in voices],
+                }
+            )
+    return _lyrics_result(found)
+
+
+def _lyrics_result(found: list[dict[str, Any]]) -> CheckResult:
+    return CheckResult(
+        "Q9",
+        "lyrics in instrumental parts",
+        passed=not found,
+        details=found,
+        summary=f"{len(found)} instrumental part(s) with lyrics",
+    )
+
+
+def lyrics_after_edit(check: CheckResult, files: dict[str, str]) -> CheckResult:
+    """Q9 after the LilyPond source was edited: parts whose lyrics are no longer
+    engraved are dropped from it."""
+    engraved = engraved_lyrics(files)
+    return _lyrics_result([d for d in check.details if set(d.get("voices", [])) & engraved])
+
+
 def run_checks(
     score: Score, root: Path, project: LyProject, settings: Settings | None = None
 ) -> QaReport:
@@ -260,6 +360,13 @@ def run_checks(
     # LilyPond writes main.midi on Linux and main.mid on Windows.
     outputs += [name for name in ("main.midi", "main.mid") if (root / name).is_file()]
     return QaReport(
-        checks=[q1, q2, rhythm_check(score), range_check(score), alignment_check(score)],
+        checks=[
+            q1,
+            q2,
+            rhythm_check(score),
+            range_check(score),
+            alignment_check(score),
+            lyrics_check(score, project),
+        ],
         outputs=outputs,
     )

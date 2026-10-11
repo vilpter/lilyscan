@@ -172,6 +172,8 @@ table.jobs { width: 100%; border-collapse: collapse; }
 .notes ul { margin: 4px 0 0; padding-left: 18px; }
 .repairs ul { margin: 2px 0 0; padding-left: 18px; }
 .repairs .kind { font-weight: 600; }
+.lyrics-check { font-size: 12px; }
+.lyrics-check button { font-size: 12px; margin-left: 4px; }
 
 @media (max-width: 900px) {
   .panes { grid-template-columns: 1fr; }
