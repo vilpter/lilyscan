@@ -80,6 +80,14 @@ def test_build_corpus_one_piece(tmp_path: Path) -> None:
     assert all(items[0].input(v).stat().st_size > 0 for v in VARIANTS)
 
 
+def test_building_one_piece_keeps_the_others_in_the_manifest(tmp_path: Path) -> None:
+    spec = tmp_path / "spec.json"
+    spec.write_text(json.dumps({"pieces": [s.to_dict() for s in SPECS[:2]]}), encoding="utf-8")
+    build_corpus(spec, tmp_path / "corpus")
+    build_corpus(spec, tmp_path / "corpus", only={SPECS[1].id})
+    assert [i.spec for i in load_corpus(tmp_path / "corpus")] == SPECS[:2]
+
+
 def test_repertoire_spec_round_trips() -> None:
     specs = load_spec(Path(__file__).parents[1] / "eval" / "corpus" / "repertoire.json")
     assert {s.category for s in specs} >= {"satb", "piano", "quartet", "leadsheet", "song"}
