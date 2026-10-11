@@ -265,14 +265,22 @@ def _unsure_columns(
     spans: dict[int, tuple[bool, list[tuple[int, int]]]],
     count: int,
 ) -> list[list[tuple[int, int]]]:
-    """The spans of measures as column ranges, for the spans of more than one measure."""
+    """The spans of more than one measure as column ranges, overlapping ones merged (the
+    rests of a part that is short by several measures can share their places)."""
     out: list[list[tuple[int, int]]] = [[] for _ in range(count)]
     for k, (short, near) in spans.items():
         owner = ref_k if short else k
         column_of = {col[owner]: c for c, col in enumerate(columns) if col[owner] is not None}
-        for first, last in near:
-            if last > first and first in column_of and last in column_of:
-                out[k].append((column_of[first], column_of[last]))
+        ranges = sorted(
+            (column_of[first], column_of[last])
+            for first, last in near
+            if last > first and first in column_of and last in column_of
+        )
+        for first, last in ranges:
+            if out[k] and first <= out[k][-1][1]:
+                out[k][-1] = (out[k][-1][0], max(out[k][-1][1], last))
+            else:
+                out[k].append((first, last))
     return out
 
 
