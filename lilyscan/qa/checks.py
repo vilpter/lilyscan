@@ -10,6 +10,7 @@ Q9 lyrics         no lyrics in a part named for an instrument that does not sing
 
 from __future__ import annotations
 
+import difflib
 import re
 from dataclasses import asdict, dataclass, field
 from fractions import Fraction
@@ -268,10 +269,37 @@ VOICES = re.compile(
 )
 
 
+# Instruments' names, for names OCR misread by a letter ("Celio", "Vrolin").
+_INSTRUMENT_WORDS = (
+    "piccolo", "flute", "oboe", "clarinet", "bassoon", "trumpet", "trombone",
+    "violin", "viola", "cello", "violoncello", "contrabass", "fiddle",
+)  # fmt: skip
+# The name Audiveris gives a one-staff part whose name it could not read.
+_PLACEHOLDER = "voice"
+
+
+def _instrument_name(name: str) -> bool | None:
+    """True for an instrument's name, False for a voice's, None when it says neither."""
+    if VOICES.search(name):
+        return False
+    if INSTRUMENTS.search(name):
+        return True
+    words = re.findall(r"[^\W\d_]{4,}", name.lower())
+    if any(difflib.get_close_matches(w, _INSTRUMENT_WORDS, n=1, cutoff=0.8) for w in words):
+        return True
+    return None
+
+
 def is_instrumental(part: Part) -> bool:
-    """The part is named (or abbreviated) for an instrument, and not for a voice."""
-    names = [part.name or "", part.abbreviation or ""]
-    return any(INSTRUMENTS.search(n) for n in names) and not any(VOICES.search(n) for n in names)
+    """The part is named for an instrument, and not for a voice. Its name decides; its
+    abbreviation only when the name says neither or is the engine's placeholder."""
+    for label in (part.name, part.abbreviation):
+        if not label or label.strip().lower() == _PLACEHOLDER:
+            continue
+        verdict = _instrument_name(label)
+        if verdict is not None:
+            return verdict
+    return False
 
 
 def lyrics_check(score: Score, project: LyProject) -> CheckResult:

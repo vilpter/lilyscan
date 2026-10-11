@@ -143,6 +143,24 @@ def test_lyrics_check_flags_instruments_that_do_not_sing() -> None:
     assert not is_instrumental(Part(id="X", name="Alto"))
 
 
+@pytest.mark.parametrize(
+    ("name", "abbreviation", "instrumental"),
+    [
+        ("Celio", None, True),  # OCR misreadings of an instrument's name
+        ("Vrolin 2", None, True),
+        ("Violin 2", "Voice", True),  # the name decides, not a placeholder abbreviation
+        ("Voice", "Vln.", True),  # a placeholder name: the abbreviation decides
+        ("Voice", "Voice", False),  # the engine's name for a part whose name it missed
+        ("Bass", "Bs", False),  # a voice or a double bass: not taken as an instrument
+        ("Double Bass", None, True),
+        ("Piano", "Pno.", False),
+        ("Theremin", None, False),
+    ],
+)
+def test_instrument_names(name: str, abbreviation: str | None, instrumental: bool) -> None:
+    assert is_instrumental(Part(id="X", name=name, abbreviation=abbreviation)) is instrumental
+
+
 def test_lyrics_check_after_the_lyrics_are_dropped() -> None:
     found = [{"part": "P1", "name": "Violin", "voices": ["violinVoice"]}]
     layout = '    \\new Lyrics \\lyricsto "violinVoice" \\violinVerseOne\n'
