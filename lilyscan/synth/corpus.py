@@ -78,9 +78,12 @@ def build_corpus(
     s = settings or Settings.from_env()
     items: list[CorpusItem] = []
     for spec in load_spec(spec_path):
-        if only and spec.id not in only:
-            continue
         item = CorpusItem(spec, out_dir / spec.id)
+        if only and spec.id not in only:
+            # Not rebuilt now, but kept in the manifest when it was built before.
+            if item.complete():
+                items.append(item)
+            continue
         items.append(item)
         if item.complete() and not force:
             continue

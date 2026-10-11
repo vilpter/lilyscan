@@ -80,6 +80,14 @@ def test_build_corpus_one_piece(tmp_path: Path) -> None:
     assert all(items[0].input(v).stat().st_size > 0 for v in VARIANTS)
 
 
+def test_building_one_piece_keeps_the_others_in_the_manifest(tmp_path: Path) -> None:
+    spec = tmp_path / "spec.json"
+    spec.write_text(json.dumps({"pieces": [s.to_dict() for s in SPECS[:2]]}), encoding="utf-8")
+    build_corpus(spec, tmp_path / "corpus")
+    build_corpus(spec, tmp_path / "corpus", only={SPECS[1].id})
+    assert [i.spec for i in load_corpus(tmp_path / "corpus")] == SPECS[:2]
+
+
 def test_repertoire_spec_round_trips() -> None:
     specs = load_spec(Path(__file__).parents[1] / "eval" / "corpus" / "repertoire.json")
     assert {s.category for s in specs} >= {"satb", "piano", "quartet", "leadsheet", "song"}
@@ -97,3 +105,20 @@ def test_lilyscan_engraver_writes_one_page(tmp_path: Path) -> None:
     result = engrave(fixture, tmp_path, engraver="lilyscan")
     assert (result.pdf.name, result.png.name) == ("score.pdf", "score.png")
     assert (tmp_path / "ly" / "main.ly").is_file()
+
+
+def test_parts_named_for_instruments_lose_the_default_piano() -> None:
+    from music21 import instrument, note, stream
+
+    from lilyscan.synth.generate import instruments_from_names
+
+    score = stream.Score()
+    for name in ("Violin 1", "Viola", "Piano", "Choir"):
+        part = stream.Part()
+        part.partName = name
+        part.insert(0, instrument.Piano())  # what music21 gives a part a work left bare
+        part.append(note.Note("C4"))
+        score.append(part)
+    instruments_from_names(score)
+    got = [(p.partAbbreviation, type(p.getInstrument()).__name__) for p in score.parts]
+    assert got == [("Vln. 1", "Violin"), ("Vla.", "Viola"), ("Pno", "Piano"), ("Ch.", "Choir")]
