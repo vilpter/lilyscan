@@ -7,12 +7,18 @@ voice, search for the fewest of these edits that make it fill the measure exactl
 
 - ``triplet``: three consecutive plain notes of one type, starting on a multiple of
   the group's length, become a 3:2 triplet;
+- ``beam``: two to four consecutive plain notes of one type each get one flag more (a
+  beam not seen: eighths read as quarters, sixteenths as eighths);
 - ``dot`` / ``undot``: add or remove one augmentation dot;
 - ``double`` / ``halve``: one flag fewer or more.
 
-Candidates are ranked by how many edits they need, then by how many of the voice's
-onsets they line up with onsets in the measure's other voices and staves (which do
-add up), then by the engine's confidence in the events they change. An ambiguous
+A triplet and a beam are one symbol each, however many notes they change. Candidates
+are ranked by how many edits they need, then by how many of the voice's onsets they
+line up with onsets in the measure's other voices and staves (which do add up). When
+several are still equal (a triplet and a missed beam often both fit), the one whose
+onsets fit the notes' places on the page clearly best is taken, as engravers space
+notes by the logarithm of their durations; otherwise they are ranked by the engine's
+confidence in the events they change. An ambiguous
 best candidate is not applied, nor is a dot or flag edit that does not line up more
 onsets with the other voices than the voice as read, unless another voice in the
 measure is short or long by as much and needs the same edit at the same place (in
@@ -57,7 +63,14 @@ MAX_SINGLE_EDITS = 1
 MAX_SOLUTIONS = 64
 NO_SINGLE_EDIT = "no single rhythm edit fits"
 # Edits that restore a symbol the engine did not see, rather than change one it saw.
-MISSED = frozenset({"dot", "triplet"})
+MISSED = frozenset({"dot", "triplet", "beam"})
+# Edits of a group of notes for one symbol (a triplet's "3", a beam), counted as one
+# symbol rather than as an edit per note.
+GROUPS = frozenset({"triplet", "beam"})
+# A beam the engine missed leaves its notes a flag short: two to four notes of one type,
+# read a value too long (eighths as quarters, sixteenths as eighths).
+BEAM_SPANS = (2, 3, 4)
+BEAMED = frozenset({"quarter", "eighth", "16th", "32nd"})
 # Rests put in by position: at most this many rests' worth of the shortest note value,
 # in a voice of at most this many notes. A placement is taken when its notes sit within
 # REST_FIT of the measure's width of where their onsets put them, and every other
@@ -71,12 +84,13 @@ REST_MARGIN = 0.015
 
 @dataclass(frozen=True)
 class Edit:
-    kind: str  # "triplet", "dot", "undot", "double", "halve"
+    kind: str  # "triplet", "beam", "dot", "undot", "double", "halve"
     index: int  # first event (index into the voice's non-grace events)
+    count: int = 1  # events a beam spans
 
     @property
     def size(self) -> int:
-        return 3 if self.kind == "triplet" else 1
+        return 3 if self.kind == "triplet" else self.count
 
 
 def _plain(e: Event) -> bool:
@@ -154,6 +168,16 @@ def _solutions(events: list[Event], start: Fraction, length: Fraction) -> Iterat
             edits.append(Edit("triplet", i))
             yield from walk(i + 3, pos + 2 * e.duration, edits, budget)
             edits.pop()
+        for count in BEAM_SPANS:
+            group = events[i : i + count]
+            if (
+                len(group) == count
+                and e.note_type in BEAMED
+                and all(_plain(x) and x.note_type == e.note_type and x.dots == 0 for x in group)
+            ):
+                edits.append(Edit("beam", i, count))
+                yield from walk(i + count, pos + count * e.duration / 2, edits, budget)
+                edits.pop()
         if budget:
             for kind, changed in single[i].items():
                 if changed is not None:
@@ -166,7 +190,7 @@ def _solutions(events: list[Event], start: Fraction, length: Fraction) -> Iterat
 
 
 def _singles(edits: list[Edit]) -> int:
-    return sum(1 for x in edits if x.kind != "triplet")
+    return sum(1 for x in edits if x.kind not in GROUPS)
 
 
 def _apply(events: list[Event], edits: list[Edit], start: Fraction) -> list[Event]:
@@ -175,6 +199,11 @@ def _apply(events: list[Event], edits: list[Edit], start: Fraction) -> list[Even
         if edit.kind == "triplet":
             for k in range(edit.index, edit.index + 3):
                 out[k] = _triplet(out[k])
+        elif edit.kind == "beam":
+            for k in range(edit.index, edit.index + edit.count):
+                halved = _single(out[k], "halve")
+                assert halved is not None
+                out[k] = halved
         else:
             changed = _single(out[edit.index], edit.kind)
             assert changed is not None
@@ -208,7 +237,32 @@ class _Fix:
     options: dict[tuple[object, ...], tuple[list[Edit], list[Event]]] = field(default_factory=dict)
 
 
-def _fix_voice(v: Voice, length: Fraction, trusted: set[Fraction]) -> _Fix | str | None:
+def _by_spacing(
+    candidates: list[tuple[list[Edit], list[Event]]], m: Measure | None
+) -> tuple[list[Edit], list[Event]] | None:
+    """Of edits equally good otherwise, the one whose onsets fit the notes' places on the
+    page clearly best (as engravers space notes), or None when none does."""
+    if m is None or m.bbox is None:
+        return None
+    end = m.bbox.x + m.bbox.w
+    ranked = []
+    for edits, fixed in candidates:
+        if any(e.bbox is None for e in fixed):
+            return None
+        sequence: list[tuple[Fraction, Event | None]] = [(e.duration, e) for e in fixed]
+        shortest = min(d for d, _ in sequence)
+        misfit, _ = _fit(_points(sequence, shortest, end))
+        ranked.append((misfit / m.bbox.w, edits, fixed))
+    ranked.sort(key=lambda r: r[0])
+    (fit, edits, fixed), second = ranked[0], ranked[1][0]
+    if fit > REST_FIT or second < REST_RATIO * fit or second - fit < REST_MARGIN:
+        return None
+    return edits, fixed
+
+
+def _fix_voice(
+    v: Voice, length: Fraction, trusted: set[Fraction], m: Measure | None = None
+) -> _Fix | str | None:
     """A fix, a reason it could not be fixed, or None when nothing is wrong."""
     events = [e for e in v.events if not e.grace]
     if not events or any(e.measure_rest for e in events) or v.duration() == length:
@@ -229,7 +283,13 @@ def _fix_voice(v: Voice, length: Fraction, trusted: set[Fraction]) -> _Fix | str
         return NO_SINGLE_EDIT
     ranked.sort(key=lambda r: (r[0], r[1], r[2], r[3]))
     best = ranked[0]
-    if len(ranked) > 1 and ranked[1][:4] == best[:4]:
+    # Edits as few as the best's, lining up as many onsets (a triplet and a missed beam
+    # often both fit): the notes' places on the page may tell them apart.
+    tied = [r for r in ranked if r[:2] == best[:2]]
+    spaced = _by_spacing([(r[4], r[5]) for r in tied], m) if len(tied) > 1 else None
+    if spaced is not None:
+        best = next(r for r in tied if r[4] is spaced[0])
+    elif len(ranked) > 1 and ranked[1][:4] == best[:4]:
         return "several rhythm edits fit equally well"
     # A changed dot or flag is a guess unless it lines the voice up with the others.
     as_read = sum(1 for e in events if e.offset in trusted)
@@ -460,7 +520,7 @@ def repair_rhythm(score: Score) -> list[Repair]:
                     for e in w.events
                     if not e.grace
                 }
-                result = _fix_voice(v, length, trusted)
+                result = _fix_voice(v, length, trusted, m)
                 if result == NO_SINGLE_EDIT and short:
                     result = _with_rests(v, length, m)
                 if isinstance(result, _Fix):

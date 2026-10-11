@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from fractions import Fraction
 from pathlib import Path
 
@@ -414,8 +415,24 @@ def rhythm_score(*staves: list[list[Event]], beats: int = 4) -> Score:
 FULL = ["quarter"] * 4
 
 
-def test_missed_triplet_is_restored() -> None:
-    # The middle measure: a triplet read as three plain eighths overfills 4/4.
+def placed(score: Score, durations: list[Fraction], width: float = 400.0) -> Score:
+    """Put the notes of the second measure where an engraver puts notes of ``durations``
+    (their true values): room for each in proportion to 1 + log2 of its duration."""
+    m = score.parts[0].staves[0].measures[1]
+    m.bbox = BBox(page=0, x=0, y=0, w=width, h=40)
+    shortest = min(durations)
+    rooms = [1 + math.log2(d / shortest) for d in durations]
+    unit = (width - 20) / sum(rooms)
+    x = 20.0
+    for e, room in zip(m.voices[0].events, rooms, strict=True):
+        e.bbox = BBox(page=0, x=x, y=0, w=12, h=10)
+        x += room * unit
+    return score
+
+
+def triplet_read_as_eighths(where: bool = True) -> Score:
+    """The middle measure: a triplet read as three plain eighths overfills 4/4. The notes
+    stand on the page as a triplet's do, unless ``where`` is False."""
     score = rhythm_score(
         [
             line(*FULL),
@@ -423,6 +440,13 @@ def test_missed_triplet_is_restored() -> None:
             line(*FULL),
         ]
     )
+    return placed(score, [Fraction(1, 3)] * 3 + [Fraction(1)] * 3) if where else score
+
+
+def test_missed_triplet_is_restored() -> None:
+    # Two sixteenths read as eighths (a missed beam) would fit too; the notes' places on
+    # the page tell the triplet apart.
+    score = triplet_read_as_eighths()
     repairs = repair_rhythm(score)
     events = score.parts[0].staves[0].measures[1].voices[0].events
     assert [e.tuplet for e in events] == [(3, 2)] * 3 + [None] * 3
@@ -437,6 +461,25 @@ def test_missed_triplet_is_restored() -> None:
         ("rhythm", "Part 1: triplet to fill the measure", ["2"])
     ]
     assert "\\tuplet 3/2" in generate_project(score).files["parts/part-1.ly"]
+
+
+def test_missed_beam_is_restored() -> None:
+    # Two eighths read as quarters (their beam not seen) overfill 4/4. Three quarters
+    # made a triplet would fit too; the notes stand on the page as eighths do.
+    score = placed(
+        rhythm_score([line(*FULL), line(*["quarter"] * 5), line(*FULL)]),
+        [Fraction(1, 2)] * 2 + [Fraction(1)] * 3,
+    )
+    repairs = repair_rhythm(score)
+    events = score.parts[0].staves[0].measures[1].voices[0].events
+    assert [e.note_type for e in events] == ["eighth", "eighth", "quarter", "quarter", "quarter"]
+    assert [e.offset for e in events] == [0, Fraction(1, 2), 1, 2, 3]
+    assert [r.detail for r in repairs] == ["Part 1: beam to fill the measure"]
+
+
+def test_triplet_or_beam_without_positions_is_left_flagged() -> None:
+    # With no places on the page, a triplet and a missed beam fit as well as each other.
+    assert repair_rhythm(triplet_read_as_eighths(where=False)) == []
 
 
 def test_missed_dot_is_restored_when_another_staff_confirms_it() -> None:
@@ -523,13 +566,7 @@ def test_pickup_is_not_filled() -> None:
 
 
 def test_review_shows_what_a_repair_changed_in_a_measure() -> None:
-    score = rhythm_score(
-        [
-            line(*FULL),
-            line("eighth", "eighth", "eighth", "quarter", "quarter", "quarter"),
-            line(*FULL),
-        ]
-    )
+    score = triplet_read_as_eighths()
     repair_rhythm(score)
     review = build_review(score, generate_project(score), QaReport(checks=[]))
     second = review["measures"][1]
