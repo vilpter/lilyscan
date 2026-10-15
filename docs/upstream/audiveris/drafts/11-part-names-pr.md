@@ -1,4 +1,4 @@
-<!-- Draft, not posted: needs the owner's OK. Branch vilpter/audiveris fix/part-names (f52f2ca87, three commits on development 10d3c184b; not pushed yet). -->
+<!-- Posted as Audiveris/audiveris#1132 (2026-10-14, owner's OK), from vilpter/audiveris fix/part-names (2a112248a). -->
 
 **Title:** Keep a part together when later systems abbreviate its name
 
