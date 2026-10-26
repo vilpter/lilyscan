@@ -87,43 +87,13 @@ Lilyscan runs on Windows and Linux (macOS should work, but is untested). You nee
 | Tool | Version | Notes |
 |---|---|---|
 | Python | 3.12 | managed by [uv](https://docs.astral.sh/uv/) |
-| [LilyPond](https://lilypond.org/download.html) | 2.26.0 | `lilypond` on the `PATH`, or `LILYPOND_BIN`. Linux distributions often package an older version: use the official tarball (below) |
-| [Audiveris](https://github.com/Audiveris/audiveris/releases/tag/5.11.0) | 5.11.0 | the installer bundles its Java runtime; point `AUDIVERIS_BIN` at its executable (found automatically in `C:\Program Files\Audiveris` on Windows; the Ubuntu `.deb` puts it at `/opt/audiveris/bin/Audiveris`) |
-| Tesseract language models | [tessdata](https://github.com/tesseract-ocr/tessdata) (not `tessdata_fast`) | `eng`, `lat`, `deu` and `fra` by default, in `%LOCALAPPDATA%\lilyscan\tessdata` on Windows (found automatically) or any folder named by `TESSDATA_PREFIX` (needed on Linux). Without them Audiveris reads no lyrics or titles |
+| [LilyPond](https://lilypond.org/download.html) | 2.26.0 | `lilypond` on the `PATH`, or `LILYPOND_BIN` |
+| [Audiveris](https://github.com/Audiveris/audiveris/releases/tag/5.11.0) | 5.11.0 | the installer bundles its Java runtime; point `AUDIVERIS_BIN` at its executable (found automatically in `C:\Program Files\Audiveris` on Windows) |
+| Tesseract language models | [tessdata](https://github.com/tesseract-ocr/tessdata) (not `tessdata_fast`) | `eng`, `lat`, `deu` and `fra` by default, in `%LOCALAPPDATA%\lilyscan\tessdata` on Windows (found automatically) or any folder named by `TESSDATA_PREFIX`. Without them Audiveris reads no lyrics or titles |
 
 Audiveris needs the full models with the legacy engine: `tessdata_fast` and distribution
 `tesseract-ocr-*` packages do not work. The versions are pinned: Lilyscan is tested against
 exactly these (`lilyscan/runtime/config.py`).
-
-### Linux, without root
-
-Everything can live in one folder of your own (here `~/opt`). This mirrors what the Docker
-images do:
-
-```bash
-mkdir -p ~/opt/tessdata && cd ~/opt
-curl -fsSLO https://gitlab.com/lilypond/lilypond/-/releases/v2.26.0/downloads/lilypond-2.26.0-linux-x86_64.tar.gz
-tar -xzf lilypond-2.26.0-linux-x86_64.tar.gz
-# Unpack the Audiveris package instead of installing it (sudo apt install ./<deb> also works)
-curl -fsSLO https://github.com/Audiveris/audiveris/releases/download/5.11.0/Audiveris-5.11.0-ubuntu24.04-x86_64.deb
-dpkg-deb -x Audiveris-5.11.0-ubuntu24.04-x86_64.deb audiveris-5.11.0
-# The OCR models, from the commit the Docker image pins, checked against its checksums
-commit=ced78752cc61322fb554c280d13360b35b8684e4
-for m in eng lat deu fra; do
-  curl -fsSL -o tessdata/$m.traineddata https://github.com/tesseract-ocr/tessdata/raw/$commit/$m.traineddata
-done
-(cd tessdata && sha256sum -c /path/to/lilyscan/services/audiveris-worker/tessdata.sha256)
-
-export LILYPOND_BIN=~/opt/lilypond-2.26.0/bin/lilypond
-export AUDIVERIS_BIN=~/opt/audiveris-5.11.0/opt/audiveris/bin/Audiveris
-export TESSDATA_PREFIX=~/opt/tessdata
-```
-
-- The Audiveris package needs the libraries its `.deb` declares
-  (`dpkg-deb -f Audiveris-5.11.0-ubuntu24.04-x86_64.deb Depends`). A desktop Ubuntu has them;
-  a headless server may not (see `services/audiveris-worker/Dockerfile`).
-- If another Python 3.12, such as Anaconda's, is first on the `PATH`, uv builds the
-  environment on it. Add `--managed-python` to `uv sync` to use uv's own Python.
 
 Then:
 
