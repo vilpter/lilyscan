@@ -72,15 +72,48 @@ lilyscan/            the library: pipeline stages (above), CLI (cli.py), evaluat
 services/
   lilyscan_app/      FastAPI app (api.py), job store (SQLite), job steps (tasks.py), dispatch
   web/               the browser UI (plain HTML, CSS and JavaScript, no build step)
-  api/, worker/, audiveris-worker/   Dockerfiles for the homelab deployment
+  api/, worker/, audiveris-worker/   Dockerfiles for the Docker deployment
 eval/                corpus specs (seed.json, repertoire.json) and committed results
 docs/                design.md (design and status log), upstream/audiveris (bug reports and fixes)
 tests/               pytest suite
 scripts/             maintenance scripts (engine smoke test, .omr fixtures)
-docker-compose.yml   the homelab deployment
+docker-compose.yml   the Docker deployment (one machine or the homelab)
 ```
 
 ## Install
+
+There are two ways to install Lilyscan:
+
+- **With Docker** (the simplest): Docker is the only thing to install. Audiveris, its OCR
+  models, LilyPond and Python come inside the published images, at the pinned versions.
+  This gives the whole app: transcribing, reviewing and combining parts in the browser.
+- **Natively**: the tools installed on the machine itself. Needed to develop Lilyscan (tests,
+  the evaluation) and to use it from Python scripts.
+
+### With Docker
+
+You need Docker Engine with the Compose plugin, or Docker Desktop. The images are built for
+x86-64 Linux (`linux/amd64`) and are about 0.9 GB to download.
+[Install Docker](https://docs.docker.com/engine/install/), then:
+
+```bash
+git clone https://github.com/vilpter/lilyscan.git
+cd lilyscan
+docker compose pull
+docker compose up -d
+```
+
+Then open <http://localhost:8000/>. Jobs are kept in the Docker volume `lilyscan-data`.
+
+- **Check:** `docker compose ps` lists the four services. `docker compose logs -f` follows their
+  logs.
+- **Update:** `git pull && docker compose pull && docker compose up -d`.
+- **Stop:** `docker compose down`. The jobs are kept; `docker compose down -v` deletes them
+  too.
+
+Ports, versions, GPU and the services are described under [Start](#start).
+
+### Natively
 
 Lilyscan runs on Windows and Linux (macOS should work, but is untested). You need:
 
@@ -106,12 +139,11 @@ uv run lilyscan selftest
 ```
 
 `versions` compares the installed LilyPond and Audiveris with the pinned ones; `selftest`
-compiles a small score. For the homelab (Docker) deployment you need none of this, only
-Docker (below).
+compiles a small score. With Docker you need none of this (above).
 
 ## Start
 
-On one machine, with jobs run inside the server process (no Redis or Docker):
+Natively, with jobs run inside the server process (no Redis or Docker):
 
 ```bash
 uv run lilyscan serve
@@ -120,8 +152,8 @@ uv run lilyscan serve
 Then open <http://localhost:8000/>. `--port` changes the port and `--data` the folder where
 jobs are kept (default `./data`).
 
-In the homelab, with the published images (the API on port 8000, the Audiveris engine and the
-pipeline in their own workers, and a Redis-compatible queue):
+With Docker, on one machine or in the homelab, using the published images (the API on port
+8000, the Audiveris engine and the pipeline in their own workers, and a Redis-compatible queue):
 
 ```bash
 docker compose pull
