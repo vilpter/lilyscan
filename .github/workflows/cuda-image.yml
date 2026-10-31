@@ -16,6 +16,8 @@ env:
 
 jobs:
   build:
+    # Only this repository publishes the images; copies of it build nothing here.
+    if: github.repository == 'vilpter/lilyscan'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
