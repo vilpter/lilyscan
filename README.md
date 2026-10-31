@@ -115,20 +115,77 @@ Ports, versions, GPU and the services are described under [Start](#start).
 
 ### Natively
 
-Lilyscan runs on Windows and Linux (macOS should work, but is untested). You need the tools
-below. The last column gives the commands for Ubuntu 24.04 or later on x86-64, after
-`sudo apt install git curl`:
+Lilyscan runs on Windows and Linux (macOS should work, but is untested). You need:
 
-| Tool | Version | Notes | Install on Ubuntu |
+| Tool | Version | Notes | Ubuntu |
 |---|---|---|---|
-| Python | 3.12 | managed by [uv](https://docs.astral.sh/uv/) | `curl -LsSf https://astral.sh/uv/install.sh \| sh`, then open a new terminal. This installs uv for your user; `uv sync` (below) downloads Python 3.12 itself |
-| [LilyPond](https://lilypond.org/download.html) | 2.26.0 | `lilypond` on the `PATH`, or `LILYPOND_BIN` | `curl -fLO https://gitlab.com/lilypond/lilypond/-/releases/v2.26.0/downloads/lilypond-2.26.0-linux-x86_64.tar.gz`<br>`sudo tar -xzf lilypond-2.26.0-linux-x86_64.tar.gz -C /opt`<br>`sudo ln -s /opt/lilypond-2.26.0/bin/lilypond /usr/local/bin/lilypond`<br>Not `apt install lilypond`: Ubuntu's package is older (2.24) |
-| [Audiveris](https://github.com/Audiveris/audiveris/releases/tag/5.11.0) | 5.11.0 | the installer bundles its Java runtime; point `AUDIVERIS_BIN` at its executable (found automatically in `C:\Program Files\Audiveris` on Windows) | `curl -fLO https://github.com/Audiveris/audiveris/releases/download/5.11.0/Audiveris-5.11.0-ubuntu24.04-x86_64.deb`<br>`sudo apt install ./Audiveris-5.11.0-ubuntu24.04-x86_64.deb`<br>`sudo ln -s /opt/audiveris/bin/Audiveris /usr/local/bin/audiveris`<br>On Ubuntu 22.04, use the `ubuntu22.04` package. The package expects a desktop; on a server without one, use Docker |
-| Tesseract language models | [tessdata](https://github.com/tesseract-ocr/tessdata) (not `tessdata_fast`) | `eng`, `lat`, `deu` and `fra` by default, in `%LOCALAPPDATA%\lilyscan\tessdata` on Windows (found automatically) or any folder named by `TESSDATA_PREFIX`. Without them Audiveris reads no lyrics or titles | `sudo mkdir -p /usr/local/share/tessdata`<br>`for l in eng lat deu fra; do sudo curl -fL -o /usr/local/share/tessdata/$l.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/$l.traineddata; done`<br>`echo 'export TESSDATA_PREFIX=/usr/local/share/tessdata' >> ~/.profile`, then log out and back in |
+| Python | 3.12 | managed by [uv](https://docs.astral.sh/uv/) | [steps](#uv-and-python) |
+| [LilyPond](https://lilypond.org/download.html) | 2.26.0 | `lilypond` on the `PATH`, or `LILYPOND_BIN` | [steps](#lilypond) |
+| [Audiveris](https://github.com/Audiveris/audiveris/releases/tag/5.11.0) | 5.11.0 | the installer bundles its Java runtime; point `AUDIVERIS_BIN` at its executable (found automatically in `C:\Program Files\Audiveris` on Windows) | [steps](#audiveris) |
+| Tesseract language models | [tessdata](https://github.com/tesseract-ocr/tessdata) (not `tessdata_fast`) | `eng`, `lat`, `deu` and `fra` by default, in `%LOCALAPPDATA%\lilyscan\tessdata` on Windows (found automatically) or any folder named by `TESSDATA_PREFIX`. Without them Audiveris reads no lyrics or titles | [steps](#ocr-models) |
 
 Audiveris needs the full models with the legacy engine: `tessdata_fast` and distribution
 `tesseract-ocr-*` packages do not work. The versions are pinned: Lilyscan is tested against
 exactly these (`lilyscan/runtime/config.py`).
+
+#### On Ubuntu
+
+These steps are for Ubuntu 24.04 or later on x86-64. Run each block in a terminal; each one
+is safe to run again. First:
+
+```bash
+sudo apt install git curl
+```
+
+##### uv and Python
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Open a new terminal afterwards. This installs uv for your user; `uv sync` (below) downloads
+Python 3.12 itself.
+
+##### LilyPond
+
+Ubuntu's own `lilypond` package is too old (2.24), so this installs the official 2.26.0 build
+in `/opt`. It takes precedence over the Ubuntu package if that is installed too.
+
+```bash
+cd /tmp
+curl -fLO https://gitlab.com/lilypond/lilypond/-/releases/v2.26.0/downloads/lilypond-2.26.0-linux-x86_64.tar.gz
+sudo tar -xzf lilypond-2.26.0-linux-x86_64.tar.gz -C /opt
+sudo ln -sf /opt/lilypond-2.26.0/bin/lilypond /usr/local/bin/lilypond
+hash -r
+lilypond --version
+```
+
+The last line should print `GNU LilyPond 2.26.0`.
+
+##### Audiveris
+
+```bash
+cd /tmp
+curl -fLO https://github.com/Audiveris/audiveris/releases/download/5.11.0/Audiveris-5.11.0-ubuntu24.04-x86_64.deb
+sudo apt install ./Audiveris-5.11.0-ubuntu24.04-x86_64.deb
+sudo ln -sf /opt/audiveris/bin/Audiveris /usr/local/bin/audiveris
+```
+
+On Ubuntu 22.04, use the `ubuntu22.04` package instead. The package is meant for a desktop; on
+a server without one, use [Docker](#with-docker).
+
+##### OCR models
+
+```bash
+sudo mkdir -p /usr/local/share/tessdata
+for lang in eng lat deu fra; do
+  sudo curl -fL -o /usr/local/share/tessdata/$lang.traineddata \
+    https://github.com/tesseract-ocr/tessdata/raw/main/$lang.traineddata
+done
+grep -q TESSDATA_PREFIX ~/.profile || echo 'export TESSDATA_PREFIX=/usr/local/share/tessdata' >> ~/.profile
+```
+
+Log out and back in, so that `TESSDATA_PREFIX` is set.
 
 Then:
 
