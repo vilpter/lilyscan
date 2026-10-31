@@ -356,6 +356,11 @@ cached in `eval/work/`, so later runs only re-score. The summary reports exact-m
 accuracy, edit rate, note F1, lyric and chord accuracy, how many engine events were located
 on the page, and how well confidence is calibrated.
 
+The current baselines are `base-1031-seed` and `base-1031-rep`: fresh engine runs on Linux
+(Ubuntu, x86-64) with `--repair --prepare --lilypond`. `base-1014-seed` and `base-1014-rep` are
+the same code's results on Windows. Audiveris reads a few pages slightly differently there, so
+compare with the baseline from the same platform, item by item in `results.json`.
+
 - `--repair` applies Lilyscan's repairs and confidence before scoring, and lists every repair.
 - `--prepare` sends scans and photos through Stage 1 first, as a job does.
 - `--lilypond` also generates LilyPond and reports how often it compiles (Q1) and passes bar
