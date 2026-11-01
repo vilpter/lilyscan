@@ -693,7 +693,7 @@ public final class Generate {
     // ---- lyrics ----
 
     /** Python {@code [^\W\d_]}: letters, and numeric characters that are not decimal digits. */
-    private static boolean wordLetter(int cp) {
+    public static boolean wordLetter(int cp) {
         int t = Character.getType(cp);
         return t == Character.UPPERCASE_LETTER || t == Character.LOWERCASE_LETTER || t == Character.TITLECASE_LETTER
                 || t == Character.MODIFIER_LETTER || t == Character.OTHER_LETTER || t == Character.LETTER_NUMBER

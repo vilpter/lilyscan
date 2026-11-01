@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +30,9 @@ sys.path.insert(0, str(ROOT))
 from lilyscan.engine.audiveris.omr import OmrBook, attach_movements, read_omr  # noqa: E402
 from lilyscan.ir.models import Score  # noqa: E402
 from lilyscan.ir.musicxml import load_musicxml  # noqa: E402
+from lilyscan.lilypond.compile import lilypond_version  # noqa: E402
 from lilyscan.lilypond.generate import LyProject, generate_project  # noqa: E402
+from lilyscan.qa.checks import run_checks  # noqa: E402
 from lilyscan.repair import apply_repairs  # noqa: E402
 from lilyscan.repair.confidence import calibrate_confidence  # noqa: E402
 from lilyscan.synth.corpus import load_spec  # noqa: E402
@@ -161,6 +164,20 @@ def _write_project(out_dir: Path, name: str, score_json: Path) -> None:
     )
 
 
+def _write_qa(out_dir: Path, name: str, score_json: Path) -> None:
+    """The QA report (Q1-Q5, Q9) of the project generated from a reference score.json; needs
+    LilyPond (LILYPOND_BIN), since Q1 and Q2 compile the project."""
+    score = Score.model_validate_json(score_json.read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        project = generate_project(score)
+        project.write(root)
+        report = run_checks(score, root, project)
+    (out_dir / f"{name}.qa.json").write_text(
+        json.dumps(report.to_dict(), indent=1) + "\n", encoding="utf-8", newline="\n"
+    )
+
+
 def _write_reference(out_dir: Path, name: str, musicxml: Path, source: str) -> None:
     score = load_musicxml(musicxml, source=source)
     (out_dir / f"{name}.score.json").write_text(
@@ -253,8 +270,13 @@ def main() -> None:
                     "score": f"omr/{entry['name']}.{kind}.json",
                 }
             )
+    with_lilypond = lilypond_version() is not None
+    if not with_lilypond:
+        print("LilyPond not found: QA references (Q1, Q2) left as they are")
     for entry in ly_manifest:
         _write_project(ly, entry["name"], OUT / entry["score"])
+        if with_lilypond:
+            _write_qa(ly, entry["name"], OUT / entry["score"])
     _write_manifest(ly, ly_manifest)
 
     if args.sweep is not None:
@@ -266,6 +288,8 @@ def main() -> None:
                 path = write_ground_truth(spec, sweep / "inputs")
                 _write_reference(sweep, spec.id, path, "musicxml")
                 _write_project(sweep, spec.id, sweep / f"{spec.id}.score.json")
+                if with_lilypond:
+                    _write_qa(sweep, spec.id, sweep / f"{spec.id}.score.json")
                 entries.append({"name": spec.id, "input": str(path), "source": "musicxml"})
         _write_manifest(sweep, entries)
         print(f"wrote {len(entries)} sweep pieces to {sweep}")

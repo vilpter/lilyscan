@@ -37,7 +37,12 @@ public final class Parity {
     public record Case(String name, Path input, String source, Path reference) {}
 
     /** A generator case: a reference score.json and the project Python generated from it. */
-    public record ProjectCase(String name, Path score, Path reference) {}
+    public record ProjectCase(String name, Path score, Path reference) {
+        /** The QA report Python produced for the same project (written when LilyPond was found). */
+        public Path qa() {
+            return reference.resolveSibling(reference.getFileName().toString().replace(".project.json", ".qa.json"));
+        }
+    }
 
     /** The committed generator cases, plus the local sweep when -PparitySweep is set. */
     public static List<ProjectCase> projectCases() {

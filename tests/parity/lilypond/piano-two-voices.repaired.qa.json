@@ -1,0 +1,165 @@
+{
+ "passed": false,
+ "checks": [
+  {
+   "id": "Q1",
+   "name": "compiles",
+   "passed": true,
+   "details": [],
+   "summary": "compiled"
+  },
+  {
+   "id": "Q2",
+   "name": "bar checks",
+   "passed": false,
+   "details": [
+    {
+     "file": "parts/piano.ly",
+     "line": 5,
+     "message": "bar check failed at: 1/4",
+     "part": "P1",
+     "staff": 1,
+     "measure": "1"
+    }
+   ],
+   "summary": "1 failing bar check(s)"
+  },
+  {
+   "id": "Q3",
+   "name": "rhythmic integrity",
+   "passed": false,
+   "details": [
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "1",
+     "voice": 1,
+     "expected": "4",
+     "actual": "3/2"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "1",
+     "voice": 2,
+     "expected": "4",
+     "actual": "3"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "1",
+     "voice": 3,
+     "expected": "4",
+     "actual": "3"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "3",
+     "voice": 1,
+     "expected": "4",
+     "actual": "3"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "3",
+     "voice": 2,
+     "expected": "4",
+     "actual": "3"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "3",
+     "voice": 3,
+     "expected": "4",
+     "actual": "3/4"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "7",
+     "voice": 1,
+     "expected": "4",
+     "actual": "5/2"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "7",
+     "voice": 2,
+     "expected": "4",
+     "actual": "2"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "12",
+     "voice": 1,
+     "expected": "4",
+     "actual": "7/2"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "12",
+     "voice": 2,
+     "expected": "4",
+     "actual": "1"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "12",
+     "voice": 3,
+     "expected": "4",
+     "actual": "2"
+    },
+    {
+     "part": "P1",
+     "staff": 1,
+     "measure": "12",
+     "voice": 4,
+     "expected": "4",
+     "actual": "1"
+    },
+    {
+     "part": "P1",
+     "staff": 2,
+     "measure": "3",
+     "voice": 5,
+     "expected": "4",
+     "actual": "3"
+    }
+   ],
+   "summary": "13 voice-measure(s) not matching the time signature"
+  },
+  {
+   "id": "Q4",
+   "name": "pitch range",
+   "passed": true,
+   "details": [],
+   "summary": "0 note(s) outside the instrument's practical range"
+  },
+  {
+   "id": "Q5",
+   "name": "cross-part alignment",
+   "passed": true,
+   "details": [],
+   "summary": "0 alignment problem(s)"
+  },
+  {
+   "id": "Q9",
+   "name": "lyrics in instrumental parts",
+   "passed": true,
+   "details": [],
+   "summary": "0 instrumental part(s) with lyrics"
+  }
+ ],
+ "outputs": [
+  "main.pdf",
+  "main.midi"
+ ]
+}
