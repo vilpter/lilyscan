@@ -40,6 +40,12 @@ subprojects {
         // (tests/parity/, scripts/java_parity.py) from the repository root.
         systemProperty 'lilyscan.repoRoot', rootProject.projectDir.absolutePath
         inputs.dir(rootProject.file('tests/parity')).optional().withPropertyName('parity')
+        // Opt-in full corpus sweep: -PparitySweep=/tmp/parity-sweep (scripts/java_parity.py --sweep).
+        def sweep = project.findProperty('paritySweep')
+        if (sweep) {
+            systemProperty 'lilyscan.paritySweep', sweep
+            outputs.upToDateWhen { false }
+        }
     }
 
     tasks.withType(JavaCompile).configureEach {

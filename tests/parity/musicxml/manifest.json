@@ -13,5 +13,30 @@
   "name": "split-flute",
   "input": "eval/fixtures/omr/5.11.0/split-flute/output.mxl",
   "source": "audiveris"
+ },
+ {
+  "name": "solo-01",
+  "input": "tests/parity/musicxml/inputs/solo-01.musicxml",
+  "source": "musicxml"
+ },
+ {
+  "name": "piano-01",
+  "input": "tests/parity/musicxml/inputs/piano-01.musicxml",
+  "source": "musicxml"
+ },
+ {
+  "name": "satb-01",
+  "input": "tests/parity/musicxml/inputs/satb-01.musicxml",
+  "source": "musicxml"
+ },
+ {
+  "name": "leadsheet-01",
+  "input": "tests/parity/musicxml/inputs/leadsheet-01.musicxml",
+  "source": "musicxml"
+ },
+ {
+  "name": "quartet-01",
+  "input": "tests/parity/musicxml/inputs/quartet-01.musicxml",
+  "source": "musicxml"
  }
 ]

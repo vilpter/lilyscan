@@ -1,0 +1,4526 @@
+{
+ "title": "Lilyscan piano-01",
+ "composer": "Generated",
+ "parts": [
+  {
+   "id": "P1",
+   "name": "Piano",
+   "abbreviation": "Pno.",
+   "transpose_semitones": null,
+   "staves": [
+    {
+     "number": 1,
+     "measures": [
+      {
+       "index": 0,
+       "number": "1",
+       "clefs": [
+        {
+         "sign": "G",
+         "line": 2,
+         "octave_change": 0,
+         "offset": "0"
+        }
+       ],
+       "key": {
+        "fifths": 0,
+        "mode": "major"
+       },
+       "time": {
+        "beats": 4,
+        "beat_type": 4,
+        "symbol": "normal"
+       },
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        },
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 1,
+       "number": "2",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "13/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "7/2",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "15/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 2,
+       "number": "3",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": true,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "3/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 1,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "15/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        },
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 3,
+       "number": "4",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "3/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 6
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 1,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": true,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "5/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/2",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": true,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "7/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "9/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 6
+             },
+             "tie_start": true,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "5/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 6
+             },
+             "tie_start": false,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "3/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 1,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "15/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 4,
+       "number": "5",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "rest",
+           "offset": "1/2",
+           "duration": "1/4",
+           "notes": [],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 6
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "3/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 1,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "5/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        },
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 5,
+       "number": "6",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "rest",
+           "offset": "1",
+           "duration": "1/4",
+           "notes": [],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "5/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 6
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/2",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": true,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "7/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": true,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "3/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 1,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "rest",
+           "offset": "11/4",
+           "duration": "1/4",
+           "notes": [],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "13/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": -1,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": true
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "7/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 6,
+       "number": "7",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "rest",
+           "offset": "0",
+           "duration": "3/4",
+           "notes": [],
+           "note_type": "eighth",
+           "dots": 1,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": true,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "4/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "5/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 7,
+       "number": "8",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "4/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "5/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 8,
+       "number": "9",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "3/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 1,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": true,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "9/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "5/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": -1,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": true
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": true,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 9,
+       "number": "10",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": true,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1/2",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "rest",
+           "offset": "1",
+           "duration": "1",
+           "notes": [],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "3/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 1,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "11/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "10/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "11/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 1,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": true
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 10,
+       "number": "11",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": true
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "13/4",
+           "duration": "1/4",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "16th",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "7/2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 11,
+       "number": "12",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 1,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2/3",
+           "duration": "1/3",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": [
+            3,
+            2
+           ],
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "1/2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 5
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "rest",
+           "offset": "5/2",
+           "duration": "1/2",
+           "notes": [],
+           "note_type": "eighth",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "rest",
+           "offset": "3",
+           "duration": "1",
+           "notes": [],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        },
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 4
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": {
+        "style": "light-heavy",
+        "repeat": null,
+        "ending": null,
+        "ending_type": null
+       },
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      }
+     ]
+    },
+    {
+     "number": 2,
+     "measures": [
+      {
+       "index": 0,
+       "number": "1",
+       "clefs": [
+        {
+         "sign": "F",
+         "line": 4,
+         "octave_change": 0,
+         "offset": "0"
+        }
+       ],
+       "key": {
+        "fifths": 0,
+        "mode": "major"
+       },
+       "time": {
+        "beats": 4,
+        "beat_type": 4,
+        "symbol": "normal"
+       },
+       "voices": [
+        {
+         "number": 3,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "1",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "2",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 1,
+       "number": "2",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "1",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 2,
+       "number": "3",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 3,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "1",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 3,
+       "number": "4",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "2",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 4,
+       "number": "5",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 3,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 5,
+       "number": "6",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "1",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 6,
+       "number": "7",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "2",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 7,
+       "number": "8",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 8,
+       "number": "9",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "2",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 9,
+       "number": "10",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "F",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "chord",
+           "offset": "2",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "B",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "D",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 10,
+       "number": "11",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 2,
+         "events": [
+          {
+           "kind": "note",
+           "offset": "0",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "1",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "E",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "3",
+           "duration": "1",
+           "notes": [
+            {
+             "pitch": {
+              "step": "G",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "quarter",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": null,
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      },
+      {
+       "index": 11,
+       "number": "12",
+       "clefs": [],
+       "key": null,
+       "time": null,
+       "voices": [
+        {
+         "number": 3,
+         "events": [
+          {
+           "kind": "chord",
+           "offset": "0",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "A",
+              "alter": 0,
+              "octave": 2
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            },
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          },
+          {
+           "kind": "note",
+           "offset": "2",
+           "duration": "2",
+           "notes": [
+            {
+             "pitch": {
+              "step": "C",
+              "alter": 0,
+              "octave": 3
+             },
+             "tie_start": false,
+             "tie_stop": false,
+             "accidental_shown": false
+            }
+           ],
+           "note_type": "half",
+           "dots": 0,
+           "tuplet": null,
+           "grace": false,
+           "measure_rest": false,
+           "lyrics": [],
+           "articulations": [],
+           "confidence": null,
+           "bbox": null,
+           "provenance": []
+          }
+         ]
+        }
+       ],
+       "chord_symbols": [],
+       "left_barline": null,
+       "right_barline": {
+        "style": "light-heavy",
+        "repeat": null,
+        "ending": null,
+        "ending_type": null
+       },
+       "implicit": false,
+       "bbox": null,
+       "confidence": null
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "source": "musicxml",
+ "provenance": [
+  {
+   "stage": "musicxml",
+   "rule": null,
+   "before": null
+  }
+ ]
+}

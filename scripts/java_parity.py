@@ -6,10 +6,19 @@ Java tests can compare against it without Python installed. Re-run it whenever t
 behaviour changes:
 
     uv run python scripts/java_parity.py
+
+It also commits one generated seed-corpus piece per category as a MusicXML input (the seed
+corpus is generated, license-clean project content). ``--sweep DIR`` additionally writes every
+seed and repertoire piece with its reference into ``DIR`` for a local full sweep; repertoire
+encodings come from music21's corpus and are never committed (D11):
+
+    uv run python scripts/java_parity.py --sweep /tmp/parity-sweep
+    ./gradlew test -Dlilyscan.paritySweep=/tmp/parity-sweep
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -18,6 +27,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from lilyscan.ir.musicxml import load_musicxml  # noqa: E402
+from lilyscan.synth.corpus import load_spec  # noqa: E402
+from lilyscan.synth.generate import write_ground_truth  # noqa: E402
 
 OUT = ROOT / "tests" / "parity"
 
@@ -37,18 +48,54 @@ FLOATS = [
 ]
 
 
-def main() -> None:
-    (OUT / "musicxml").mkdir(parents=True, exist_ok=True)
-    manifest = []
-    for name, (rel, source) in MUSICXML_INPUTS.items():
-        score = load_musicxml(ROOT / rel, source=source)
-        (OUT / "musicxml" / f"{name}.score.json").write_text(
-            score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
-        )
-        manifest.append({"name": name, "input": rel, "source": source})
-    (OUT / "musicxml" / "manifest.json").write_text(
+def _write_reference(out_dir: Path, name: str, musicxml: Path, source: str) -> None:
+    score = load_musicxml(musicxml, source=source)
+    (out_dir / f"{name}.score.json").write_text(
+        score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
+    )
+
+
+def _write_manifest(out_dir: Path, manifest: list[dict[str, str]]) -> None:
+    (out_dir / "manifest.json").write_text(
         json.dumps(manifest, indent=1) + "\n", encoding="utf-8", newline="\n"
     )
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--sweep", type=Path, help="also write every corpus piece here (local only)")
+    args = ap.parse_args()
+
+    mx = OUT / "musicxml"
+    (mx / "inputs").mkdir(parents=True, exist_ok=True)
+    manifest = []
+    for name, (rel, source) in MUSICXML_INPUTS.items():
+        _write_reference(mx, name, ROOT / rel, source)
+        manifest.append({"name": name, "input": rel, "source": source})
+    # One generated seed piece per category, committed as inputs.
+    seen: set[str] = set()
+    for spec in load_spec(ROOT / "eval" / "corpus" / "seed.json"):
+        if spec.category in seen:
+            continue
+        seen.add(spec.category)
+        path = write_ground_truth(spec, mx / "inputs")
+        _write_reference(mx, spec.id, path, "musicxml")
+        manifest.append(
+            {"name": spec.id, "input": str(path.relative_to(ROOT)), "source": "musicxml"}
+        )
+    _write_manifest(mx, manifest)
+
+    if args.sweep is not None:
+        sweep = args.sweep.resolve()
+        (sweep / "inputs").mkdir(parents=True, exist_ok=True)
+        entries = []
+        for spec_file in ("seed.json", "repertoire.json"):
+            for spec in load_spec(ROOT / "eval" / "corpus" / spec_file):
+                path = write_ground_truth(spec, sweep / "inputs")
+                _write_reference(sweep, spec.id, path, "musicxml")
+                entries.append({"name": spec.id, "input": str(path), "source": "musicxml"})
+        _write_manifest(sweep, entries)
+        print(f"wrote {len(entries)} sweep pieces to {sweep}")
     (OUT / "floats.json").write_text(
         json.dumps([[f.hex(), repr(f)] for f in FLOATS], indent=1) + "\n",
         encoding="utf-8",
