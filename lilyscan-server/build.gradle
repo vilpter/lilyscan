@@ -7,3 +7,13 @@ dependencies {
     implementation libs.sqlite.jdbc
     runtimeOnly libs.logback.classic
 }
+
+// The single-page app is served from the jar (LILYSCAN_WEB_DIR overrides it).
+sourceSets.main.resources {
+    srcDir rootProject.file('services')
+    include 'web/**'
+}
+
+dependencies {
+    testImplementation testFixtures(project(':lilyscan-core'))
+}
