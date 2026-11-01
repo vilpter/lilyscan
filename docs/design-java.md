@@ -108,10 +108,10 @@ corpora and `eval/results/` layout; the public web SPA in `services/web/` (reuse
 | **D16** | **Engine isolation** | **Each transcription runs in a forked child JVM** (`lilyscan --engine-worker`), re-using our own jars. Audiveris was built as a single-user GUI with global/static state; option A got per-job crash/OOM isolation for free by running a fresh process. We keep that: the child JVM transcribes the book **and** imports the `.omr` in-process via Audiveris classes, then writes our IR JSON to the artifact store for the parent to read. The parent never holds Audiveris state. Heap is set on the child's command line (no launcher-config rewrite). `-Djava.awt.headless=true -Dsun.java2d.uiScale=1` are set to avoid the GTK HiDPI probe crash (`design.md` §5). A desktop user may opt into in-parent transcription for small trusted books. |
 | **D17** | **Embedded HTTP server** | **Javalin** (on Jetty; Apache-2.0) serves the existing `services/web/` SPA and the `/api/jobs` + `/api/scores` endpoints. Lightweight, embeddable, no annotation framework. Spring Boot was rejected as too heavy for a bundled desktop app; plain Jetty was rejected for more boilerplate. |
 | **D18** | **Job store & dispatch** | **SQLite via `org.xerial:sqlite-jdbc`** (same Postgres-compatible schema as today). Dispatch is an **in-process `ExecutorService`** for the desktop and for single-machine `serve`; the heavy engine step forks a worker JVM (D16). **Redis/Valkey and the four-container split are dropped.** For future multi-machine scaling, **JobRunr** (LGPL-3.0, backed by the same SQL DB — no Redis) is the sanctioned option; it is not needed for v1. |
-| **D19** | **IR serialization & migration** | **Java records serialized with Jackson**, keeping the on-disk `score.json`, `report.json` and `review.json` schemas **byte-compatible** with the Python version, so existing jobs and golden files load unchanged and the two implementations can be cross-checked during the port. Deterministic LilyPond output (the byte-identical requirement, `design.md` Stage 7) is preserved; existing `tests/golden/` are reused as-is. |
+| **D19** | **IR serialization & migration** | **Java classes serialized with Jackson** — mutable, with public fields and value equality like pydantic models, because the repairs edit the IR in place (records would fight that port); deep copies keep shared references as Python's `deepcopy` does — keeping the on-disk `score.json`, `report.json` and `review.json` schemas **byte-compatible** with the Python version, so existing jobs and golden files load unchanged and the two implementations can be cross-checked during the port. Deterministic LilyPond output (the byte-identical requirement, `design.md` Stage 7) is preserved; existing `tests/golden/` are reused as-is. |
 | **D20** | **Music theory helpers** | **Port the specific helpers Lilyscan uses from music21** (pitch spelling, interval arithmetic, key/mode inference by tonic evidence + relative-minor leading-tone frequency, accidental respelling, transposition by interval). There is no mature JVM equivalent to music21, and `proxymusic` is a MusicXML binding only. We do not depend on a music-theory library; the needed surface is small and is covered by unit tests against the Python behaviour. |
 | **D21** | **Synthetic corpus** | **Reimplement the generator in Java** (`synth/`): produce random-but-valid music as MusicXML ground truth via `proxymusic`, engrave it through **our own IR→LilyPond generator** (not `musicxml2ly`) + LilyPond, and degrade to simulated scans/photos via bytedeco OpenCV. The "byte-identical rebuild from the spec" guarantee is re-baselined (different RNG and engraving path); corpus **specs** stay committed, built corpora stay git-ignored (D11). |
-| **D22** | **Packaging (Docker-first)** | **The primary, and simplest, install is one Docker image**, run with `docker compose up`. The image is a single server container built `FROM eclipse-temurin:25-jre`, carrying: our fat application jar (which includes the Audiveris `:app` classes and the bytedeco JavaCPP natives for Tesseract, Leptonica and OpenCV, pulled at build time — no apt packages for OCR), the pinned tessdata models, and the LilyPond 2.26.0 binary (installed into the image; launched as a subprocess). The engine runs in a forked worker JVM *inside the same container* (D16), so there is **one image and one service** — no api/worker/audiveris/redis split, no Redis. `docker compose up` needs nothing on the host but Docker. The image is published to GHCR (D8) and runs `lilyscan serve`. Jobs persist to a Docker volume (SQLite). **The jpackage desktop installer is optional and built last** (JM10): per-OS installers (msi/exe, dmg/pkg, deb/rpm) that jlink a Java 25 runtime and bundle the same jars, natives, tessdata and LilyPond as app content; it may be deferred or dropped without affecting the server. |
+| **D22** | **Packaging (Docker-first)** | **The primary, and simplest, install is one Docker image**, run with `docker compose up`. The image is a single server container built `FROM eclipse-temurin:25-jre`, carrying: our fat application jar (which includes the Audiveris `:app` classes and the bytedeco JavaCPP natives for Tesseract, Leptonica and OpenCV, pulled at build time — no apt packages for OCR), the pinned tessdata models, and the LilyPond 2.26.0 binary (installed into the image; launched as a subprocess). The engine runs in a forked worker JVM *inside the same container* (D16), so there is **one image and one service** — no api/worker/audiveris/redis split, no Redis. `docker compose up` needs nothing on the host but Docker. The image is published to GHCR (D8) and runs `lilyscan serve`; CI builds the fat jar (it needs the Audiveris submodule, a Java 25 JVM and a UTF-8 locale) and the image copies it in, with the tessdata models pinned to the Python image's commit and checksum-verified. Jobs persist to a Docker volume (SQLite). **The jpackage desktop installer is optional and built last** (JM10): per-OS installers (msi/exe, dmg/pkg, deb/rpm) that jlink a Java 25 runtime and bundle the same jars, natives, tessdata and LilyPond as app content; it may be deferred or dropped without affecting the server. |
 | **D23** | **Dependency licences** | Every Java dependency is AGPL-compatible (D2/D12). Verified set in §9. LilyPond (GPL) is bundled as a separate program invoked as a subprocess (aggregation, not linking). `jgrapht` is taken under its LGPL option (it is dual EPL-2.0 / LGPL-2.1). JobRunr is taken under LGPL-3.0. |
 
 ## 4. Architecture
@@ -169,35 +169,54 @@ Audiveris's model — and D15/D16 claim that benefit without the fragility that 
 `.omr` reader.
 
 - **Linkage (D15).** A git submodule `third_party/audiveris` pinned at tag `5.11.0`; our
-  `settings.gradle` does `includeBuild("third_party/audiveris")`; `lilyscan-engine` declares
-  `implementation("org.audiveris:audiveris-app")` resolved to the included build. A breaking change
-  in Audiveris's model now fails our compile, which is precisely the compile-time safety `design.md`
-  §5.2 wanted from option D. The submodule is unmodified upstream (D6).
-- **Model access (replaces `engine/audiveris/omr.py`).** We load a saved `.omr` with Audiveris's
-  `Book`/`BookManager`, then walk `SheetStub` → `Sheet` → `SystemInfo` → `MeasureStack`/`Slot` and
-  the symbol-interpretation graph (`SIGraph`, `Inter` subclasses `HeadInter`, `HeadChordInter`,
-  `StemInter`, …, and the `Relation` edges `HeadStemRelation`, `ChordTupletRelation`, …) **as live
-  objects**. Grades (`getGrade`, `getContextualGrade`), bounds, staff-relative pitch and the
-  containment/relation graph come straight from the classes — no schema re-parsing, no version
-  drift in our parser. The join plan (`design.md` Stage 3: MusicXML measure *i* ↔ the *i*-th stack,
-  onset→slot, nearest head-chord by x and staff step) ports directly but now reads typed objects.
-  The movement-merging and multi-measure-rest handling (`design.md` Stage 3, M9) port as logic.
-- **Transcription.** The child worker calls Audiveris's book API to run the batch steps
-  (`LOAD … PAGE … EXPORT`), applies per-job `-constant` overrides through its `Constant`/
-  `ConstantManager` API, exports `.mxl`, saves `.omr`, and records the command/wall-time/exit in
-  `engine/run.json` (unchanged schema). The failed-sheet handling (`design.md` Stage 2) — re-read
-  the book from a copy without invalid/failing sheets, record `skipped_sheets`, do **not** use
-  `-sheets` (upstream bug 6) — ports as orchestration around the API.
-- **Isolation (D16).** The parent forks `lilyscan --engine-worker <job>`; the child does
-  transcription + `.omr`→IR and writes `ir/score.json`. A crash or OOM loses only that job, exactly
-  as the Python per-process model did. The child sets `-Xmx` from `AUDIVERIS_MAX_HEAP`,
-  `-Djava.awt.headless=true` and `-Dsun.java2d.uiScale=1`.
+  `settings.gradle` does `includeBuild("third_party/audiveris")` with an explicit dependency
+  substitution (`org.audiveris:audiveris-app` → Audiveris's `:app` project), so we need not track
+  Audiveris's own coordinates. A breaking change in Audiveris's model now fails our compile, which
+  is precisely the compile-time safety `design.md` §5.2 wanted from option D. The submodule is
+  unmodified upstream (D6). *Built (JM1).* Making this work required, all now encoded in the build:
+  our Gradle at Audiveris's version (9.4.1) so one Gradle builds both; a Java 25 JVM launching
+  Gradle (Audiveris has no toolchain of its own); Audiveris's JBoss repository for its non-free JAI
+  dependency (scoped to `javax.media`); the few Audiveris API types we touch (JGraphT, JAXB
+  annotations) on our compile classpath, since `:app` declares its dependencies `implementation`;
+  and a UTF-8 locale, without which Shadow cannot unzip a dependency with non-ASCII class names.
+- **Model access (replaces `engine/audiveris/omr.py`).** *Built (JM1):* `OmrReader` loads a saved
+  `.omr` with `Book.loadBook` and `SheetStub.getSheet`, and walks Audiveris's typed model as live
+  objects: `SystemInfo` → `MeasureStack`/`Slot`, `Part` → `Staff` → staff lines, and the
+  interpretation graph (`SIGraph` vertices and its containment `Relation` edges). Values are read as
+  the project saved them through a small JAXB-metadata view (`JaxbView`: the bound attribute names,
+  type adapters, enum values and getter-bound attributes), because some Audiveris getters do more
+  than return stored data — `Inter.getBounds()` falls back to, and caches, glyph bounds when none
+  were saved, which would silently change which events get boxes and so the calibrated confidence
+  inputs. The book model and the attaching logic (`Geometry`: the join plan — MusicXML measure *i*
+  ↔ the *i*-th stack, onset→slot, nearest head by x and staff step — plus movements and
+  multi-measure rests) live in `lilyscan-core` with no Audiveris dependency.
+  **One documented difference:** Audiveris re-derives the bounds of line-based symbols (the
+  horizontal and vertical line families — stems, beams, barlines, connectors — ledgers, music words,
+  octave shifts) from their median line when it reloads a sheet, moving their edges by up to a
+  pixel from the saved rectangle. No stage uses those boxes (geometry is attached from heads, rests
+  and chords; the syllable repair uses lyric items), and the parity test checks that every kind a
+  stage does use is exact.
+- **Transcription.** *Built (JM1):* rather than driving Audiveris's step API directly, the worker
+  runs Audiveris's own batch CLI (`org.audiveris.omr.Main`) in-process, with exactly the arguments
+  the Python runner gave the Audiveris launcher (`-batch -transcribe -export -save -output … 
+  -constant k=v … -- inputs`). Every option, constant, output file and log line is therefore the
+  one the Python pipeline was tuned against, and the Python log analysis (OCR problems, step errors,
+  invalid and crashed sheets) ports unchanged. `AUDIVERIS_BIN` can still name an external launcher.
+  The job step around it — the failed-sheet retry without those pages (not `-sheets`, upstream bug
+  6), the choice between the prepared and the uploaded reading of a scan, and `engine/run.json` —
+  needs the job store, Stage 1's pages and the confidence model, so it is ported with the job steps
+  (JM3).
+- **Isolation (D16).** *Built (JM1):* each run forks `EngineWorker` — a JVM on Lilyscan's own
+  classpath (the fat jar in the image), `-Xmx` from `AUDIVERIS_MAX_HEAP` (default `3G`),
+  `-Djava.awt.headless=true -Dsun.java2d.uiScale=1` — for transcription (`audiveris <args>`) and
+  for reading a saved project (`read-omr`, which writes the book model as JSON for the parent). A
+  crash or out-of-memory error loses only that run, exactly as the Python per-process model did, and
+  the parent never loads Audiveris's model or global state.
 - **OCR / natives.** Audiveris pulls Tesseract 5.5.2 and Leptonica through bytedeco/JavaCPP, so the
-  OCR engine comes in on the classpath with no separate Tesseract install. `TESSDATA_PREFIX` points
-  at the bundled models (D22); the legacy-engine / full-`tessdata` requirement and the OCR-failure
-  detection (`design.md` §5) port into the worker, which fails loudly on the known messages.
-- **Golden fixtures.** The `eval/fixtures/omr/` golden `.omr` files are reused to test the new
-  in-process reader against the Python reader's IR output, measure by measure, during the port.
+  OCR engine comes in on the classpath with no separate Tesseract install (verified from the fat
+  jar alone). `TESSDATA_PREFIX` points at the models, pinned to the Python image's tessdata commit
+  and checksum-verified (D10, D22); the OCR-failure detection fails loudly on the known messages.
+- **Golden fixtures.** The `eval/fixtures/omr/` projects are the parity tests for the reader (§10).
 
 ## 6. Stage-by-stage port map
 
@@ -208,11 +227,11 @@ hard parts. "Direct" = logic port with no ecosystem dependency.
 |---|---|---|---|
 | 0 Ingest | `ingest/pdf.py`, PyMuPDF render 400 DPI | **PDFBox** `PDFRenderer` at 400 DPI grayscale → multi-page TIFF; page classification (raster ≥80% image vs vector) from PDFBox content/resources | Medium |
 | 1 Prepare | `prepare/` OpenCV (Otsu, homography, max-filter illumination, orientation cues, strip dewarp, NLM denoise, unsharp) + NumPy fits | **bytedeco OpenCV** for all CV ops; **JAMA/EJML** for the cubic-x/quadratic-y displacement-field least-squares fit and the orientation scoring; thresholds (staff-space units) copied verbatim into the config module | **Hard** — largest mechanical port; pixel-exact parity needs care |
-| 2 Engine | `engine/audiveris/runner.py` CLI | In-process via Audiveris book API in the forked worker (§5) | Medium (new model) |
-| 3 Import | `engine/audiveris/omr.py` XML re-parse; `ir/musicxml.py` | In-process model walk (§5); MusicXML→IR via **proxymusic** | Medium — simpler and sturdier than today |
+| 2 Engine | `engine/audiveris/runner.py` CLI | Audiveris's own batch CLI, in-process in the forked worker (§5) | **Done (JM1)**; the job step around it with JM3 |
+| 3 Import | `engine/audiveris/omr.py` XML re-parse; `ir/musicxml.py` | In-process model walk (§5); MusicXML→IR as a JDK DOM port of the Python ElementTree reader (it never used music21, so neither does the port; proxymusic stays available for the MusicXML writer) | **Done (JM1)** — byte-identical IR |
 | 4 Vector oracle | `vector/` PyMuPDF glyphs + fontTools names | **PDFBox** content stream for glyph positions + vector paths (staff/stem/beam/barline); **FontBox** + the embedded font program for glyph *names*; italic-digit tuplet detection direct | **Hard** — font-name extraction and path parsing are fiddly |
 | 5 Repair | `repair/` pure rules + music21 + `confidence.json` | **Direct** port of every rule (`part-merge`, `octave-clef`, `rhythm`, `lyric-*`, `key-signature`); **ported music-theory helpers** (D20); **ported confidence scorer** reading the same `confidence.json` | Medium — rules direct; the music21 surface is the cost |
-| 6 IR | `ir/models.py` pydantic | **Java records + Jackson**, same schema (D19); provenance and before/after values kept | Direct |
+| 6 IR | `ir/models.py` pydantic | Mutable classes + Jackson, same schema (D19); provenance and before/after values kept | **Done (JM1)** — `score.json` byte-compatible |
 | 7 LilyPond | `lilypond/` generator, `single.py`, compiler, diagnostics; `to_musicxml.py` | **Direct** string generation (byte-identical output preserved); LilyPond invoked as subprocess; MusicXML export via proxymusic; python-ly reformat pass dropped | Direct |
 | 8 QA | `qa/` Q1–Q9 | **Direct**; Q1/Q2 parse LilyPond stderr (version-sensitive wording — keep the tests, `design.md` D5); Q6/Q7 optional engine runs | Direct |
 | 9 Custom | empty until justified | unchanged; ONNX Runtime (Java) available if entered | n/a |
@@ -322,10 +341,18 @@ The owner's D12 rule (no NC/ND/research-only/unstated terms) carries over unchan
 
 ## 10. Testing and evaluation parity
 
+- **Python references (`tests/parity/`).** `scripts/java_parity.py` runs the Python implementation
+  on the committed fixtures and writes what it produces; the Java tests compare against those files
+  without Python installed. *In place since JM1:* `score.json` written by Python and re-written by
+  Java (byte-identical), the MusicXML reader on 8 committed inputs (the three fixtures and one
+  generated seed piece per category), the `.omr` book model and the attached IR on the two
+  Audiveris projects, and Python's float formatting. `--sweep DIR` adds every seed and repertoire
+  corpus piece locally (`-PparitySweep=DIR`); repertoire encodings are not committed (D11).
+  Re-run the script whenever the Python behaviour changes.
 - **Golden files reused.** `tests/golden/` (generator output) and `eval/fixtures/omr/` (saved
   `.omr`) are the acceptance tests for the generator and the new reader. The Java generator must
   reproduce the golden `.ly` byte-for-byte (D19); the Java reader must reproduce the Python reader's
-  IR on the fixtures (measures, boxes, grades).
+  IR on the fixtures (measures, boxes, grades) — met in JM1 (§5).
 - **Corpus parity.** `lilyscan eval run` on the seed and repertoire corpora must land within
   measurement noise of `eval/results/base-1031-seed` / `-rep` (Linux baselines). Results stay in
   `eval/results/<label>/` in the same `summary.md` + `results.json` format, so the port's progress
@@ -333,7 +360,8 @@ The owner's D12 rule (no NC/ND/research-only/unstated terms) carries over unchan
 - **Confidence.** The ported scorer must reproduce the stored `confidence.json`'s outputs; refitting
   (`eval calibrate`) comes with the eval module and must hit the same ECE targets (< 0.05).
 - **JUnit 5** for unit tests; tags for `engine` (needs Audiveris, now in-process), `lilypond`,
-  `gpu`, mirroring the pytest marks. CI runs CPU-only; GPU and engine jobs are separate.
+  `gpu`, mirroring the pytest marks. Engine tests skip without `TESSDATA_PREFIX`; CI runs them in
+  their own job with the pinned, checksum-verified models. CI runs CPU-only.
 
 ## 11. Risks
 
@@ -356,10 +384,10 @@ baseline, and a Java stage ships only when it matches it.
 
 | JM | Deliverable | Exit criteria |
 |---|---|---|
-| **JM0** | Gradle multi-project skeleton (`core`, `engine`, `server`, `cli`, `eval`; `desktop` stub); Java 25 toolchain; Audiveris submodule + composite build resolving; picocli launcher; Shadow fat jar; CI (Gradle build, tests, **Docker image build**) | `./gradlew build` works; `lilyscan versions`/`selftest` run; `serve` launches; the fat jar builds and a `docker build` of the server image succeeds; Audiveris `:app` is on the classpath |
-| **JM1** | Engine adapter: forked worker (D16), in-process transcription + `.omr`→IR reader; MusicXML→IR | Transcribes a sample page in-process to our IR; reproduces the Python reader's IR on `eval/fixtures/omr/`; ≥98% box coverage on clean input |
+| **JM0** *(done)* | Gradle multi-project skeleton (`core`, `engine`, `server`, `cli`, `eval`; `desktop` stub); Java 25 toolchain; Audiveris submodule + composite build resolving; picocli launcher; Shadow fat jar; CI (Gradle build, tests, **Docker image build**) | `./gradlew build` works; `lilyscan versions`/`selftest` run; `serve` launches; the fat jar builds and a `docker build` of the server image succeeds; Audiveris `:app` is on the classpath |
+| **JM1** | Engine adapter: forked worker (D16), in-process transcription + `.omr`→IR reader; MusicXML→IR; the IR model | Transcribes a sample page in-process to our IR; reproduces the Python reader's IR on `eval/fixtures/omr/`; ≥98% box coverage on clean input. **Done** |
 | **JM2** | IR (records + Jackson, D19) + LilyPond generator + compiler + Q1–Q5 | `tests/golden/` reproduced byte-for-byte; all corpus engine outputs compile; ground-truth MusicXML→IR→`.ly` round-trips with zero compile errors. **First usable core** |
-| **JM3** | `lilyscan-server` (Javalin) serving `services/web/` + `/api/jobs` + `/api/scores`; SQLite job store; **the Docker image + `docker-compose.yml`** (D22) | `docker compose up` gives the existing browser review UI end to end — upload → transcribe → review → download — with nothing installed on the host but Docker. **First usable product** |
+| **JM3** | `lilyscan-server` (Javalin) serving `services/web/` + `/api/jobs` + `/api/scores`; SQLite job store; the job steps (including the engine step: failed-sheet retry, prepared-vs-uploaded choice, `engine/run.json`); **the Docker image + `docker-compose.yml`** (D22) | `docker compose up` gives the existing browser review UI end to end — upload → transcribe → review → download — with nothing installed on the host but Docker. **First usable product** |
 | **JM4** | Stage 5 repair + ported music21 helpers + confidence scorer | Reproduces `eval/results/base-1031-*` repair gains within noise; confidence ECE < 0.05 |
 | **JM5** | Stage 0 + Stage 1 (PDFBox render; bytedeco OpenCV prepare, quality gate) | Photo/scan accuracy within noise of the Python M6/M7 results on the corpus |
 | **JM6** | Stage 4 vector oracle (PDFBox + FontBox) | PDF exact-measure accuracy matches the Python M7 results |
@@ -394,6 +422,8 @@ lilyscan-desktop/
   services/web/                # the existing SPA, reused unchanged
   eval/                        # corpus specs (committed), fixtures, committed results
   tests/ (per module)          # JUnit 5; golden files reused from the Python tree
+  tests/parity/                # Python-generated references the Java tests compare against
+  scripts/java_parity.py       # regenerates tests/parity/ from the Python implementation
   docs/design.md               # the pipeline design (authority on behaviour)
   docs/design-java.md          # this document (authority on the Java build)
 ```
@@ -408,3 +438,5 @@ of golden/baseline data, and is removed only once the Java build meets the accur
 |---|---|---|
 | 2026-11-01 | — | Design drafted. Decisions: D13 (JVM stack, overturns D9), D14 (Swing+FlatLaf, optional front end), D15 (Audiveris in-process via composite build, amends D6), D16 (forked engine worker for isolation), D17 (Javalin), D18 (SQLite + in-process dispatch, drops Redis), D19 (Jackson IR, schema-compatible), D20 (ported music21 helpers), D21 (Java synthetic corpus), D22 (jpackage installers), D23 (licences verified). Milestones JM0–JM10 defined. No code yet. |
 | 2026-11-01 | — | **Revised to Docker-first delivery.** The primary product is the self-hosted web server, installed with `docker compose up` from one image with every dependency (Audiveris + native OCR, LilyPond, tessdata) baked in — no host install but Docker, no Redis, no 4-container split. The Swing desktop app and its jpackage installer are now optional and last (JM9–JM10). D22 rewritten (Docker-first; installer optional); D5/D8/D10/D14 adjusted; milestones reordered so JM3 (`docker compose up` works end to end) is the first usable product and JM8 reaches full server parity. |
+| 2026-11-01 | JM0 | **Done** (PR #2). Gradle multi-project build on Java 25 (`core`, `engine`, `server`, `cli`, `eval`, optional `desktop`), picocli launcher, Shadow fat jar, Docker image and compose, CI. |
+| 2026-11-01 | JM1 | **Done** (PR #3). Exit criteria met.<br>• **Audiveris in-process (D15):** pinned submodule + composite build; Audiveris compiles from source with our build; the fat jar (~67 MB) carries it with Tesseract 5.5.2 via JavaCPP and runs transcription on its own.<br>• **IR (D19):** `score.json` written by Python is read and re-written byte-for-byte; Python float formatting reproduced.<br>• **MusicXML → IR:** byte-identical IR to the Python reader on 8 committed inputs and on all 39 seed + repertoire corpus pieces.<br>• **`.omr` → IR:** the reader walks Audiveris's model; on the two fixture projects the attached `score.json` is byte-identical to Python's, and the book model matches exactly except line-symbol boxes Audiveris re-derives on reload (≤ 1 px, unused by any stage; §5).<br>• **Transcription (D16):** forked worker running Audiveris's batch CLI in-process; the bundled engine reports 5.11.0; the OCR-language and step-timeout constants are proven honoured; a clean page transcribed and read back to IR locates **102/102 events (100%)**, in ~18 s.<br>• Also: `merge_scores`, `Config`/`Settings`, the runner's log analysis, CLI `versions` (Python's format) and `selftest`. 76 tests (5 need the OCR models and run in CI's engine job).<br>• Deviations recorded above: mutable IR classes (D19), MusicXML import via the JDK DOM, the worker runs Audiveris's CLI rather than its step API, Gradle 9.4.1 to match Audiveris, the image copies the CI-built jar; the engine job step moves to JM3. |
