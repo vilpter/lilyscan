@@ -39,6 +39,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "25"
+      - name: LilyPond (the version pinned in the Docker image)
+        run: |
+          v=$(sed -n 's/^ARG LILYPOND_VERSION=//p' docker/Dockerfile)
+          curl -fsSL -o /tmp/lilypond.tar.gz \
+            "https://gitlab.com/lilypond/lilypond/-/releases/v$v/downloads/lilypond-$v-linux-x86_64.tar.gz"
+          sudo tar -xzf /tmp/lilypond.tar.gz -C /opt
+          echo "LILYPOND_BIN=/opt/lilypond-$v/bin/lilypond" >> "$GITHUB_ENV"
       - name: Build and test
         run: ./gradlew build --no-daemon
       - name: Fat jar + CLI smoke test
@@ -46,6 +53,31 @@ jobs:
           ./gradlew :lilyscan-cli:shadowJar --no-daemon
           java -jar lilyscan-cli/build/libs/lilyscan.jar versions
           java -jar lilyscan-cli/build/libs/lilyscan.jar selftest
+
+  engine:
+    # The real Audiveris, in-process in forked workers: transcription, OCR, the .omr reader.
+    runs-on: ubuntu-latest
+    env:
+      TESSDATA_PREFIX: ${{ github.workspace }}/tessdata
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: OCR models (pinned commit, checksum-verified, as in the Docker image)
+        run: |
+          mkdir -p "$TESSDATA_PREFIX" && cd "$TESSDATA_PREFIX"
+          commit=$(sed -n 's/^ARG TESSDATA_COMMIT=//p' "$GITHUB_WORKSPACE/docker/Dockerfile")
+          for lang in eng lat deu fra; do
+            curl -fsSL -o "$lang.traineddata" \
+              "https://raw.githubusercontent.com/tesseract-ocr/tessdata/$commit/$lang.traineddata"
+          done
+          sha256sum -c "$GITHUB_WORKSPACE/docker/tessdata.sha256"
+      - name: Engine tests
+        run: ./gradlew :lilyscan-engine:test --no-daemon
 
   docker:
     runs-on: ubuntu-latest
