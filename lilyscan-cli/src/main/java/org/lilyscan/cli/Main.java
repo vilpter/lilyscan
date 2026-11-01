@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.Map;
+import org.lilyscan.core.Pipeline;
 import org.lilyscan.core.Versions;
 import org.lilyscan.core.json.PyJson;
 import org.lilyscan.core.lilypond.Compile;
@@ -31,6 +33,7 @@ import picocli.CommandLine.Option;
             Main.Serve.class,
             Main.VersionsCmd.class,
             Main.Selftest.class,
+            Main.Convert.class,
         })
 public final class Main implements Runnable {
 
@@ -78,6 +81,28 @@ public final class Main implements Runnable {
             au.put("found", AudiverisRunner.audiverisVersion(s));
             System.out.println(PyJson.write(root, PyJson.Style.JSON_DUMPS_COMPACT));
             return 0;
+        }
+    }
+
+    @Command(name = "convert", description = "MusicXML -> LilyPond project with QA report.")
+    static final class Convert implements Callable<Integer> {
+        @CommandLine.Parameters(index = "0", description = "The MusicXML file (.musicxml, .xml or .mxl).")
+        Path musicxml;
+
+        @Option(names = "--out", required = true, description = "Output folder.")
+        Path out;
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Integer call() {
+            Map<String, Object> report = Pipeline.convertFile(musicxml, out, Settings.fromEnv());
+            List<Map<String, Object>> checks = (List<Map<String, Object>>) ((Map<String, Object>) report.get("qa")).get("checks");
+            for (Map<String, Object> check : checks) {
+                String mark = Boolean.TRUE.equals(check.get("passed")) ? "ok  " : "FAIL";
+                System.out.println(mark + " " + check.get("id") + " " + check.get("name") + ": " + check.get("summary"));
+            }
+            System.out.println("LilyPond project: " + out.resolve("ly").resolve("main.ly"));
+            return Boolean.TRUE.equals(checks.get(0).get("passed")) ? 0 : 1;
         }
     }
 
