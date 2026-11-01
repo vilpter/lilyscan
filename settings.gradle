@@ -29,7 +29,16 @@ include 'lilyscan-cli'
 include 'lilyscan-eval'
 include 'lilyscan-desktop'   // optional, secondary front end (D14)
 
-// Audiveris is linked in-process (D15) as a composite build against a pinned
-// submodule. Wired by the JM0 "Audiveris submodule" step once third_party/audiveris
-// is present:
-//   includeBuild 'third_party/audiveris'
+// Audiveris is linked in-process (D15) as a composite build against the pinned
+// submodule third_party/audiveris (tag 5.11.0, unmodified). The explicit
+// dependency substitution maps the coordinate lilyscan-engine depends on to
+// Audiveris's :app project, so we need not track Audiveris's own group/version.
+//
+// NOTE: the Audiveris build has no Java toolchain of its own, so it compiles with
+// the JVM that launches Gradle. That JVM must be Java 25 (D13) — in CI via
+// actions/setup-java java-version 25; locally, launch ./gradlew under a JDK 25.
+includeBuild('third_party/audiveris') {
+    dependencySubstitution {
+        substitute module('org.audiveris:audiveris-app') using project(':app')
+    }
+}

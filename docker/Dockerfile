@@ -1,17 +1,12 @@
 # Lilyscan server image (design-java.md D22, §7) — the primary delivery.
-# One image, one service: the JVM, Audiveris (via the fat jar's JavaCPP natives, wired in JM1),
-# LilyPond and the OCR models, so `docker compose up` needs nothing on the host but Docker.
+# One image, one service: the JVM, Audiveris (bundled in the fat jar, with its JavaCPP native
+# OCR), LilyPond and the OCR models, so `docker compose up` needs nothing on the host but Docker.
 #
-# Build the fat jar first:  ./gradlew :lilyscan-cli:shadowJar
-# then:                     docker build -f docker/Dockerfile -t lilyscan .
-
-# ---- stage 1: build the fat jar inside the image (reproducible, no host JDK needed) ----
-FROM eclipse-temurin:25-jdk AS build
-WORKDIR /src
-COPY . .
-RUN ./gradlew --no-daemon :lilyscan-cli:shadowJar
-
-# ---- stage 2: the runtime image ----
+# The fat jar is built by CI (it needs the Audiveris submodule + a UTF-8 locale + JDK 25) and
+# copied in here; CI publishes the image to GHCR so users pull rather than build. To build
+# locally, run first:
+#   LANG=C.UTF-8 ./gradlew :lilyscan-cli:shadowJar   # requires: git submodule update --init
+#   docker build -f docker/Dockerfile -t lilyscan .
 FROM eclipse-temurin:25-jre
 
 # LilyPond 2.26.0 (D5) and the pinned Tesseract OCR models (D10), both fetched at build time (not
@@ -38,7 +33,7 @@ RUN set -eux; \
     apt-get purge -y curl; apt-get autoremove -y; rm -rf /var/lib/apt/lists/*; \
     lilypond --version
 
-COPY --from=build /src/lilyscan-cli/build/libs/lilyscan.jar /app/lilyscan.jar
+COPY lilyscan-cli/build/libs/lilyscan.jar /app/lilyscan.jar
 
 ENV LILYSCAN_DATA_DIR=/data
 VOLUME ["/data"]

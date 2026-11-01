@@ -1,8 +1,9 @@
 // lilyscan-engine — the Audiveris adapter (design-java.md §5): forked worker (D16),
 // in-process transcription, and the .omr -> IR reader.
 //
-// The Audiveris :app dependency (D15) is added in JM1 once the composite build is wired:
-//   dependencies { implementation 'org.audiveris:audiveris-app' }
 dependencies {
     api project(':lilyscan-core')
+    // Audiveris linked in-process (D15). The coordinate is substituted in
+    // settings.gradle to the pinned Audiveris :app project (composite build).
+    api 'org.audiveris:audiveris-app'
 }

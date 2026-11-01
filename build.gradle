@@ -20,6 +20,13 @@ subprojects {
     repositories {
         maven { url = 'https://maven-central.storage-download.googleapis.com/maven2' }
         mavenCentral()
+        // Audiveris (linked in-process, D15) pulls non-free JAI from JBoss; our build
+        // must resolve those transitive deps. Scoped to the javax.media group.
+        maven {
+            name = 'jboss-jai'
+            url = 'https://repository.jboss.org/maven2'
+            content { includeGroup 'javax.media' }
+        }
     }
 
     dependencies {
