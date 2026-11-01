@@ -14,9 +14,11 @@ FROM eclipse-temurin:25-jre
 # tessdata models with the legacy engine are required, or Audiveris skips text silently (design.md
 # §5). LilyPond is launched as a subprocess; the models are read by Audiveris via TESSDATA_PREFIX.
 ARG LILYPOND_VERSION=2.26.0
-# Pin the tessdata commit so the models are reproducible (mirror of the Python audiveris-worker).
-ARG TESSDATA_REF=main
+# The tessdata commit and checksums are the Python audiveris-worker's pin (D10); the models are
+# verified against docker/tessdata.sha256.
+ARG TESSDATA_COMMIT=ced78752cc61322fb554c280d13360b35b8684e4
 ENV TESSDATA_PREFIX=/opt/tessdata
+COPY docker/tessdata.sha256 /opt/tessdata/SHA256SUMS
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends curl ca-certificates fontconfig; \
@@ -25,11 +27,13 @@ RUN set -eux; \
     tar -xzf /tmp/lilypond.tar.gz -C /opt; \
     ln -sf "/opt/lilypond-${LILYPOND_VERSION}/bin/lilypond" /usr/local/bin/lilypond; \
     rm -f /tmp/lilypond.tar.gz; \
-    mkdir -p "${TESSDATA_PREFIX}"; \
+    cd "${TESSDATA_PREFIX}"; \
     for lang in eng lat deu fra; do \
-      curl -fL -o "${TESSDATA_PREFIX}/${lang}.traineddata" \
-        "https://github.com/tesseract-ocr/tessdata/raw/${TESSDATA_REF}/${lang}.traineddata"; \
+      curl -fsSL -o "${lang}.traineddata" \
+        "https://raw.githubusercontent.com/tesseract-ocr/tessdata/${TESSDATA_COMMIT}/${lang}.traineddata"; \
     done; \
+    sha256sum -c SHA256SUMS; \
+    cd /; \
     apt-get purge -y curl; apt-get autoremove -y; rm -rf /var/lib/apt/lists/*; \
     lilypond --version
 
