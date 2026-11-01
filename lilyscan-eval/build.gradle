@@ -1,0 +1,6 @@
+// lilyscan-eval — the evaluation harness and the synthetic-corpus generator (D21).
+// Test/dev scope; not shipped in the Docker image or the desktop installer.
+dependencies {
+    api project(':lilyscan-core')
+    api project(':lilyscan-engine')
+}

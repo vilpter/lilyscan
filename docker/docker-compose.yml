@@ -1,0 +1,25 @@
+# Lilyscan (Java) — the primary install (design-java.md D22, §7).
+# One service, one volume, no Redis, no multi-container split.
+#
+#   docker compose -f docker/docker-compose.yml up -d --build
+#   # open http://localhost:8000/
+#
+# Once the Java server reaches full parity (JM8), this replaces the Python
+# docker-compose.yml at the repo root; until then the Python compose stays as
+# the reference deployment (design-java.md §13).
+services:
+  lilyscan:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: ghcr.io/vilpter/lilyscan-desktop:latest
+    ports:
+      - "${LILYSCAN_PORT:-8000}:8000"
+    volumes:
+      - lilyscan-data:/data
+    environment:
+      - LILYSCAN_OCR_LANGUAGES=${LILYSCAN_OCR_LANGUAGES:-eng+lat+deu+fra}
+    restart: unless-stopped
+
+volumes:
+  lilyscan-data:

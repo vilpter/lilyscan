@@ -1,0 +1,38 @@
+// Root build for the Lilyscan Java port (design-java.md).
+// Shared configuration for every subproject; no production code lives here.
+
+allprojects {
+    group = 'org.lilyscan'
+    version = '0.1.0-SNAPSHOT'
+}
+
+subprojects {
+    apply plugin: 'java-library'
+
+    java {
+        toolchain {
+            // Java 25 (D13), matching Audiveris's own toolchain. Auto-provisioned
+            // by the foojay resolver (settings.gradle) when not installed.
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    repositories {
+        maven { url = 'https://maven-central.storage-download.googleapis.com/maven2' }
+        mavenCentral()
+    }
+
+    dependencies {
+        testImplementation rootProject.libs.junit.jupiter
+        testRuntimeOnly rootProject.libs.junit.platform.launcher
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs << '-Xlint:all,-serial,-processing'
+    }
+}

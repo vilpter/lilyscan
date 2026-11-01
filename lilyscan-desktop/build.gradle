@@ -1,0 +1,7 @@
+// lilyscan-desktop — OPTIONAL, secondary front end (D14): a Swing + FlatLaf review app over the
+// same core. Can be dropped with milestones JM9-JM10 and no effect on the server.
+dependencies {
+    api project(':lilyscan-core')
+    api project(':lilyscan-engine')
+    implementation libs.flatlaf
+}

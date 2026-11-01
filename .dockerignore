@@ -1,9 +1,15 @@
 .git
+# Java / Gradle (the port)
+.gradle
+**/build
+# Python (the reference implementation)
 .venv
 **/__pycache__
 .mypy_cache
 .pytest_cache
 .ruff_cache
+# Data and large regenerable trees (neither image needs them)
 data
-eval
-tests
+eval/corpus
+eval/work
+*.log
