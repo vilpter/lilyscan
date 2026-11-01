@@ -24,4 +24,8 @@ tasks.named('shadowJar') {
     archiveVersion = ''
     // Merge service descriptors (SLF4J providers, Javalin/Jetty, JavaCPP) so the fat jar runs.
     mergeServiceFiles()
+    // SQLite's JDBC driver loads its native library (JDK 24+ warns unless this is granted).
+    manifest {
+        attributes 'Enable-Native-Access': 'ALL-UNNAMED'
+    }
 }
