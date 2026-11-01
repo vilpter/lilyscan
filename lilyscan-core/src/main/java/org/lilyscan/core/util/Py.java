@@ -112,23 +112,6 @@ public final class Py {
         return s.codePointCount(0, s.length());
     }
 
-    /**
-     * Python {@code format(x, ".Nf")}: the exact binary value rounded half to even, as Python
-     * does (Java's {@code %.Nf} rounds the shortest decimal half up: 0.125 -> "0.13" vs "0.12").
-     */
-    public static String fixed(double x, int digits) {
-        if (Double.isNaN(x)) {
-            return "nan";
-        }
-        if (Double.isInfinite(x)) {
-            return x > 0 ? "inf" : "-inf";
-        }
-        String body = new java.math.BigDecimal(Math.abs(x))
-                .setScale(digits, java.math.RoundingMode.HALF_EVEN).toPlainString();
-        boolean negative = x < 0 || (x == 0.0 && Double.doubleToRawLongBits(x) < 0);
-        return negative ? "-" + body : body;
-    }
-
     /** Python {@code str.isdigit()} for the decimal digits that {@code int()} accepts. */
     public static boolean isDigit(String s) {
         return s != null && !s.isEmpty() && s.chars().allMatch(Character::isDigit);

@@ -167,7 +167,7 @@ public final class Compile {
                 return new Result(-1, msg, List.of(new Diagnostic("fatal error", msg)), List.of());
             }
             if (r.timedOut()) {
-                String msg = "lilypond timed out after " + Py.fixed(s.lilypondTimeoutS(), 0) + "s";
+                String msg = "lilypond timed out after " + String.format(java.util.Locale.ROOT, "%.0f", s.lilypondTimeoutS()) + "s";
                 return new Result(-1, msg, List.of(new Diagnostic("fatal error", msg)), List.of());
             }
             if (returncode == 0) {

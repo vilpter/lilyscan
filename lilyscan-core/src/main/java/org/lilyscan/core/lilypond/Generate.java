@@ -280,7 +280,7 @@ public final class Generate {
             if (e.bbox != null) {
                 where = " bbox=p" + (e.bbox.page + 1) + ":(" + Py.round(e.bbox.x) + "," + Py.round(e.bbox.y) + ")";
             }
-            out.add("%{ ?? conf=" + Py.fixed(e.confidence, 2) + where + " %}");
+            out.add("%{ ?? conf=" + String.format(java.util.Locale.ROOT, "%.2f", e.confidence) + where + " %}");
         }
         for (Provenance prov : e.provenance) {
             if ("repair".equals(prov.stage) && (prov.rule == null || !STAFF_REPAIRS.contains(prov.rule))) {
