@@ -12,3 +12,9 @@ dependencies {
     testFixturesApi libs.junit.jupiter
     testFixturesApi libs.jackson.databind
 }
+
+// The confidence model is the Python package's own file (one source of truth).
+sourceSets.main.resources {
+    srcDir rootProject.projectDir
+    include 'lilyscan/repair/confidence.json'
+}

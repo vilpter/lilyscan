@@ -67,6 +67,31 @@ public final class Py {
         return r == 0 ? Math.copySign(0.0, x) : r;
     }
 
+    /** Python {@code f"{x:.Nf}"}: the exact binary value rounded half-even. */
+    public static String fixed(double x, int digits) {
+        if (Double.isNaN(x)) return "nan";
+        if (Double.isInfinite(x)) return x > 0 ? "inf" : "-inf";
+        String s = new java.math.BigDecimal(x).setScale(digits, java.math.RoundingMode.HALF_EVEN).toPlainString();
+        return (x < 0 || (x == 0 && 1 / x < 0)) && !s.startsWith("-") ? "-" + s : s;
+    }
+
+    /** Python {@code statistics.mean} of floats: the exact mean, correctly rounded. */
+    public static double mean(java.util.List<Double> xs) {
+        if (xs.isEmpty()) throw new IllegalArgumentException("mean requires at least one data point");
+        java.math.BigDecimal sum = java.math.BigDecimal.ZERO;
+        for (double x : xs) sum = sum.add(new java.math.BigDecimal(x));
+        return sum.divide(java.math.BigDecimal.valueOf(xs.size()), new java.math.MathContext(120)).doubleValue();
+    }
+
+    /** Python {@code statistics.median} of ints: the middle value, or the mean of the two middle ones. */
+    public static double median(java.util.List<Integer> xs) {
+        java.util.List<Integer> s = new java.util.ArrayList<>(xs);
+        java.util.Collections.sort(s);
+        int n = s.size();
+        if (n % 2 == 1) return s.get(n / 2);
+        return (s.get(n / 2 - 1) + s.get(n / 2)) / 2.0;
+    }
+
     /** Python {@code str(v)} for the scalar values JSON holds. */
     public static String str(Object v) {
         if (v == null) return "None";

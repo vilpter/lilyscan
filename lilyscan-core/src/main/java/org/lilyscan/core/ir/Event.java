@@ -47,6 +47,23 @@ public final class Event {
         this.duration = duration;
     }
 
+    /** Pydantic's {@code model_copy()}: a new event sharing this one's lists and objects. */
+    public Event shallowCopy() {
+        Event e = new Event(kind, offset, duration);
+        e.notes = notes;
+        e.noteType = noteType;
+        e.dots = dots;
+        e.tuplet = tuplet;
+        e.grace = grace;
+        e.measureRest = measureRest;
+        e.lyrics = lyrics;
+        e.articulations = articulations;
+        e.confidence = confidence;
+        e.bbox = bbox;
+        e.provenance = provenance;
+        return e;
+    }
+
     public boolean isRest() {
         return REST.equals(kind);
     }

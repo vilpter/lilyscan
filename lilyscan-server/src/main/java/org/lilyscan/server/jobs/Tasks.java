@@ -29,6 +29,10 @@ import org.lilyscan.core.omr.Geometry;
 import org.lilyscan.core.omr.OmrBook;
 import org.lilyscan.core.omr.OmrException;
 import org.lilyscan.core.omr.Overlay;
+import org.lilyscan.core.repair.Confidence;
+import org.lilyscan.core.repair.Repair;
+import org.lilyscan.core.repair.Repairs;
+import org.lilyscan.core.vector.VectorOracle;
 import org.lilyscan.core.runtime.Settings;
 import org.lilyscan.core.util.Py;
 import org.lilyscan.engine.audiveris.AudiverisRun;
@@ -41,9 +45,7 @@ import org.slf4j.LoggerFactory;
  * {@code lilyscan/pipeline.py}): prepare the inputs, transcribe them, then import, generate and
  * check. Each step records its own failure on the job.
  *
- * <p>Not yet ported: the Stage 4 and 5 corrections (the PDF oracle, the repair rules and the
- * calibrated confidence, JM4), so {@code repairs} is empty and the confidence is Audiveris's;
- * and Stage 1 page preparation (JM5), see {@link Book}.
+ * <p>Not yet ported: Stage 1 page preparation (JM5), see {@link Book}.
  */
 public final class Tasks {
 
@@ -278,9 +280,14 @@ public final class Tasks {
         return new Ran(chosen.run(), summary);
     }
 
-    /** The events Lilyscan expects to be right in a run: the sum of its confidences. */
+    /**
+     * Lilyscan's estimate of how good an engine run is, for choosing between runs on different
+     * versions of the same pages: the events expected to be right after repair.
+     */
     private double assessEngineRun(Path root, Map<String, Object> engineRun) {
         Imported imported = importEngineOutput(root, MAPPER.valueToTree(engineRun));
+        Repairs.apply(imported.score(), imported.book());
+        Confidence.calibrate(imported.score());
         double sum = 0;
         for (Score.PartStaff ps : imported.score().staves()) {
             for (Measure m : ps.staff().measures) {
@@ -356,17 +363,49 @@ public final class Tasks {
     }
 
     /**
-     * Stages 4 and 5 (the corrections arrive with JM4): returns the repair log, then draws the
-     * page overlays so their colours show the final confidence.
+     * The job's PDF, when it is the only input, every page of it is born-digital, and the kept
+     * engine run read those pages as rendered (so sheet n is the PDF's page n).
      */
-    List<Map<String, Object>> repairEngineOutput(Imported imported, Path root) {
-        List<Map<String, Object>> repairs = new ArrayList<>();
+    static Path bornDigitalPdf(Path root, JsonNode engine) {
+        Path report = root.resolve("prepared/report.json");
+        if (!Files.isRegularFile(report) || !"prepared".equals(engine.path("pages").asText(null))) return null;
+        JsonNode pages = readJson(report);
+        java.util.Set<String> inputs = new java.util.HashSet<>();
+        boolean allBorn = true, numbered = true;
+        int k = 0;
+        for (JsonNode p : pages) {
+            inputs.add(p.path("input").asText());
+            allBorn &= p.path("born_digital").asBoolean(false);
+            numbered &= p.has("page") && p.get("page").isInt() && p.get("page").asInt() == k;
+            k++;
+        }
+        if (inputs.size() != 1 || !allBorn) return null;
+        JsonNode skipped = engine.get("skipped_sheets");
+        if (!numbered || (skipped != null && skipped.isArray() && !skipped.isEmpty())) return null;
+        return root.resolve("input").resolve(inputs.iterator().next());
+    }
+
+    /**
+     * Stages 4 and 5: corrections from the born-digital PDF the pages came from (if any), the
+     * repair rules, then Lilyscan's calibrated confidence; returns the repair log. Then draws the
+     * page overlays, so their colours show the final confidence.
+     */
+    List<Map<String, Object>> repairEngineOutput(Imported imported, Path root, Path pdf) {
+        List<Repair> repairs = new ArrayList<>();
+        OmrBook book = imported.book();
+        if (pdf != null && book != null) repairs.addAll(VectorOracle.apply(imported.score(), pdf, book));
+        repairs.addAll(Repairs.apply(imported.score(), book));
+        boolean calibrated = Confidence.calibrate(imported.score());
+        List<Map<String, Object>> log = new ArrayList<>();
+        for (Repair r : repairs) log.add(r.toMap());
         Map<String, Object> geometry = imported.geometry();
-        if (geometry == null || geometry.containsKey("error") || imported.book() == null) return repairs;
+        if (geometry == null || geometry.containsKey("error") || book == null) return log;
+        geometry.put("confidence", calibrated ? "lilyscan" : "audiveris");
+        geometry.put("low_confidence_events", lowConfidence(imported.score()));
         Path omr = root.resolve((String) geometry.get("source"));
-        List<Path> written = Overlay.render(imported.score(), imported.book(), omr, root.resolve("overlays"));
+        List<Path> written = Overlay.render(imported.score(), book, omr, root.resolve("overlays"));
         geometry.put("overlays", written.stream().map(p -> rel(root, p)).toList());
-        return repairs;
+        return log;
     }
 
     /** Stages 3 and 5-8: import the engine's output, repair it, generate LilyPond, run QA. */
@@ -376,7 +415,7 @@ public final class Tasks {
             JsonNode engineRun = readJson(root.resolve("engine/run.json"));
             Imported imported = importEngineOutput(root, engineRun);
             store.update(jobId, null, "repair", null, null);
-            List<Map<String, Object>> repairs = repairEngineOutput(imported, root);
+            List<Map<String, Object>> repairs = repairEngineOutput(imported, root, bornDigitalPdf(root, engineRun));
             store.update(jobId, null, "lilypond", null, null);
             Path prepared = root.resolve("prepared/report.json");
             Map<String, Object> report = new LinkedHashMap<>();
