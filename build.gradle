@@ -36,6 +36,10 @@ subprojects {
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        // Parity tests read the shared fixtures and the Python-generated references
+        // (tests/parity/, scripts/java_parity.py) from the repository root.
+        systemProperty 'lilyscan.repoRoot', rootProject.projectDir.absolutePath
+        inputs.dir(rootProject.file('tests/parity')).optional().withPropertyName('parity')
     }
 
     tasks.withType(JavaCompile).configureEach {
