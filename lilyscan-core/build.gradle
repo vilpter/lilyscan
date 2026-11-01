@@ -5,10 +5,23 @@ plugins {
     id 'java-test-fixtures'
 }
 
+// Native platform of the OpenCV binaries: the build host's, or -PtargetOS=linux-arm64 etc.
+def hostArch = System.getProperty('os.arch') in ['aarch64', 'arm64'] ? 'arm64' : 'x86_64'
+def hostOS = System.getProperty('os.name').toLowerCase().contains('mac') ? "macosx-$hostArch"
+        : System.getProperty('os.name').toLowerCase().contains('win') ? "windows-$hostArch" : "linux-$hostArch"
+ext.targetOS = project.findProperty('targetOS') ?: hostOS
+
 dependencies {
     api libs.jackson.databind
     api libs.slf4j.api
     implementation libs.pdfbox
+    // Stage 1 (page preparation) runs on OpenCV through JavaCPP, the same JavaCPP release
+    // Audiveris uses for Tesseract (D10). Natives for the target platform only.
+    implementation(libs.opencv) {
+        exclude group: 'org.bytedeco', module: 'numpy'
+    }
+    runtimeOnly(variantOf(libs.opencv) { classifier(targetOS) })
+    runtimeOnly(variantOf(libs.openblas) { classifier(targetOS) })
     testFixturesApi libs.junit.jupiter
     testFixturesApi libs.jackson.databind
 }

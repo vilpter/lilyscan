@@ -1,36 +1,38 @@
 package org.lilyscan.core.ingest;
 
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
+import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.MatVector;
+import org.lilyscan.core.prepare.Prepare;
 import org.lilyscan.core.runtime.Config;
+import static org.bytedeco.opencv.global.opencv_core.CV_8U;
+import static org.bytedeco.opencv.global.opencv_imgcodecs.IMREAD_GRAYSCALE;
+import static org.bytedeco.opencv.global.opencv_imgcodecs.imread;
+import static org.bytedeco.opencv.global.opencv_imgcodecs.imreadmulti;
+import static org.bytedeco.opencv.global.opencv_imgcodecs.imwritemulti;
 
 /**
- * Stage 0 (port of {@code lilyscan/ingest/book.py}): all of a job's pages, in order, as one
- * multi-page TIFF for the engine ({@code pages.tif}), since a job's page geometry comes from one
- * Audiveris book.
+ * Stages 0 and 1 (port of {@code lilyscan/ingest/book.py}): all of a job's pages, in order, as
+ * one multi-page TIFF for the engine. Born-digital PDF pages are rendered at 400 DPI; scanned
+ * PDF pages, photos and image scans go through Stage 1 ({@link Prepare}).
  *
- * <p>Stage 1 (finding, straightening and cleaning photographed and scanned pages) arrives with
- * JM5. Until then such pages go to the engine as uploaded, their report entries carry no
- * preparation fields, and no {@code uploaded.tif} is written (there is no prepared form to
- * compare it with).
+ * <ul>
+ *   <li>{@code pages.tif}: the pages as prepared;
+ *   <li>{@code uploaded.tif}: the same pages as uploaded (but turned upright), written only when
+ *       some page is a scan, so the engine can also read it and the better run be kept.
+ * </ul>
+ *
+ * <p>Images are read and written with OpenCV's codecs, as the Python {@code cv2.imread} does.
  */
 public final class Book {
 
@@ -39,6 +41,7 @@ public final class Book {
     /** One report entry per page (or per input that could not be read). */
     public final List<Map<String, Object>> pages = new ArrayList<>();
     public Path prepared;
+    /** Only when some page is a scan. */
     public Path uploaded;
 
     /** Some page is a scan (Stage 1 found no page edges in it). */
@@ -52,65 +55,90 @@ public final class Book {
         return dot <= 0 ? "" : name.substring(dot).toLowerCase(Locale.ROOT);
     }
 
-    static BufferedImage gray(BufferedImage img) {
-        if (img.getType() == BufferedImage.TYPE_BYTE_GRAY) return img;
-        BufferedImage out = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-        Graphics2D g = out.createGraphics();
-        g.drawImage(img, 0, 0, java.awt.Color.WHITE, null);
-        g.dispose();
-        return out;
-    }
+    /** An 8-bit gray page. */
+    record Gray(int w, int h, byte[] px) {
+        static Gray of(Mat m) {
+            Mat c = m.isContinuous() ? m : m.clone();
+            byte[] px = new byte[c.cols() * c.rows()];
+            c.data().get(px);
+            return new Gray(c.cols(), c.rows(), px);
+        }
 
-    /** Every page of an image file (all pages of a TIFF), grayscale. */
-    static List<BufferedImage> imagePages(Path path) throws IOException {
-        List<BufferedImage> out = new ArrayList<>();
-        try (ImageInputStream in = ImageIO.createImageInputStream(path.toFile())) {
-            Iterator<ImageReader> readers = in == null ? null : ImageIO.getImageReaders(in);
-            if (readers == null || !readers.hasNext()) throw new IOException("cannot read image " + path.getFileName());
-            ImageReader reader = readers.next();
-            try {
-                reader.setInput(in);
-                int n = reader.getNumImages(true);
-                for (int i = 0; i < n; i++) out.add(gray(reader.read(i)));
-            } finally {
-                reader.dispose();
+        static Gray of(BufferedImage img) {
+            if (img.getType() != BufferedImage.TYPE_BYTE_GRAY) throw new IllegalArgumentException("expected an 8-bit gray image");
+            var raster = img.getRaster();
+            byte[] px = new byte[img.getWidth() * img.getHeight()];
+            raster.getDataElements(0, 0, img.getWidth(), img.getHeight(), px);
+            return new Gray(img.getWidth(), img.getHeight(), px);
+        }
+
+        Mat mat() {
+            Mat m = new Mat(h, w, CV_8U);
+            m.data().put(px);
+            return m;
+        }
+
+        BufferedImage image() {
+            BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_GRAY);
+            img.getRaster().setDataElements(0, 0, w, h, px);
+            return img;
+        }
+
+        /** {@code np.rot90(pixels, k)}. */
+        Gray rot90(int k) {
+            k = ((k % 4) + 4) % 4;
+            Gray g = this;
+            for (int t = 0; t < k; t++) {
+                byte[] r = new byte[g.px.length];
+                int nw = g.h, nh = g.w;
+                for (int y = 0; y < nh; y++) for (int x = 0; x < nw; x++) r[y * nw + x] = g.px[x * g.w + (g.w - 1 - y)];
+                g = new Gray(nw, nh, r);
             }
+            return g;
         }
-        if (out.isEmpty()) throw new IOException("cannot read image " + path.getFileName());
+    }
+
+    /** Every page of an image file (all pages of a TIFF), grayscale, as {@code cv2} reads them. */
+    static List<Gray> imagePages(Path path) throws IOException {
+        List<Gray> out = new ArrayList<>();
+        String s = suffix(path);
+        if (s.equals(".tif") || s.equals(".tiff")) {
+            MatVector pages = new MatVector();
+            if (!imreadmulti(path.toString(), pages, IMREAD_GRAYSCALE) || pages.size() == 0) {
+                throw new IOException("cannot read image " + path.getFileName());
+            }
+            for (long i = 0; i < pages.size(); i++) out.add(Gray.of(pages.get(i)));
+            return out;
+        }
+        Mat img = imread(path.toString(), IMREAD_GRAYSCALE);
+        if (img == null || img.empty()) throw new IOException("cannot read image " + path.getFileName());
+        out.add(Gray.of(img));
         return out;
     }
 
-    /** Writes {@code pages} as one multi-page, LZW-compressed TIFF. */
-    static void writeTiff(List<BufferedImage> pages, Path dst) throws IOException {
-        ImageWriter writer = ImageIO.getImageWritersByFormatName("tiff").next();
+    /** Writes {@code pages} as one multi-page TIFF ({@code cv2.imwritemulti}). */
+    static void writeTiff(List<Gray> pages, Path dst) throws IOException {
+        MatVector mats = new MatVector(pages.size());
+        for (int i = 0; i < pages.size(); i++) mats.put(i, pages.get(i).mat());
         Files.deleteIfExists(dst);
-        try (ImageOutputStream out = ImageIO.createImageOutputStream(dst.toFile())) {
-            writer.setOutput(out);
-            ImageWriteParam param = writer.getDefaultWriteParam();
-            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            param.setCompressionType("LZW");
-            writer.prepareWriteSequence(null);
-            for (BufferedImage img : pages) writer.writeToSequence(new IIOImage(img, null, null), param);
-            writer.endWriteSequence();
-        } finally {
-            writer.dispose();
-        }
+        if (!imwritemulti(dst.toString(), mats)) throw new IOException("cannot write " + dst);
     }
 
-    private record Kinded(String kind, BufferedImage pixels) {}
+    private record Kinded(String kind, Gray pixels) {}
 
-    /** Every page of {@code inputs} (in order) into {@code outDir}. */
+    /** Prepares every page of {@code inputs} (in order) into {@code outDir}. */
     public static Book assemble(List<Path> inputs, Path outDir) {
         Book book = new Book();
-        List<BufferedImage> prepared = new ArrayList<>();
+        List<Gray> prepared = new ArrayList<>();
+        List<Gray> uploaded = new ArrayList<>();
         for (Path path : inputs) {
             String suffix = suffix(path);
             List<Kinded> pages = new ArrayList<>();
             try {
                 if (suffix.equals(".pdf")) {
-                    for (PdfPages.Page p : PdfPages.pages(path)) pages.add(new Kinded(p.kind(), p.pixels()));
+                    for (PdfPages.Page p : PdfPages.pages(path)) pages.add(new Kinded(p.kind(), Gray.of(p.pixels())));
                 } else if (IMAGE_SUFFIXES.contains(suffix)) {
-                    for (BufferedImage img : imagePages(path)) pages.add(new Kinded("image", img));
+                    for (Gray g : imagePages(path)) pages.add(new Kinded("image", g));
                 } else {
                     throw new IOException("unsupported input " + path.getFileName());
                 }
@@ -131,9 +159,17 @@ public final class Book {
                 if (k.kind().equals("vector")) {
                     entry.put("born_digital", true);
                     entry.put("rendered_dpi", Config.PDF_RENDER_DPI);
+                    entry.put("passed", true);
+                    prepared.add(k.pixels());
+                    uploaded.add(k.pixels());
+                } else {
+                    Prepare.Result r = Prepare.preparePage(k.pixels().image(), path.getFileName().toString());
+                    prepared.add(Gray.of(r.image()));
+                    // Audiveris cannot read a page lying on its side, as uploaded or not.
+                    int turns = Math.floorMod((int) Math.rint(r.report().rotated / 90), 4);
+                    uploaded.add(k.pixels().rot90(turns));
+                    entry.putAll(r.report().toMap());
                 }
-                entry.put("passed", true);
-                prepared.add(k.pixels());
                 book.pages.add(entry);
             }
         }
@@ -142,8 +178,12 @@ public final class Book {
             Files.createDirectories(outDir);
             book.prepared = outDir.resolve("pages.tif");
             writeTiff(prepared, book.prepared);
+            if (book.scanLike()) {
+                book.uploaded = outDir.resolve("uploaded.tif");
+                writeTiff(uploaded, book.uploaded);
+            }
         } catch (IOException e) {
-            throw new UncheckedIOException("cannot write " + book.prepared, e);
+            throw new UncheckedIOException(e);
         }
         return book;
     }
@@ -158,8 +198,8 @@ public final class Book {
                 PdfPages.select(path, keep, dst);
                 return dst;
             }
-            List<BufferedImage> pages = imagePages(path);
-            List<BufferedImage> kept = new ArrayList<>();
+            List<Gray> pages = imagePages(path);
+            List<Gray> kept = new ArrayList<>();
             for (int n : keep) if (n > 0 && n <= pages.size()) kept.add(pages.get(n - 1));
             if (kept.isEmpty()) throw new IOException("cannot write " + dst);
             writeTiff(kept, dst);
