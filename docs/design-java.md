@@ -1,9 +1,11 @@
 # Lilyscan Desktop: Java Port — Design and Build Plan
 
 Sheet music (PDF, scans, phone photos) → editable LilyPond, via optical music recognition
-built around Audiveris. This document plans the port of Lilyscan from Python to a standalone
-**Java 25 desktop application** that keeps the existing browser/server mode, as decided by the
-owner (GitHub user `vilpter`).
+built around Audiveris. This document plans the port of Lilyscan from Python to a **Java 25**
+application whose primary delivery is a **self-hosted web server, installed with Docker**, with an
+optional native desktop front end. The move to Java was decided by the owner (GitHub user
+`vilpter`); the Docker-first delivery was chosen over per-OS desktop installers to keep installing
+the whole stack as simple as `docker compose up`.
 
 **Repository:** `github.com/vilpter/lilyscan-desktop` — a full-history copy of
 `github.com/vilpter/lilyscan`. AGPL-3.0-or-later (unchanged). The two repos share history so
@@ -26,32 +28,43 @@ must meet before it replaces the Python one.
 
 ## 1. Goal
 
-One Java core that runs two ways:
+One Java core that runs two ways. The **primary** product is the server; the desktop app is an
+**optional** second front end over the same core.
 
-1. **A native desktop application** — a Swing window (as Audiveris uses), installed from a single
-   `jpackage` installer that bundles the Java runtime, Audiveris, LilyPond and the OCR models, so
-   a user installs one package and is done. No Docker, no Python, no `PATH` setup.
-2. **A headless server** — the same core, serving the existing browser UI and the `/api/jobs` API,
-   so one machine can serve a browser or the homelab, as the Docker deployment does today.
+1. **A self-hosted web server (primary), installed with Docker** — the same core serving the
+   existing browser UI and the `/api/jobs` API. Install is `docker compose up`: one image carries
+   the JVM, Audiveris (and its native OCR), LilyPond and the OCR models, so there is no Python, no
+   Redis, no per-tool `PATH` setup, and nothing to install on the host but Docker. One machine can
+   serve a browser or the homelab, as the Docker deployment does today — but now from a single
+   image instead of four.
+2. **A native desktop application (optional)** — a Swing window (as Audiveris uses) over the same
+   `lilyscan-core`, for a user who wants a local app with no browser. It is a secondary deliverable,
+   not on the critical path; its per-OS `jpackage` installers are built last and may be deferred or
+   dropped without affecting the server product.
 
-Both front ends run on **one core module with no duplicated pipeline logic**. The desktop app and
-the server are thin shells over the same `lilyscan-core` library.
+Both front ends run on **one core module with no duplicated pipeline logic** — thin shells over the
+same `lilyscan-core` library.
 
 **Success criteria** (in addition to the accuracy bar above):
-- A Swing three-pane review (source · engraved · LilyPond source) with click-to-sync, recompile,
-  and the ranked review list — the desktop equivalent of the M4 web UI.
-- `lilyscan serve` brings up the browser UI and API unchanged, on one process, no Redis.
-- `jpackage` produces working installers for Windows, Linux and macOS that need nothing else
-  installed.
+- `docker compose up` brings up the browser UI and the API on one container, with every dependency
+  (Audiveris, LilyPond, OCR models) already inside the image — nothing to install on the host but
+  Docker. No Redis, no multi-container orchestration.
+- `lilyscan serve` runs the same server directly (for development, or a non-Docker host) on one
+  process.
+- The three-pane review (source · engraved · LilyPond source) with click-to-sync, recompile and the
+  ranked review list works in the browser UI (and, optionally, in the Swing desktop app).
 - The eval harness reproduces the Python baselines within measurement noise on the same corpora.
+- *(Optional, last)* `jpackage` produces a working desktop installer that needs nothing else
+  installed.
 
 ## 2. What changes, and what does not
 
-| Area | Python (today) | Java desktop (this plan) |
+| Area | Python (today) | Java (this plan) |
 |---|---|---|
 | Language / build | Python 3.12, uv | **Java 25, Gradle** (as Audiveris) |
-| Desktop UI | none (browser only) | **Swing + FlatLaf** native window |
+| Primary delivery | 4 Docker images on GHCR (api/worker/audiveris/redis) | **one Docker image**, `docker compose up`, all deps baked in |
 | Browser UI | FastAPI + static SPA | **same static SPA**, served by an embedded HTTP server |
+| Desktop UI | none (browser only) | **optional** Swing + FlatLaf native window (secondary) |
 | Audiveris coupling | separate process, CLI + `.omr`/`.mxl` files (option A) | **in-process, jars on the classpath** (old option C/D) |
 | `.omr` import | re-parse the JAXB XML in Python (`engine/audiveris/omr.py`) | read via **Audiveris's own model classes** — no XML re-parsing |
 | Job queue | RQ on Valkey (Redis), 4 containers | **in-process executor** (desktop) / forked engine workers (server); **no Redis** |
@@ -61,7 +74,7 @@ the server are thin shells over the same `lilyscan-core` library.
 | Vector oracle (Stage 4) | PyMuPDF + fontTools | **PDFBox + FontBox** (already inside Audiveris) |
 | Music theory (Stage 5) | music21 helpers | **ported helpers** (no music21 equivalent on the JVM) |
 | Synthetic corpus | music21 + `musicxml2ly` | Java music generator + our own IR→LilyPond engraver |
-| Packaging | Docker images on GHCR | **jpackage installers** + one optional slim server image |
+| Packaging | 4 Docker images on GHCR | **one slim Docker image** (primary); optional jpackage desktop installer (last) |
 | Confidence model | `confidence.json` (logistic + isotonic) | **same `confidence.json`**, ported scorer (pure arithmetic) |
 
 **Unchanged:** the AGPL licence and the D12 compatibility rule; the pinned versions (Audiveris
@@ -79,10 +92,10 @@ corpora and `eval/results/` layout; the public web SPA in `services/web/` (reuse
 | D1 | GPU optional; CPU baseline; single device module. | **Kept.** The device abstraction moves to `Device.java`; our models run through ONNX Runtime (Java) on CPU or CUDA; Audiveris stays CPU-only. |
 | D2, D12 | AGPL; everything AGPL-compatible. | **Kept and re-verified** for every Java dependency (D23). |
 | D3, D4 | Transposing instruments; absolute `\fixed` pitch. | **Kept** (generator behaviour, unchanged). |
-| D5 | LilyPond 2.26.0, pinned, invoked as a subprocess. | **Kept.** LilyPond stays an external program invoked as a subprocess and bundled by jpackage. |
+| D5 | LilyPond 2.26.0, pinned, invoked as a subprocess. | **Kept.** LilyPond stays an external program invoked as a subprocess, installed into the Docker image (and bundled by the optional jpackage installer). |
 | D7 | Audiveris 5.11.0 pinned; the reader is versioned to it. | **Kept and strengthened:** the pin is now a build-time source dependency, so a version mismatch fails at compile time, not at parse time. |
-| D8 | Name, public repo, conventional commits, GitHub milestones. | **Kept**, in `vilpter/lilyscan-desktop`. GHCR image publishing is reduced to one optional server image (D22). |
-| D10 | OCR languages `eng+lat+deu+fra`, overridable. | **Kept.** tessdata is bundled by the installer; languages resolve the same way. |
+| D8 | Name, public repo, conventional commits, GitHub milestones. | **Kept**, in `vilpter/lilyscan-desktop`. GHCR publishing is reduced to the one server image (D22). |
+| D10 | OCR languages `eng+lat+deu+fra`, overridable. | **Kept.** tessdata is baked into the Docker image (and the optional desktop installer); languages resolve the same way. |
 | D11 | Real repertoire in the eval corpus, reported separately. | **Kept**, but the repertoire fetch (music21's bundled corpus) is re-sourced — see D20. |
 
 ### 3.2 New decisions (D13–D23)
@@ -90,7 +103,7 @@ corpora and `eval/results/` layout; the public web SPA in `services/web/` (reuse
 | # | Topic | Decision |
 |---|---|---|
 | **D13** | **Stack** | **JVM throughout (option C of `design.md` §5.2).** Java 25, Gradle, mirroring Audiveris's own toolchain. Kotlin is not used; staying in Java keeps the core in the same language as the upstream we now link, which was the tie-breaker (`design.md` §5.2: "choose C only if you would rather maintain Java than Python"). |
-| **D14** | **Desktop UI toolkit** | **Swing + FlatLaf.** Audiveris itself is Swing + FlatLaf (`com.formdev:flatlaf`), so we inherit a known-good HiDPI, dark-mode and cross-platform story, and can reuse its look. JavaFX was considered and rejected: it would add a second UI runtime to bundle, duplicate Audiveris's toolkit, and buy little for a document-review UI that is mostly images, an SVG view and a text editor. |
+| **D14** | **Desktop UI toolkit (optional front end)** | The desktop app is an **optional** second front end; the primary product is the web server (D22). When built, it is **Swing + FlatLaf.** Audiveris itself is Swing + FlatLaf (`com.formdev:flatlaf`), so we inherit a known-good HiDPI, dark-mode and cross-platform story, and can reuse its look. JavaFX was considered and rejected: it would add a second UI runtime to bundle, duplicate Audiveris's toolkit, and buy little for a document-review UI that is mostly images, an SVG view and a text editor. If the desktop app is dropped, the `lilyscan-desktop` module and milestones JM9–JM10 fall away with no effect on the server. |
 | **D15** | **Audiveris linkage** | **Consume Audiveris's `:app` module as a Gradle composite build** (`includeBuild`) against a git submodule pinned at the 5.11.0 tag. Audiveris publishes no library artifact (only `org.audiveris:proxymusic` is on Maven Central), so we build it from the pinned source. This gives compile-time coupling to its model classes (the real advantage of the old option D), satisfies AGPL source-availability, and keeps the pin reproducible. No Audiveris source is modified; per-job `-constant` overrides are applied through its API. |
 | **D16** | **Engine isolation** | **Each transcription runs in a forked child JVM** (`lilyscan --engine-worker`), re-using our own jars. Audiveris was built as a single-user GUI with global/static state; option A got per-job crash/OOM isolation for free by running a fresh process. We keep that: the child JVM transcribes the book **and** imports the `.omr` in-process via Audiveris classes, then writes our IR JSON to the artifact store for the parent to read. The parent never holds Audiveris state. Heap is set on the child's command line (no launcher-config rewrite). `-Djava.awt.headless=true -Dsun.java2d.uiScale=1` are set to avoid the GTK HiDPI probe crash (`design.md` §5). A desktop user may opt into in-parent transcription for small trusted books. |
 | **D17** | **Embedded HTTP server** | **Javalin** (on Jetty; Apache-2.0) serves the existing `services/web/` SPA and the `/api/jobs` + `/api/scores` endpoints. Lightweight, embeddable, no annotation framework. Spring Boot was rejected as too heavy for a bundled desktop app; plain Jetty was rejected for more boilerplate. |
@@ -98,22 +111,24 @@ corpora and `eval/results/` layout; the public web SPA in `services/web/` (reuse
 | **D19** | **IR serialization & migration** | **Java records serialized with Jackson**, keeping the on-disk `score.json`, `report.json` and `review.json` schemas **byte-compatible** with the Python version, so existing jobs and golden files load unchanged and the two implementations can be cross-checked during the port. Deterministic LilyPond output (the byte-identical requirement, `design.md` Stage 7) is preserved; existing `tests/golden/` are reused as-is. |
 | **D20** | **Music theory helpers** | **Port the specific helpers Lilyscan uses from music21** (pitch spelling, interval arithmetic, key/mode inference by tonic evidence + relative-minor leading-tone frequency, accidental respelling, transposition by interval). There is no mature JVM equivalent to music21, and `proxymusic` is a MusicXML binding only. We do not depend on a music-theory library; the needed surface is small and is covered by unit tests against the Python behaviour. |
 | **D21** | **Synthetic corpus** | **Reimplement the generator in Java** (`synth/`): produce random-but-valid music as MusicXML ground truth via `proxymusic`, engrave it through **our own IR→LilyPond generator** (not `musicxml2ly`) + LilyPond, and degrade to simulated scans/photos via bytedeco OpenCV. The "byte-identical rebuild from the spec" guarantee is re-baselined (different RNG and engraving path); corpus **specs** stay committed, built corpora stay git-ignored (D11). |
-| **D22** | **Packaging** | **`jpackage` per-OS installers** (msi/exe, dmg/pkg, deb/rpm) that bundle a jlinked Java 25 runtime, our jars, the Audiveris `:app` jars and their JavaCPP natives (Tesseract, Leptonica), the bytedeco OpenCV natives, the pinned tessdata models, and the LilyPond 2.26.0 binary as app content. LilyPond is launched as a subprocess (it is a separate program, not a Java library). One optional **slim server image** remains for the homelab (`serve`, headless); the api/worker/audiveris/redis images are retired. |
+| **D22** | **Packaging (Docker-first)** | **The primary, and simplest, install is one Docker image**, run with `docker compose up`. The image is a single server container built `FROM eclipse-temurin:25-jre`, carrying: our fat application jar (which includes the Audiveris `:app` classes and the bytedeco JavaCPP natives for Tesseract, Leptonica and OpenCV, pulled at build time — no apt packages for OCR), the pinned tessdata models, and the LilyPond 2.26.0 binary (installed into the image; launched as a subprocess). The engine runs in a forked worker JVM *inside the same container* (D16), so there is **one image and one service** — no api/worker/audiveris/redis split, no Redis. `docker compose up` needs nothing on the host but Docker. The image is published to GHCR (D8) and runs `lilyscan serve`. Jobs persist to a Docker volume (SQLite). **The jpackage desktop installer is optional and built last** (JM10): per-OS installers (msi/exe, dmg/pkg, deb/rpm) that jlink a Java 25 runtime and bundle the same jars, natives, tessdata and LilyPond as app content; it may be deferred or dropped without affecting the server. |
 | **D23** | **Dependency licences** | Every Java dependency is AGPL-compatible (D2/D12). Verified set in §9. LilyPond (GPL) is bundled as a separate program invoked as a subprocess (aggregation, not linking). `jgrapht` is taken under its LGPL option (it is dual EPL-2.0 / LGPL-2.1). JobRunr is taken under LGPL-3.0. |
 
 ## 4. Architecture
 
 ```
-                         ┌───────────────────────────────┐
-   Swing desktop app ───▶│                               │
-   (lilyscan-desktop)    │        lilyscan-core          │◀── embedded HTTP server
-                         │  (one library, no UI, no web) │    (lilyscan-server, Javalin)
-   headless serve ──────▶│                               │        serves services/web/ SPA
-                         └──────────────┬────────────────┘        + /api/jobs, /api/scores
-                                        │
-              per-job fork ─────────────▼───────────────── lilyscan --engine-worker (child JVM)
-                                   Audiveris :app on classpath (in-process, pinned 5.11.0)
-                                   transcribe → read .omr via Audiveris classes → write IR JSON
+   Docker image: lilyscan serve ──┐     ┌───────────────────────────────┐
+   (PRIMARY: docker compose up)   ├────▶│                               │
+   embedded HTTP server (Javalin) ┘     │        lilyscan-core          │
+     serves services/web/ SPA           │  (one library, no UI, no web) │
+     + /api/jobs, /api/scores           │                               │
+                                        └──────────────┬────────────────┘
+   optional Swing desktop app ──────────────▲          │
+   (lilyscan-desktop, secondary)                        │
+                                        per-job fork ────▼──── lilyscan --engine-worker (child JVM)
+                                   Audiveris :app on classpath (in-process, pinned 5.11.0),
+                                   in the SAME container: transcribe → read .omr via
+                                   Audiveris classes → write IR JSON
 
    all stages read/write ─▶ artifact store (per-stage JSON, images, .omr, .mxl, .ly) under data/jobs/<id>/
 ```
@@ -126,20 +141,26 @@ corpora and `eval/results/` layout; the public web SPA in `services/web/` (reuse
   `:app`, the forked-worker launcher (D16), transcription driving, and the in-process `.omr`→IR
   reader. Split from `-core` so only this module carries the Audiveris classpath, and so the
   forked worker can start with a minimal classpath.
-- **`lilyscan-desktop`** — the Swing application (D14): the main window, the three-pane review, the
-  upload/combine dialogs, the job list. Depends on `-core` and `-engine`.
-- **`lilyscan-server`** — the Javalin app (D17): serves `services/web/` and the JSON API. Depends
-  on `-core` and `-engine`. `lilyscan serve` and the slim Docker image use this.
-- **`lilyscan-cli`** — picocli entry point (`convert`, `serve`, `versions`, `selftest`, `device`,
-  `corpus`, `eval`, and the hidden `--engine-worker`). The desktop launcher and the CLI share a
-  main class that dispatches by argument, so one installed binary does everything (as `audiveris`
-  does).
+- **`lilyscan-server`** (the primary front end) — the Javalin app (D17): serves `services/web/` and
+  the JSON API. Depends on `-core` and `-engine`. `lilyscan serve` and the Docker image use this.
+- **`lilyscan-desktop`** (optional, secondary) — the Swing application (D14): the main window, the
+  three-pane review, the upload/combine dialogs, the job list. Depends on `-core` and `-engine`.
+  Can be dropped without affecting the server.
+- **`lilyscan-engine`** — the Audiveris adapter: the composite-build dependency on Audiveris
+  `:app`, the forked-worker launcher (D16), transcription driving, and the in-process `.omr`→IR
+  reader. Split from `-core` so only this module carries the Audiveris classpath, and so the
+  forked worker can start with a minimal classpath.
+- **`lilyscan-cli`** — picocli entry point (`serve`, `convert`, `versions`, `selftest`, `device`,
+  `corpus`, `eval`, the optional `desktop`, and the hidden `--engine-worker`). One main class
+  dispatches by argument, so one binary does everything (as `audiveris` does); `serve` is the
+  Docker image's entry point.
 - **`lilyscan-eval`** — the evaluation harness and the synthetic-corpus generator (D21). Test/dev
-  scope; not shipped in the installer.
+  scope; not shipped in the image or the installer.
 
-Gradle multi-project build; Java toolchain 25; `application` plugin for the launcher; the
-`org.beryx.jlink`/`jpackage` wiring in a `packaging` subproject that mirrors Audiveris's own
-`packaging` module.
+Gradle multi-project build; Java toolchain 25; `application` + Shadow (fat-jar) plugins for the
+server launcher and the Docker image; the optional `org.beryx.jlink`/`jpackage` wiring in a
+`packaging` subproject (mirroring Audiveris's own `packaging` module) builds the desktop installer
+only when requested.
 
 ## 5. Audiveris in-process (the crux)
 
@@ -210,7 +231,46 @@ hard parts. "Direct" = logic port with no ecosystem dependency.
 Everything else is either a direct logic port or *simpler* on the JVM than it was in Python
 (notably Stage 3, which stops re-parsing XML).
 
-## 7. Desktop application (Swing)
+## 7. Server, Docker and deployment (primary delivery)
+
+The whole point of the Docker-first delivery is that **installing the full stack is one command**.
+Everything a job needs — the JVM, Audiveris and its native OCR, LilyPond, the OCR models — lives in
+one image, so the host needs nothing but Docker.
+
+- **The image.** A single `Dockerfile`, `FROM eclipse-temurin:25-jre`, that:
+  1. installs LilyPond 2.26.0 (the pinned tarball from lilypond.org, into `/opt`, symlinked onto the
+     `PATH` — not the distro package, which is too old; same as `design.md` README);
+  2. copies the pinned tessdata models and sets `TESSDATA_PREFIX`;
+  3. copies our Shadow **fat jar**, which already contains the Audiveris `:app` classes and the
+     bytedeco JavaCPP natives for Tesseract, Leptonica and OpenCV (resolved at Gradle build time, so
+     there are **no apt packages for OCR or OpenCV** and nothing to download at first run);
+  4. `ENTRYPOINT ["java","-jar","/app/lilyscan.jar","serve"]`.
+  There is **one image and one service**. The engine runs in a forked worker JVM *inside the same
+  container* (D16), so the api/worker/audiveris/redis split and Redis are gone.
+- **`docker-compose.yml`.** One service, one named volume for `data/` (jobs persist across restarts),
+  port 8000 published. The whole user story is:
+  ```
+  docker compose up -d      # pulls the image, starts the server
+  # open http://localhost:8000/
+  ```
+  No `.env` to fill in to get started; `LILYSCAN_*` variables (below) stay optional overrides.
+- **Build vs pull.** CI publishes the image to `ghcr.io/vilpter/lilyscan-desktop` (D8); the compose
+  file points at it, so `docker compose up` pulls rather than builds. `docker compose up --build`
+  builds locally. The CUDA variant is a build arg / second tag, enabled by a compose profile; the
+  default image is CPU-only (D1), and Audiveris is CPU-only regardless.
+- **Non-Docker / development.** `lilyscan serve` runs the same server directly on a host that has
+  the JVM (and LilyPond on the `PATH`), on one process with the in-process executor and forked engine
+  workers — the dev loop, and a fallback for hosts without Docker.
+- **GPU & config.** The GPU path is ONNX Runtime provider selection (D1). The `LILYSCAN_*`
+  environment variables (`design.md` README "Configuration") are kept; `LILYPOND_BIN`/`AUDIVERIS_*`
+  default to the copies inside the image unless overridden. `LILYSCAN_DISPATCH` loses `rq`; the
+  values become `inline` (default) and, later, `jobrunr`.
+
+## 8. Desktop application (optional, Swing)
+
+A second front end for users who want a local app and no browser. It is **optional** (D14): it adds
+no pipeline code, shares `lilyscan-core`, and can be deferred or dropped (with milestone JM10 and the
+`lilyscan-desktop` module) without touching the server product.
 
 - **Main window**: a job list / home (upload, combine parts) and a review workspace, FlatLaf-themed
   to match Audiveris.
@@ -226,25 +286,13 @@ Everything else is either a direct logic port or *simpler* on the JVM than it wa
 - **Downloads**: `.ly` (single file), `.ly` project (zip), PDF, MIDI, MusicXML, `.omr`.
 - **Progress**: stage-by-stage job progress on a background thread; the engine step shows the forked
   worker's progress.
+- **Installer (optional, last).** When built, `jpackage` produces msi/exe (Windows), dmg/pkg (macOS)
+  and deb/rpm (Linux), each jlinking a Java 25 runtime and bundling the same jars, JavaCPP/OpenCV
+  natives, tessdata and the LilyPond binary as app content (note jpackage's signing caveat for extra
+  content; verify per OS). Audiveris's own `packaging` module is the reference.
 
-The desktop app calls `lilyscan-core` directly (no HTTP). The web UI reaches the same core through
+The desktop app calls `lilyscan-core` directly (no HTTP); the web UI reaches the same core through
 `lilyscan-server`. There is one pipeline implementation.
-
-## 8. Packaging, server and deployment
-
-- **Installers (D22).** `jpackage` builds msi/exe (Windows), dmg/pkg (macOS), deb/rpm (Linux),
-  each bundling: a jlinked Java 25 runtime, all Lilyscan + Audiveris jars, the JavaCPP natives
-  (Tesseract, Leptonica) and bytedeco OpenCV natives, the pinned tessdata models, and the LilyPond
-  2.26.0 binary under the app image (via `--app-content`/resource dir; note jpackage's signing
-  caveat for extra content and verify per OS). The app launcher dispatches desktop vs `serve` vs CLI
-  by argument. Audiveris's own `packaging` module is the reference for the layout.
-- **Server mode.** `lilyscan serve` starts Javalin on port 8000, serves `services/web/` and the API,
-  runs jobs on the in-process executor with forked engine workers. One optional **slim Docker image**
-  (`eclipse-temurin:25` + LilyPond + the app, no Redis) covers the homelab; it replaces the four
-  images. The GPU path is ONNX Runtime provider selection (D1); Audiveris stays CPU-only.
-- **Config.** The `LILYSCAN_*` environment variables (`design.md` README "Configuration") are kept;
-  `LILYPOND_BIN`/`AUDIVERIS_*` become "use the bundled copy unless overridden". `LILYSCAN_DISPATCH`
-  loses `rq`; the values become `inline` (default) and, later, `jobrunr`.
 
 ## 9. Dependencies and licences (all AGPL-compatible, D23)
 
@@ -295,8 +343,9 @@ The owner's D12 rule (no NC/ND/research-only/unstated terms) carries over unchan
 | No music21 on the JVM | Port only the helpers used, tested against Python behaviour (D20); the surface is small |
 | Audiveris global/static state in-process | Forked worker per job (D16) restores per-process isolation; parent never holds engine state |
 | Audiveris model classes are internal (no API stability guarantee) | Pinned source submodule (D15); a breaking change fails our compile, caught at build; golden `.omr` tests |
-| Loss of the simple `docker compose` multi-worker scale-out | In-process + forked workers covers one machine; JobRunr-on-SQL (D18) is the sanctioned multi-machine path, no Redis |
-| jpackage bundling of an external binary (LilyPond) + natives across 3 OSes | Follow Audiveris's `packaging` module; verify the app image and signing per OS early (JM1) |
+| Loss of the simple multi-container scale-out | One image + in-process forked workers covers one machine (the common case); JobRunr-on-SQL (D18) is the sanctioned multi-machine path, no Redis |
+| bytedeco/JavaCPP natives must match the image platform | Resolve the `linux-x86_64` native classifiers at build time into the fat jar; the CI `docker build` + `lilyscan selftest` in the container is the guard (JM0/JM3). JavaCPP extracts natives to a temp dir at runtime, which works in the container |
+| jpackage bundling of LilyPond + natives across 3 OSes (optional) | Only if the desktop installer is built (JM10); follow Audiveris's `packaging` module and verify the app image and signing per OS then. Not on the critical path |
 | Synthetic corpus not byte-reproducible after the port | Re-baseline (D21); keep specs committed; report synthetic vs real separately (D11) |
 | Determinism of generated `.ly` | Preserve exact formatting; reuse `tests/golden/` as the guard (D19) |
 
@@ -307,21 +356,23 @@ baseline, and a Java stage ships only when it matches it.
 
 | JM | Deliverable | Exit criteria |
 |---|---|---|
-| **JM0** | Gradle multi-project skeleton (`core`, `engine`, `desktop`, `server`, `cli`, `eval`); Java 25 toolchain; Audiveris submodule + composite build resolving; picocli launcher; CI (Gradle build, tests) | `./gradlew build` works; `lilyscan versions`/`selftest` run; a Swing window and `serve` both launch and share the core; Audiveris `:app` is on the classpath |
+| **JM0** | Gradle multi-project skeleton (`core`, `engine`, `server`, `cli`, `eval`; `desktop` stub); Java 25 toolchain; Audiveris submodule + composite build resolving; picocli launcher; Shadow fat jar; CI (Gradle build, tests, **Docker image build**) | `./gradlew build` works; `lilyscan versions`/`selftest` run; `serve` launches; the fat jar builds and a `docker build` of the server image succeeds; Audiveris `:app` is on the classpath |
 | **JM1** | Engine adapter: forked worker (D16), in-process transcription + `.omr`→IR reader; MusicXML→IR | Transcribes a sample page in-process to our IR; reproduces the Python reader's IR on `eval/fixtures/omr/`; ≥98% box coverage on clean input |
 | **JM2** | IR (records + Jackson, D19) + LilyPond generator + compiler + Q1–Q5 | `tests/golden/` reproduced byte-for-byte; all corpus engine outputs compile; ground-truth MusicXML→IR→`.ly` round-trips with zero compile errors. **First usable core** |
-| **JM3** | Stage 5 repair + ported music21 helpers + confidence scorer | Reproduces `eval/results/base-1031-*` repair gains within noise; confidence ECE < 0.05 |
-| **JM4** | Swing desktop review UI (three-pane, click-to-sync, recompile, review list, downloads) | Correct a flagged measure and re-export in under a minute, in the native app |
-| **JM5** | `lilyscan-server` (Javalin) serving `services/web/` + `/api/jobs` + `/api/scores`; job store | The existing browser UI works unchanged against the Java server on one process |
-| **JM6** | Stage 0 + Stage 1 (PDFBox render; bytedeco OpenCV prepare, quality gate) | Photo/scan accuracy within noise of the Python M6/M7 results on the corpus |
-| **JM7** | Stage 4 vector oracle (PDFBox + FontBox) | PDF exact-measure accuracy matches the Python M7 results |
-| **JM8** | Combiner (`combine`/`align`/`arrange`) + transposition | Parts from two jobs combine into one compiling score; piano reduction matches Python output |
-| **JM9** | Eval harness + synthetic corpus (D21) parity | `lilyscan eval run` reproduces the seed and repertoire baselines within noise; `eval calibrate` hits the ECE targets |
-| **JM10** | jpackage installers (Win/Linux/macOS) + slim server image | One installer installs a working app with nothing else needed; `serve` image runs on the homelab |
+| **JM3** | `lilyscan-server` (Javalin) serving `services/web/` + `/api/jobs` + `/api/scores`; SQLite job store; **the Docker image + `docker-compose.yml`** (D22) | `docker compose up` gives the existing browser review UI end to end — upload → transcribe → review → download — with nothing installed on the host but Docker. **First usable product** |
+| **JM4** | Stage 5 repair + ported music21 helpers + confidence scorer | Reproduces `eval/results/base-1031-*` repair gains within noise; confidence ECE < 0.05 |
+| **JM5** | Stage 0 + Stage 1 (PDFBox render; bytedeco OpenCV prepare, quality gate) | Photo/scan accuracy within noise of the Python M6/M7 results on the corpus |
+| **JM6** | Stage 4 vector oracle (PDFBox + FontBox) | PDF exact-measure accuracy matches the Python M7 results |
+| **JM7** | Combiner (`combine`/`align`/`arrange`) + transposition | Parts from two jobs combine into one compiling score; piano reduction matches Python output |
+| **JM8** | Eval harness + synthetic corpus (D21) parity | `lilyscan eval run` reproduces the seed and repertoire baselines within noise; `eval calibrate` hits the ECE targets. **Full server parity with the Python product** |
+| **JM9** | *(Optional)* Swing desktop review UI (three-pane, click-to-sync, recompile, review list, downloads) | Correct a flagged measure and re-export in under a minute, in the native app |
+| **JM10** | *(Optional)* jpackage desktop installers (Win/Linux/macOS) | One installer installs a working desktop app with nothing else needed |
 
-Build strategy mirrors `design.md` §10: JM2 is the first working core; each later milestone is
-measured against the Python baseline and shipped only if it matches. Full feature parity is reached
-by JM10; nothing in the Python feature set is dropped.
+Build strategy mirrors `design.md` §10: JM2 is the first working core and **JM3 is the first usable
+product** (`docker compose up`); each later milestone is measured against the Python baseline and
+shipped only if it matches. **Full server parity is reached at JM8**, at which point the Java server
+can replace the Python one. The optional desktop app (JM9) and its installer (JM10) follow only if
+wanted. Nothing in the Python *server* feature set is dropped.
 
 ## 13. Repo layout (target)
 
@@ -333,11 +384,13 @@ lilyscan-desktop/
   third_party/audiveris/       # git submodule, pinned tag 5.11.0 (unmodified)
   lilyscan-core/               # pipeline, IR, generator, repair, confidence, combine, config, device
   lilyscan-engine/             # Audiveris adapter, forked worker, .omr→IR reader
-  lilyscan-desktop/            # Swing app (FlatLaf)
-  lilyscan-server/             # Javalin app serving services/web/ + API
-  lilyscan-cli/                # picocli launcher (desktop | serve | convert | eval | --engine-worker)
+  lilyscan-server/             # Javalin app serving services/web/ + API (primary front end)
+  lilyscan-cli/                # picocli launcher (serve | convert | eval | desktop | --engine-worker)
   lilyscan-eval/               # eval harness + synthetic corpus generator
-  packaging/                   # jpackage / jlink wiring (mirrors Audiveris's packaging module)
+  lilyscan-desktop/            # optional Swing app (FlatLaf)
+  packaging/                   # optional jpackage / jlink wiring (mirrors Audiveris's packaging module)
+  docker/                      # Dockerfile (server image) — new, replaces the Python images
+  docker-compose.yml           # one service, one volume — the primary install (rewritten for Java)
   services/web/                # the existing SPA, reused unchanged
   eval/                        # corpus specs (committed), fixtures, committed results
   tests/ (per module)          # JUnit 5; golden files reused from the Python tree
@@ -353,4 +406,5 @@ of golden/baseline data, and is removed only once the Java build meets the accur
 
 | Date | Milestone | State |
 |---|---|---|
-| 2026-11-01 | — | Design drafted. Decisions: D13 (JVM stack, overturns D9), D14 (Swing+FlatLaf), D15 (Audiveris in-process via composite build, amends D6), D16 (forked engine worker for isolation), D17 (Javalin), D18 (SQLite + in-process dispatch, drops Redis), D19 (Jackson IR, schema-compatible), D20 (ported music21 helpers), D21 (Java synthetic corpus), D22 (jpackage installers), D23 (licences verified). Milestones JM0–JM10 defined. No code yet. |
+| 2026-11-01 | — | Design drafted. Decisions: D13 (JVM stack, overturns D9), D14 (Swing+FlatLaf, optional front end), D15 (Audiveris in-process via composite build, amends D6), D16 (forked engine worker for isolation), D17 (Javalin), D18 (SQLite + in-process dispatch, drops Redis), D19 (Jackson IR, schema-compatible), D20 (ported music21 helpers), D21 (Java synthetic corpus), D22 (jpackage installers), D23 (licences verified). Milestones JM0–JM10 defined. No code yet. |
+| 2026-11-01 | — | **Revised to Docker-first delivery.** The primary product is the self-hosted web server, installed with `docker compose up` from one image with every dependency (Audiveris + native OCR, LilyPond, tessdata) baked in — no host install but Docker, no Redis, no 4-container split. The Swing desktop app and its jpackage installer are now optional and last (JM9–JM10). D22 rewritten (Docker-first; installer optional); D5/D8/D10/D14 adjusted; milestones reordered so JM3 (`docker compose up` works end to end) is the first usable product and JM8 reaches full server parity. |
