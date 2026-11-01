@@ -31,6 +31,7 @@ junit = "5.11.3"
 shadow = "9.6.1"
 
 [libraries]
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }

@@ -60,6 +60,21 @@ public final class Py {
         return truncate(Math.rint(x));
     }
 
+    /** Python {@code round(x, ndigits)} of a float: the exact binary value rounded half-even. */
+    public static double round(double x, int ndigits) {
+        if (Double.isNaN(x) || Double.isInfinite(x) || x == 0) return x;
+        double r = new java.math.BigDecimal(x).setScale(ndigits, java.math.RoundingMode.HALF_EVEN).doubleValue();
+        return r == 0 ? Math.copySign(0.0, x) : r;
+    }
+
+    /** Python {@code str(v)} for the scalar values JSON holds. */
+    public static String str(Object v) {
+        if (v == null) return "None";
+        if (v instanceof Boolean b) return b ? "True" : "False";
+        if (v instanceof Double || v instanceof Float) return org.lilyscan.core.json.PyJson.floatRepr(((Number) v).doubleValue());
+        return v.toString();
+    }
+
     /** Python {@code str.isspace()} for one code point (Unicode White_Space, incl. NBSP). */
     public static boolean isSpace(int cp) {
         return Character.isWhitespace(cp) || Character.isSpaceChar(cp) || cp == 0x85;
