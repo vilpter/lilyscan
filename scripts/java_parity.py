@@ -78,8 +78,18 @@ def book_dump(book: OmrBook) -> dict[str, object]:
                             for pid, staves in sy.parts.items()
                         ],
                         "inters": [
-                            [i.id, i.kind, i.shape, i.grade, i.ctx_grade, i.staff, box(i.box),
-                             i.step, i.value, i.role]
+                            [
+                                i.id,
+                                i.kind,
+                                i.shape,
+                                i.grade,
+                                i.ctx_grade,
+                                i.staff,
+                                box(i.box),
+                                i.step,
+                                i.value,
+                                i.role,
+                            ]
                             for i in sy.inters
                         ],
                         "chord_of": [[k, v.id] for k, v in sy.chord_of.items()],
@@ -94,10 +104,37 @@ def book_dump(book: OmrBook) -> dict[str, object]:
 
 # Python repr() of floats, for the JSON writer's float formatting.
 FLOATS = [
-    0.0, -0.0, 1.0, -1.0, 0.1, 0.5, 0.95, 812.0, 340.5, 2480.0, 1e-4, 1e-5, 0.0005, 1.5e-7,
-    12345678.0, 1e15, 1e16, 1.2345678901234567e17, 1e100, 1.5e-300, 123.456, 0.30000000000000004,
-    2 / 3, 1 / 3, 99999999999999.9, 0.012345678, 5e-324, 1.7976931348623157e308, 7.0e-4,
-    0.07142857142857142, 3.141592653589793,
+    0.0,
+    -0.0,
+    1.0,
+    -1.0,
+    0.1,
+    0.5,
+    0.95,
+    812.0,
+    340.5,
+    2480.0,
+    1e-4,
+    1e-5,
+    0.0005,
+    1.5e-7,
+    12345678.0,
+    1e15,
+    1e16,
+    1.2345678901234567e17,
+    1e100,
+    1.5e-300,
+    123.456,
+    0.30000000000000004,
+    2 / 3,
+    1 / 3,
+    99999999999999.9,
+    0.012345678,
+    5e-324,
+    1.7976931348623157e308,
+    7.0e-4,
+    0.07142857142857142,
+    3.141592653589793,
 ]
 
 
