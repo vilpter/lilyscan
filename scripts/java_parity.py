@@ -26,6 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from lilyscan.engine.audiveris.omr import OmrBook, attach_movements, read_omr  # noqa: E402
 from lilyscan.ir.musicxml import load_musicxml  # noqa: E402
 from lilyscan.synth.corpus import load_spec  # noqa: E402
 from lilyscan.synth.generate import write_ground_truth  # noqa: E402
@@ -38,6 +39,58 @@ MUSICXML_INPUTS = {
     "piano-two-voices": ("eval/fixtures/omr/5.11.0/piano-two-voices/output.mxl", "audiveris"),
     "split-flute": ("eval/fixtures/omr/5.11.0/split-flute/output.mxl", "audiveris"),
 }
+
+# Audiveris projects (book.omr + its exported MusicXML) for the .omr reader (Stage 3).
+OMR_INPUTS = {
+    "piano-two-voices": "eval/fixtures/omr/5.11.0/piano-two-voices",
+    "split-flute": "eval/fixtures/omr/5.11.0/split-flute",
+}
+
+
+def book_dump(book: OmrBook) -> dict[str, object]:
+    """Everything read_omr extracts, in a form the Java reader reproduces exactly."""
+
+    def box(b: object) -> list[float] | None:
+        return None if b is None else [b.x, b.y, b.w, b.h]  # type: ignore[attr-defined]
+
+    return {
+        "software_version": book.software_version,
+        "logical_parts": [[k, v] for k, v in book.logical_parts.items()],
+        "sheets": [
+            {
+                "number": sh.number,
+                "width": sh.width,
+                "height": sh.height,
+                "interline": sh.interline,
+                "systems": [
+                    {
+                        "starts_movement": sy.starts_movement,
+                        "stacks": [
+                            {
+                                "left": st.left,
+                                "right": st.right,
+                                "slots": [[str(t), x] for t, x in st.slots.items()],
+                            }
+                            for st in sy.stacks
+                        ],
+                        "parts": [
+                            [pid, [[s.id, s.top, s.bottom] for s in staves]]
+                            for pid, staves in sy.parts.items()
+                        ],
+                        "inters": [
+                            [i.id, i.kind, i.shape, i.grade, i.ctx_grade, i.staff, box(i.box),
+                             i.step, i.value, i.role]
+                            for i in sy.inters
+                        ],
+                        "chord_of": [[k, v.id] for k, v in sy.chord_of.items()],
+                    }
+                    for sy in sh.systems
+                ],
+            }
+            for sh in book.sheets
+        ],
+    }
+
 
 # Python repr() of floats, for the JSON writer's float formatting.
 FLOATS = [
@@ -84,6 +137,40 @@ def main() -> None:
             {"name": spec.id, "input": str(path.relative_to(ROOT)), "source": "musicxml"}
         )
     _write_manifest(mx, manifest)
+
+    om = OUT / "omr"
+    om.mkdir(parents=True, exist_ok=True)
+    omr_manifest = []
+    for name, rel in OMR_INPUTS.items():
+        book = read_omr(ROOT / rel / "book.omr")
+        (om / f"{name}.book.json").write_text(
+            json.dumps(book_dump(book), indent=1) + "\n", encoding="utf-8", newline="\n"
+        )
+        movements = [load_musicxml(ROOT / rel / "output.mxl", "audiveris")]
+        score, stats = attach_movements(movements, book)
+        assert stats is not None
+        (om / f"{name}.score.json").write_text(
+            score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
+        )
+        (om / f"{name}.stats.json").write_text(
+            json.dumps(
+                {
+                    "events": stats.events,
+                    "mappable": stats.mappable,
+                    "located": stats.located,
+                    "pitch_mismatch": stats.pitch_mismatch,
+                    "measures": stats.measures,
+                    "measures_located": stats.measures_located,
+                    "unmapped_staves": stats.unmapped_staves,
+                },
+                indent=1,
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        omr_manifest.append({"name": name, "dir": rel, "movements": ["output.mxl"]})
+    _write_manifest(om, omr_manifest)
 
     if args.sweep is not None:
         sweep = args.sweep.resolve()

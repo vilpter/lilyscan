@@ -11,6 +11,9 @@ pdfbox = "3.0.6"
 jackson = "2.18.2"
 slf4j = "2.0.16"
 logback = "1.5.12"
+# Audiveris API types our engine code touches (must match third_party/audiveris/app/build.gradle)
+jgrapht = "1.5.2"
+jaxb-api = "2.3.1"
 # Server + store
 javalin = "6.3.0"
 sqlite = "3.47.1.0"
@@ -31,6 +34,8 @@ shadow = "9.6.1"
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+jgrapht-core = { module = "org.jgrapht:jgrapht-core", version.ref = "jgrapht" }
+jaxb-api = { module = "javax.xml.bind:jaxb-api", version.ref = "jaxb-api" }
 javalin = { module = "io.javalin:javalin", version.ref = "javalin" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
