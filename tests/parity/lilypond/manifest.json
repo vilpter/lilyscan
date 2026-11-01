@@ -1,0 +1,50 @@
+[
+ {
+  "name": "features",
+  "score": "musicxml/features.score.json"
+ },
+ {
+  "name": "piano-two-voices",
+  "score": "musicxml/piano-two-voices.score.json"
+ },
+ {
+  "name": "split-flute",
+  "score": "musicxml/split-flute.score.json"
+ },
+ {
+  "name": "solo-01",
+  "score": "musicxml/solo-01.score.json"
+ },
+ {
+  "name": "piano-01",
+  "score": "musicxml/piano-01.score.json"
+ },
+ {
+  "name": "satb-01",
+  "score": "musicxml/satb-01.score.json"
+ },
+ {
+  "name": "leadsheet-01",
+  "score": "musicxml/leadsheet-01.score.json"
+ },
+ {
+  "name": "quartet-01",
+  "score": "musicxml/quartet-01.score.json"
+ },
+ {
+  "name": "piano-two-voices.score",
+  "score": "omr/piano-two-voices.score.json"
+ },
+ {
+  "name": "piano-two-voices.repaired",
+  "score": "omr/piano-two-voices.repaired.score.json"
+ },
+ {
+  "name": "split-flute.score",
+  "score": "omr/split-flute.score.json"
+ },
+ {
+  "name": "split-flute.repaired",
+  "score": "omr/split-flute.repaired.score.json"
+ }
+]

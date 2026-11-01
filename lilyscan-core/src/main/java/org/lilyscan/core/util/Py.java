@@ -19,7 +19,7 @@ public final class Py {
 
     /** Python {@code float(s)}; throws {@link NumberFormatException} where Python raises ValueError. */
     public static double parseFloat(String s) {
-        String t = s.strip();
+        String t = strip(s);
         if (SPECIAL.matcher(t).matches()) {
             String lower = t.toLowerCase();
             boolean neg = lower.startsWith("-");
@@ -34,7 +34,7 @@ public final class Py {
 
     /** Python {@code int(s)} for a base-10 literal (whitespace, sign and underscores allowed). */
     public static int parseInt(String s) {
-        String t = s.strip();
+        String t = strip(s);
         if (!INT.matcher(t).matches()) {
             throw new NumberFormatException("invalid literal for int() with base 10: '" + s + "'");
         }
@@ -58,6 +58,75 @@ public final class Py {
     /** Python {@code round(x)} of a float: nearest integer, ties to even. */
     public static int round(double x) {
         return truncate(Math.rint(x));
+    }
+
+    /** Python {@code str.isspace()} for one code point (Unicode White_Space, incl. NBSP). */
+    public static boolean isSpace(int cp) {
+        return Character.isWhitespace(cp) || Character.isSpaceChar(cp) || cp == 0x85;
+    }
+
+    /** Python {@code str.strip()} (no arguments). */
+    public static String strip(String s) {
+        int start = 0;
+        int end = s.length();
+        while (start < end && isSpace(s.codePointAt(start))) {
+            start += Character.charCount(s.codePointAt(start));
+        }
+        while (end > start && isSpace(s.codePointBefore(end))) {
+            end -= Character.charCount(s.codePointBefore(end));
+        }
+        return s.substring(start, end);
+    }
+
+    /** Python {@code str.rstrip()} (no arguments). */
+    public static String rstrip(String s) {
+        int end = s.length();
+        while (end > 0 && isSpace(s.codePointBefore(end))) {
+            end -= Character.charCount(s.codePointBefore(end));
+        }
+        return s.substring(0, end);
+    }
+
+    /** Python {@code str.split()} (no arguments): runs of whitespace, no empty pieces. */
+    public static java.util.List<String> split(String s) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        int i = 0;
+        int n = s.length();
+        while (i < n) {
+            while (i < n && isSpace(s.codePointAt(i))) {
+                i += Character.charCount(s.codePointAt(i));
+            }
+            int start = i;
+            while (i < n && !isSpace(s.codePointAt(i))) {
+                i += Character.charCount(s.codePointAt(i));
+            }
+            if (i > start) {
+                out.add(s.substring(start, i));
+            }
+        }
+        return out;
+    }
+
+    /** {@code len(s)}: code points, not UTF-16 units. */
+    public static int len(String s) {
+        return s.codePointCount(0, s.length());
+    }
+
+    /**
+     * Python {@code format(x, ".Nf")}: the exact binary value rounded half to even, as Python
+     * does (Java's {@code %.Nf} rounds the shortest decimal half up: 0.125 -> "0.13" vs "0.12").
+     */
+    public static String fixed(double x, int digits) {
+        if (Double.isNaN(x)) {
+            return "nan";
+        }
+        if (Double.isInfinite(x)) {
+            return x > 0 ? "inf" : "-inf";
+        }
+        String body = new java.math.BigDecimal(Math.abs(x))
+                .setScale(digits, java.math.RoundingMode.HALF_EVEN).toPlainString();
+        boolean negative = x < 0 || (x == 0.0 && Double.doubleToRawLongBits(x) < 0);
+        return negative ? "-" + body : body;
     }
 
     /** Python {@code str.isdigit()} for the decimal digits that {@code int()} accepts. */

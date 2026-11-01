@@ -56,7 +56,7 @@ public final class Config {
     /** Normalize and validate an OCR language spec such as {@code eng+lat+deu}. */
     public static String parseOcrLanguages(String spec) {
         List<String> codes = new ArrayList<>();
-        for (String c : spec.strip().toLowerCase(Locale.ROOT).replace(",", "+").split("\\+", -1)) {
+        for (String c : org.lilyscan.core.util.Py.strip(spec).toLowerCase(Locale.ROOT).replace(",", "+").split("\\+", -1)) {
             if (!c.isEmpty()) {
                 codes.add(c);
             }
