@@ -68,25 +68,9 @@ def parse_ocr_languages(spec: str) -> str:
     return normalized
 
 
-def _web_dir(value: str | None) -> Path | None:
-    """LILYSCAN_WEB_DIR, else services/web next to the service package (source layout)."""
-    if value:
-        return Path(value).resolve()
-    default = Path(__file__).resolve().parents[2] / "services" / "web"
-    return default if default.is_dir() else None
-
-
-def _dispatch(value: str) -> str:
-    value = value.strip().lower() or "rq"
-    if value not in ("rq", "inline"):
-        raise ValueError(f"LILYSCAN_DISPATCH must be rq or inline, got {value!r}")
-    return value
-
-
 @dataclass(frozen=True)
 class Settings:
     data_dir: Path
-    redis_url: str
     lilypond_bin: str
     audiveris_bin: str
     lilypond_timeout_s: float
@@ -94,15 +78,12 @@ class Settings:
     audiveris_timeout_per_page_s: float  # more for long books: this much per page
     audiveris_step_timeout_s: int = 300  # the most one engine step may take on a sheet
     ocr_languages: str = DEFAULT_OCR_LANGUAGES
-    dispatch: str = "rq"  # "rq" (Redis workers) or "inline" (in the API process)
-    web_dir: Path | None = None  # the web UI's static files; None disables it
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Settings:
         e = os.environ if env is None else env
         return cls(
             data_dir=Path(e.get("LILYSCAN_DATA_DIR", "data")).resolve(),
-            redis_url=e.get("REDIS_URL", "redis://localhost:6379/0"),
             lilypond_bin=e.get("LILYPOND_BIN", "lilypond"),
             audiveris_bin=e.get("AUDIVERIS_BIN", "audiveris"),
             lilypond_timeout_s=float(e.get("LILYPOND_TIMEOUT_S", "120")),
@@ -112,6 +93,4 @@ class Settings:
             ocr_languages=parse_ocr_languages(
                 e.get("LILYSCAN_OCR_LANGUAGES", DEFAULT_OCR_LANGUAGES)
             ),
-            dispatch=_dispatch(e.get("LILYSCAN_DISPATCH", "rq")),
-            web_dir=_web_dir(e.get("LILYSCAN_WEB_DIR")),
         )

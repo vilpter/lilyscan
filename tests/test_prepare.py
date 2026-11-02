@@ -130,44 +130,6 @@ def scanned_pdf(path: Path, img: np.ndarray) -> None:
     doc.save(path)
 
 
-def test_job_pages_become_one_book(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from lilyscan_app import tasks
-    from lilyscan_app.jobs import JobStore, job_dir
-
-    monkeypatch.setenv("LILYSCAN_DATA_DIR", str(tmp_path))
-    store = JobStore(tmp_path)
-    names = ["00-photo.png", "01-score.pdf", "02-scanned.pdf", "03-broken.pdf"]
-    job = store.create(names, {"prepare": True})
-    root = job_dir(tmp_path, job.id)
-    (root / "input").mkdir(parents=True)
-    save_png(photo(page(), seed=3), root / "input" / "00-photo.png")
-    born_digital_pdf(root / "input" / "01-score.pdf")
-    scanned_pdf(root / "input" / "02-scanned.pdf", scan(page(), seed=5))
-    (root / "input" / "03-broken.pdf").write_bytes(b"%PDF-1.4")
-
-    result = tasks.prepare_inputs(job.id)
-
-    pages = result["pages"]
-    assert [(p["input"], p.get("kind")) for p in pages] == [
-        ("00-photo.png", "image"),
-        ("01-score.pdf", "vector"),
-        ("02-scanned.pdf", "raster"),
-        ("03-broken.pdf", None),
-    ]
-    assert pages[0]["page_found"] and pages[0]["passed"]
-    assert pages[1]["born_digital"] and pages[1]["rendered_dpi"] == 400
-    assert pages[2]["page_found"] is False and pages[2]["interline"] is not None
-    assert "error" in pages[3] and not pages[3]["passed"]
-    ok, book = cv2.imreadmulti(str(root / "prepared" / "pages.tif"))
-    assert ok and len(book) == 3
-    assert book[1].shape[1] == round(595 * 400 / 72)  # the born-digital page at 400 DPI
-    # A page is a scan, so the pages as uploaded are there too for a second engine run.
-    ok, as_uploaded = cv2.imreadmulti(str(root / "prepared" / "uploaded.tif"))
-    assert ok and len(as_uploaded) == 3
-    assert (root / "prepared" / "report.json").is_file()
-    store.close()
-
-
 def test_born_digital_pdf_alone_gets_no_second_run(tmp_path: Path) -> None:
     from lilyscan.ingest.book import assemble
 
@@ -175,18 +137,6 @@ def test_born_digital_pdf_alone_gets_no_second_run(tmp_path: Path) -> None:
     book = assemble([tmp_path / "score.pdf"], tmp_path / "out")
     assert book.prepared is not None and book.prepared.is_file()
     assert book.uploaded is None and not book.scan_like
-
-
-def test_job_task_can_skip_preparation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from lilyscan_app import tasks
-    from lilyscan_app.jobs import JobStore, job_dir
-
-    monkeypatch.setenv("LILYSCAN_DATA_DIR", str(tmp_path))
-    store = JobStore(tmp_path)
-    job = store.create(["00-photo.png"], {"prepare": False})
-    (job_dir(tmp_path, job.id) / "input").mkdir(parents=True)
-    assert tasks.prepare_inputs(job.id) == {"pages": []}
-    store.close()
 
 
 def page_with_text() -> np.ndarray:
