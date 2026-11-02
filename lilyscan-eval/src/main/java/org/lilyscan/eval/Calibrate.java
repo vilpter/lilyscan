@@ -167,6 +167,13 @@ public final class Calibrate {
 
     private record Pair(double p, boolean ok) {}
 
+    /** Expected calibration error of predictions against outcomes. */
+    static double ece(List<Double> preds, List<Boolean> ys) {
+        List<Pair> pairs = new ArrayList<>();
+        for (int i = 0; i < preds.size(); i++) pairs.add(new Pair(preds.get(i), ys.get(i)));
+        return ece(pairs);
+    }
+
     /** Expected calibration error over equal-width confidence bins. */
     static double ece(List<Pair> pairs) {
         double total = 0.0;

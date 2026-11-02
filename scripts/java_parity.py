@@ -341,6 +341,34 @@ def _write_compare(out: Path) -> None:
     (out / "compare.json").write_text(json.dumps(cases, indent=1) + "\n", encoding="utf-8", newline="\n")
 
 
+def _write_calibrate(out: Path) -> None:
+    """The confidence model's fit (Newton logistic, out-of-fold isotonic, ECE) on a fixed
+    synthetic sample set, so the numerics are checked without engine runs."""
+    import random
+
+    from lilyscan.evaluation.calibrate import Sample, cross_validate, ece, fit
+    from lilyscan.repair.confidence import FEATURES, predict
+
+    rng = random.Random(7)
+    samples = []
+    for i in range(600):
+        group = f"piece-{i % 23}"
+        grade = rng.random()
+        x = [rng.random() if k % 3 else float(rng.random() < 0.3) for k in range(len(FEATURES))]
+        x[0] = grade
+        right = rng.random() < 0.2 + 0.7 * grade
+        samples.append(Sample(group, x, right, grade if i % 5 else None))
+    model = fit(samples)
+    oof = cross_validate(samples)
+    result = {
+        "samples": [[s.group, s.x, s.y, s.grade] for s in samples],
+        "model": model,
+        "ece_in_sample": ece([(predict(model, s.x), s.y) for s in samples]),
+        "ece_out_of_fold": ece([(p, s.y) for p, s in zip(oof, samples, strict=True)]),
+    }
+    (out / "calibrate.json").write_text(json.dumps(result, indent=1) + "\n", encoding="utf-8", newline="\n")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sweep", type=Path, help="also write every corpus piece here (local only)")
@@ -437,6 +465,7 @@ def main() -> None:
     if with_lilypond:
         _write_combine(OUT / "combine")
         _write_compare(OUT / "eval")
+        _write_calibrate(OUT / "eval")
 
     if args.sweep is not None:
         sweep = args.sweep.resolve()
