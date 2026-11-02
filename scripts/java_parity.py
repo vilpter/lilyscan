@@ -30,8 +30,8 @@ sys.path.insert(0, str(ROOT))
 from lilyscan.engine.audiveris.omr import OmrBook, attach_movements, read_omr  # noqa: E402
 from lilyscan.ir.models import Score  # noqa: E402
 from lilyscan.ir.musicxml import load_musicxml  # noqa: E402
-from lilyscan.lilypond.compile import lilypond_version  # noqa: E402
 from lilyscan.ir.to_musicxml import to_musicxml  # noqa: E402
+from lilyscan.lilypond.compile import lilypond_version  # noqa: E402
 from lilyscan.lilypond.generate import LyProject, generate_project  # noqa: E402
 from lilyscan.lilypond.single import single_file  # noqa: E402
 from lilyscan.qa.checks import run_checks  # noqa: E402
