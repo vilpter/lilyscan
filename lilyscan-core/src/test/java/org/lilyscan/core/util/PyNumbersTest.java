@@ -35,4 +35,13 @@ class PyNumbersTest {
         assertEquals(63.0, Py.median(List.of(60, 64, 62, 70)));
         assertEquals(62.0, Py.median(List.of(70, 62, 50)));
     }
+
+    @Test
+    void sumIsCompensatedAsInPython312() {
+        assertEquals(1.0, Py.sum(List.of(1e16, 1.0, -1e16)));
+        assertEquals(1.0, Py.sum(java.util.Collections.nCopies(10, 0.1)));
+        assertEquals(PY_SMALL, Py.sum(List.of(0.1, 0.2, 0.3, 1e-17, -0.6)));
+    }
+
+    private static final double PY_SMALL = 3.7755575615628916e-17; // CPython 3.12
 }

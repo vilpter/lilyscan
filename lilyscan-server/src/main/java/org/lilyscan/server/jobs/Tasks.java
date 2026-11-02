@@ -289,15 +289,15 @@ public final class Tasks {
         Imported imported = importEngineOutput(root, MAPPER.valueToTree(engineRun));
         Repairs.apply(imported.score(), imported.book());
         Confidence.calibrate(imported.score());
-        double sum = 0;
+        Py.Sum sum = new Py.Sum(); // Python's sum() of floats is compensated
         for (Score.PartStaff ps : imported.score().staves()) {
             for (Measure m : ps.staff().measures) {
                 for (Voice v : m.voices) {
-                    for (Event e : v.events) if (e.confidence != null) sum += e.confidence;
+                    for (Event e : v.events) if (e.confidence != null) sum.add(e.confidence);
                 }
             }
         }
-        return Py.round(sum, 2);
+        return Py.round(sum.value(), 2);
     }
 
     /** The imported score, its geometry report (null without an {@code .omr}) and the book read. */

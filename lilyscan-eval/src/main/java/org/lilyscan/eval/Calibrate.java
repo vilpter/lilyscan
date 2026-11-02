@@ -180,15 +180,15 @@ public final class Calibrate {
         for (int b = 0; b < ECE_BINS; b++) {
             double lo = (double) b / ECE_BINS, hi = (double) (b + 1) / ECE_BINS;
             int n = 0, ok = 0;
-            double conf = 0;
+            Py.Sum conf = new Py.Sum(); // Python's sum() of floats is compensated
             for (Pair p : pairs) {
                 if ((lo <= p.p() && p.p() < hi) || (b == ECE_BINS - 1 && p.p() == 1.0)) {
                     n++;
                     if (p.ok()) ok++;
-                    conf += p.p();
+                    conf.add(p.p());
                 }
             }
-            if (n > 0) total += (double) n / pairs.size() * Math.abs((double) ok / n - conf / n);
+            if (n > 0) total += (double) n / pairs.size() * Math.abs((double) ok / n - conf.value() / n);
         }
         return Py.round(total, 4);
     }
@@ -201,14 +201,14 @@ public final class Calibrate {
         int size = Math.max(1, pairs.size() / ISOTONIC_BINS);
         List<double[]> merged = new ArrayList<>();
         for (int i = 0; i < pairs.size(); i += size) {
-            double sp = 0;
+            Py.Sum sp = new Py.Sum(); // Python's sum() of floats is compensated
             int sy = 0;
             List<Pair> chunk = pairs.subList(i, Math.min(i + size, pairs.size()));
             for (Pair p : chunk) {
-                sp += p.p();
+                sp.add(p.p());
                 if (p.ok()) sy++;
             }
-            merged.add(new double[] {sp, sy, chunk.size()});
+            merged.add(new double[] {sp.value(), sy, chunk.size()});
             while (merged.size() > 1) {
                 double[] a = merged.get(merged.size() - 2), last = merged.get(merged.size() - 1);
                 if (!(a[1] / a[2] > last[1] / last[2])) break;

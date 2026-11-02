@@ -246,11 +246,11 @@ public final class Harness {
     }
 
     static double expectedRight(Score score) {
-        double sum = 0;
+        Py.Sum sum = new Py.Sum(); // Python's sum() of floats is compensated
         for (var ps : score.staves()) for (Measure m : ps.staff().measures) for (Voice v : m.voices) {
-            for (Event e : v.events) if (e.confidence != null) sum += e.confidence;
+            for (Event e : v.events) if (e.confidence != null) sum.add(e.confidence);
         }
-        return sum;
+        return sum.value();
     }
 
     public static ItemResult evaluateItem(Corpus.Item item, String variant, Path work, Settings settings, Options o) throws IOException {

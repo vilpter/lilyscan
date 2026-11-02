@@ -221,9 +221,9 @@ public final class Tuplets {
                 if (!sequential(v)) continue;
                 List<Integer> group = group(v, x, scale, mk.space());
                 if (group == null) continue;
-                double sum = 0;
-                for (int i : group) sum += (v.events.get(i).bbox.y + v.events.get(i).bbox.h / 2) / scale;
-                options.add(new Option(Math.abs(sum / group.size() - mk.glyph().originY()), k, group));
+                org.lilyscan.core.util.Py.Sum sum = new org.lilyscan.core.util.Py.Sum(); // Python's sum() of floats
+                for (int i : group) sum.add((v.events.get(i).bbox.y + v.events.get(i).bbox.h / 2) / scale);
+                options.add(new Option(Math.abs(sum.value() / group.size() - mk.glyph().originY()), k, group));
             }
             if (options.isEmpty()) {
                 stats.unplaced++;

@@ -20,6 +20,7 @@ import org.lilyscan.core.ir.Staff;
 import org.lilyscan.core.ir.TimeSignature;
 import org.lilyscan.core.ir.Tuplet;
 import org.lilyscan.core.ir.Voice;
+import org.lilyscan.core.util.Py;
 
 /**
  * Measure-duration constraint repair (port of {@code lilyscan/repair/rhythm.py}): the fewest
@@ -199,18 +200,18 @@ public final class Rhythm {
     }
 
     private static double confidence(List<Event> events, List<Edit> edits) {
-        double sum = 0;
+        Py.Sum sum = new Py.Sum(); // Python's sum() of floats is compensated
         int n = 0;
         for (Edit x : edits) {
             for (int k = x.index(); k < x.index() + x.size(); k++) {
                 Double c = events.get(k).confidence;
                 if (c != null) {
-                    sum += c;
+                    sum.add(c);
                     n++;
                 }
             }
         }
-        return n > 0 ? sum / n : 1.0;
+        return n > 0 ? sum.value() / n : 1.0;
     }
 
     /** A fix to one voice. */
@@ -308,24 +309,24 @@ public final class Rhythm {
 
     /** The line through the points: its root-mean-square misfit and its slope. */
     static double[] fit(List<double[]> points) {
+        // Python's sum() of floats is compensated (Neumaier), so each sum here is too.
         int n = points.size();
-        double sp = 0, sx = 0;
-        for (double[] p : points) sp += p[0];
-        double mp = sp / n;
-        for (double[] p : points) sx += p[1];
-        double mx = sx / n;
-        double spread = 0;
-        for (double[] p : points) spread += (p[0] - mp) * (p[0] - mp);
-        double cov = 0;
-        for (double[] p : points) cov += (p[0] - mp) * (p[1] - mx);
-        double slope = spread != 0 ? cov / spread : 0.0;
+        Py.Sum sp = new Py.Sum(), sx = new Py.Sum();
+        for (double[] p : points) sp.add(p[0]);
+        double mp = sp.value() / n;
+        for (double[] p : points) sx.add(p[1]);
+        double mx = sx.value() / n;
+        Py.Sum spread = new Py.Sum(), cov = new Py.Sum();
+        for (double[] p : points) spread.add((p[0] - mp) * (p[0] - mp));
+        for (double[] p : points) cov.add((p[0] - mp) * (p[1] - mx));
+        double slope = spread.value() != 0 ? cov.value() / spread.value() : 0.0;
         if (slope <= 0) return new double[] {Double.POSITIVE_INFINITY, 0.0};
-        double ss = 0;
+        Py.Sum ss = new Py.Sum();
         for (double[] p : points) {
             double r = p[1] - (mx + slope * (p[0] - mp));
-            ss += r * r;
+            ss.add(r * r);
         }
-        return new double[] {Math.sqrt(ss / n), slope};
+        return new double[] {Math.sqrt(ss.value() / n), slope};
     }
 
     /** Every way to share {@code units} among {@code slots} gaps. */

@@ -202,9 +202,9 @@ public final class Confidence {
 
     public static double predict(Model model, double[] x) {
         if (x.length != model.weights().length) throw new IllegalArgumentException("zip() argument lengths differ");
-        double sum = 0;
-        for (int i = 0; i < x.length; i++) sum += model.weights()[i] * x[i];
-        double z = model.bias() + sum;
+        Py.Sum sum = new Py.Sum(); // Python's sum() of floats is compensated
+        for (int i = 0; i < x.length; i++) sum.add(model.weights()[i] * x[i]);
+        double z = model.bias() + sum.value();
         double p = 1.0 / (1.0 + StrictMath.exp(-Math.max(-30.0, Math.min(30.0, z))));
         return recalibrate(model.calibration(), p);
     }

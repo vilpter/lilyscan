@@ -426,13 +426,13 @@ public final class Compare {
                 continue;
             }
             int ok = 0;
-            double conf = 0;
+            Py.Sum conf = new Py.Sum(); // Python's sum() of floats is compensated
             for (Scored s : members) {
                 if (s.correct()) ok++;
-                conf += s.confidence();
+                conf.add(s.confidence());
             }
             double accuracy = (double) ok / members.size();
-            double confidence = conf / members.size();
+            double confidence = conf.value() / members.size();
             ece += (double) members.size() / scored.size() * Math.abs(accuracy - confidence);
             b.put("events", members.size());
             b.put("accuracy", Py.round(accuracy, 4));

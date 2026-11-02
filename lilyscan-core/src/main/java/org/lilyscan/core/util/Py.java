@@ -75,6 +75,34 @@ public final class Py {
         return (x < 0 || (x == 0 && 1 / x < 0)) && !s.startsWith("-") ? "-" + s : s;
     }
 
+    /**
+     * Python's built-in {@code sum()} of floats (3.12+): Neumaier's compensated summation, as
+     * CPython's {@code builtin_sum_impl} does it, the compensation added once at the end.
+     */
+    public static final class Sum {
+        private double total;
+        private double c;
+
+        public Sum add(double x) {
+            double t = total + x;
+            if (Math.abs(total) >= Math.abs(x)) c += (total - t) + x;
+            else c += (x - t) + total;
+            total = t;
+            return this;
+        }
+
+        public double value() {
+            return c != 0 && Double.isFinite(c) ? total + c : total;
+        }
+    }
+
+    /** {@code sum(xs)} of floats, as Python 3.12+ computes it. */
+    public static double sum(Iterable<Double> xs) {
+        Sum s = new Sum();
+        for (double x : xs) s.add(x);
+        return s.value();
+    }
+
     /** Python {@code statistics.mean} of floats: the exact mean, correctly rounded. */
     public static double mean(java.util.List<Double> xs) {
         if (xs.isEmpty()) throw new IllegalArgumentException("mean requires at least one data point");
