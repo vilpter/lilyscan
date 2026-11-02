@@ -307,6 +307,40 @@ def _write_combine(out: Path) -> None:
     _write_manifest(out, sorted(cases))
 
 
+def _write_compare(out: Path) -> None:
+    """The evaluation's scoring on committed scores read "wrong" (the combiner's jobs)."""
+    from lilyscan.evaluation.compare import calibration, compare, event_correctness
+
+    out.mkdir(parents=True, exist_ok=True)
+    jobs = OUT / "combine" / "jobs"
+
+    def load(job: str) -> Score:
+        return Score.model_validate_json((jobs / job / "ir" / "score.json").read_text(encoding="utf-8"))
+
+    cases = []
+    for gt_job, pred_job in [
+        ("quartet", "quartet"),
+        ("quartet", "quartet-lost"),
+        ("quartet", "quartet-rekey"),
+        ("quartet", "quartet-short"),
+        ("satb", "satb-extra"),
+        ("satb", "quartet"),
+    ]:
+        gt, pred = load(gt_job), load(pred_job)
+        # Confidences as a calibrated run would carry them.
+        calibrate_confidence(pred)
+        cases.append(
+            {
+                "gt": gt_job,
+                "pred": pred_job,
+                "comparison": compare(gt, pred).to_dict(),
+                "calibration": calibration(event_correctness(gt, pred)),
+            }
+        )
+    cases.append({"gt": "quartet", "pred": None, "comparison": compare(load("quartet"), None).to_dict(), "calibration": None})
+    (out / "compare.json").write_text(json.dumps(cases, indent=1) + "\n", encoding="utf-8", newline="\n")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sweep", type=Path, help="also write every corpus piece here (local only)")
@@ -402,6 +436,7 @@ def main() -> None:
     # an extra measure, a misread key), combined as a user would. Needs LilyPond (QA).
     if with_lilypond:
         _write_combine(OUT / "combine")
+        _write_compare(OUT / "eval")
 
     if args.sweep is not None:
         sweep = args.sweep.resolve()

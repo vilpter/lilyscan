@@ -10,6 +10,7 @@ dependencies {
     implementation project(':lilyscan-core')
     implementation project(':lilyscan-engine')
     implementation project(':lilyscan-server')
+    implementation project(':lilyscan-eval')
     implementation libs.picocli
     runtimeOnly libs.logback.classic
 }

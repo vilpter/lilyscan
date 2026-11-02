@@ -188,6 +188,37 @@ public final class Book {
         return book;
     }
 
+    /**
+     * Every page of a PDF rendered (grayscale, at {@code dpi}) into the multi-page TIFF
+     * {@code dst}, and the page kinds (port of {@code lilyscan/ingest/pdf.py}'s
+     * {@code render_pdf}); returns the {@code PdfReport} as a map.
+     */
+    public static Map<String, Object> renderPdf(Path src, Path dst, int dpi) {
+        try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.Loader.loadPDF(src.toFile())) {
+            org.apache.pdfbox.rendering.PDFRenderer renderer = new org.apache.pdfbox.rendering.PDFRenderer(doc);
+            List<String> kinds = new ArrayList<>();
+            List<Gray> pages = new ArrayList<>();
+            for (int i = 0; i < doc.getNumberOfPages(); i++) {
+                kinds.add(PdfPages.pageKind(doc, i));
+                pages.add(Gray.of(PdfPages.render(renderer, doc.getPage(i), i, dpi)));
+            }
+            Files.createDirectories(dst.getParent());
+            if (pages.isEmpty()) throw new IOException("cannot write " + dst);
+            writeTiff(pages, dst);
+            boolean bornDigital = !kinds.isEmpty() && !kinds.contains("raster") && kinds.contains("vector");
+            Map<String, Object> report = new LinkedHashMap<>();
+            report.put("source", src.getFileName().toString());
+            report.put("pages", kinds.size());
+            report.put("kinds", kinds);
+            report.put("rendered_dpi", dpi);
+            report.put("born_digital", bornDigital);
+            report.put("passed", true);
+            return report;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     /** A copy of the multi-page TIFF or PDF {@code path} holding only the pages {@code keep}
      *  (numbered from 1), under the same name in {@code outDir}. */
     public static Path withoutPages(Path path, List<Integer> keep, Path outDir) {

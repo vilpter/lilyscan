@@ -1,0 +1,435 @@
+[
+ {
+  "gt": "quartet",
+  "pred": "quartet",
+  "comparison": {
+   "engine_ok": true,
+   "gt_staves": 4,
+   "pred_staves": 4,
+   "gt_measures": 32,
+   "pred_measures": 32,
+   "exact_measures": 32,
+   "gt_events": 268,
+   "event_edits": 0,
+   "gt_notes": 249,
+   "pred_notes": 249,
+   "matched_notes": 249,
+   "matched_onsets": 249,
+   "gt_lyrics": 0,
+   "lyric_edits": 0,
+   "gt_chords": 0,
+   "chord_edits": 0,
+   "per_staff_exact": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "measure_accuracy": 1.0,
+   "edit_rate": 0.0,
+   "note_precision": 1.0,
+   "note_recall": 1.0,
+   "note_f1": 1.0,
+   "onset_f1": 1.0,
+   "lyric_accuracy": null,
+   "chord_accuracy": null
+  },
+  "calibration": {
+   "events": 268,
+   "scored_events": 268,
+   "ece": 0.9429,
+   "bands": [
+    {
+     "band": "0.0-0.5",
+     "events": 268,
+     "accuracy": 1.0,
+     "mean_confidence": 0.0571
+    },
+    {
+     "band": "0.5-0.7",
+     "events": 0
+    },
+    {
+     "band": "0.7-0.8",
+     "events": 0
+    },
+    {
+     "band": "0.8-0.9",
+     "events": 0
+    },
+    {
+     "band": "0.9-1.0",
+     "events": 0
+    }
+   ],
+   "unscored_accuracy": null
+  }
+ },
+ {
+  "gt": "quartet",
+  "pred": "quartet-lost",
+  "comparison": {
+   "engine_ok": true,
+   "gt_staves": 4,
+   "pred_staves": 4,
+   "gt_measures": 32,
+   "pred_measures": 31,
+   "exact_measures": 31,
+   "gt_events": 268,
+   "event_edits": 10,
+   "gt_notes": 249,
+   "pred_notes": 240,
+   "matched_notes": 240,
+   "matched_onsets": 240,
+   "gt_lyrics": 0,
+   "lyric_edits": 0,
+   "gt_chords": 0,
+   "chord_edits": 0,
+   "per_staff_exact": [
+    1.0,
+    0.875,
+    1.0,
+    1.0
+   ],
+   "measure_accuracy": 0.9688,
+   "edit_rate": 0.0373,
+   "note_precision": 1.0,
+   "note_recall": 0.9639,
+   "note_f1": 0.9816,
+   "onset_f1": 0.9816,
+   "lyric_accuracy": null,
+   "chord_accuracy": null
+  },
+  "calibration": {
+   "events": 258,
+   "scored_events": 258,
+   "ece": 0.9429,
+   "bands": [
+    {
+     "band": "0.0-0.5",
+     "events": 258,
+     "accuracy": 1.0,
+     "mean_confidence": 0.0571
+    },
+    {
+     "band": "0.5-0.7",
+     "events": 0
+    },
+    {
+     "band": "0.7-0.8",
+     "events": 0
+    },
+    {
+     "band": "0.8-0.9",
+     "events": 0
+    },
+    {
+     "band": "0.9-1.0",
+     "events": 0
+    }
+   ],
+   "unscored_accuracy": null
+  }
+ },
+ {
+  "gt": "quartet",
+  "pred": "quartet-rekey",
+  "comparison": {
+   "engine_ok": true,
+   "gt_staves": 4,
+   "pred_staves": 4,
+   "gt_measures": 32,
+   "pred_measures": 32,
+   "exact_measures": 32,
+   "gt_events": 268,
+   "event_edits": 0,
+   "gt_notes": 249,
+   "pred_notes": 249,
+   "matched_notes": 249,
+   "matched_onsets": 249,
+   "gt_lyrics": 0,
+   "lyric_edits": 0,
+   "gt_chords": 0,
+   "chord_edits": 0,
+   "per_staff_exact": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "measure_accuracy": 1.0,
+   "edit_rate": 0.0,
+   "note_precision": 1.0,
+   "note_recall": 1.0,
+   "note_f1": 1.0,
+   "onset_f1": 1.0,
+   "lyric_accuracy": null,
+   "chord_accuracy": null
+  },
+  "calibration": {
+   "events": 268,
+   "scored_events": 268,
+   "ece": 0.9429,
+   "bands": [
+    {
+     "band": "0.0-0.5",
+     "events": 268,
+     "accuracy": 1.0,
+     "mean_confidence": 0.0571
+    },
+    {
+     "band": "0.5-0.7",
+     "events": 0
+    },
+    {
+     "band": "0.7-0.8",
+     "events": 0
+    },
+    {
+     "band": "0.8-0.9",
+     "events": 0
+    },
+    {
+     "band": "0.9-1.0",
+     "events": 0
+    }
+   ],
+   "unscored_accuracy": null
+  }
+ },
+ {
+  "gt": "quartet",
+  "pred": "quartet-short",
+  "comparison": {
+   "engine_ok": true,
+   "gt_staves": 4,
+   "pred_staves": 4,
+   "gt_measures": 32,
+   "pred_measures": 28,
+   "exact_measures": 28,
+   "gt_events": 268,
+   "event_edits": 31,
+   "gt_notes": 249,
+   "pred_notes": 219,
+   "matched_notes": 219,
+   "matched_onsets": 219,
+   "gt_lyrics": 0,
+   "lyric_edits": 0,
+   "gt_chords": 0,
+   "chord_edits": 0,
+   "per_staff_exact": [
+    0.5,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "measure_accuracy": 0.875,
+   "edit_rate": 0.1157,
+   "note_precision": 1.0,
+   "note_recall": 0.8795,
+   "note_f1": 0.9359,
+   "onset_f1": 0.9359,
+   "lyric_accuracy": null,
+   "chord_accuracy": null
+  },
+  "calibration": {
+   "events": 237,
+   "scored_events": 237,
+   "ece": 0.9429,
+   "bands": [
+    {
+     "band": "0.0-0.5",
+     "events": 237,
+     "accuracy": 1.0,
+     "mean_confidence": 0.0571
+    },
+    {
+     "band": "0.5-0.7",
+     "events": 0
+    },
+    {
+     "band": "0.7-0.8",
+     "events": 0
+    },
+    {
+     "band": "0.8-0.9",
+     "events": 0
+    },
+    {
+     "band": "0.9-1.0",
+     "events": 0
+    }
+   ],
+   "unscored_accuracy": null
+  }
+ },
+ {
+  "gt": "satb",
+  "pred": "satb-extra",
+  "comparison": {
+   "engine_ok": true,
+   "gt_staves": 4,
+   "pred_staves": 4,
+   "gt_measures": 32,
+   "pred_measures": 33,
+   "exact_measures": 32,
+   "gt_events": 196,
+   "event_edits": 8,
+   "gt_notes": 196,
+   "pred_notes": 204,
+   "matched_notes": 196,
+   "matched_onsets": 196,
+   "gt_lyrics": 184,
+   "lyric_edits": 7,
+   "gt_chords": 0,
+   "chord_edits": 0,
+   "per_staff_exact": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "measure_accuracy": 1.0,
+   "edit_rate": 0.0408,
+   "note_precision": 0.9608,
+   "note_recall": 1.0,
+   "note_f1": 0.98,
+   "onset_f1": 0.98,
+   "lyric_accuracy": 0.962,
+   "chord_accuracy": null
+  },
+  "calibration": {
+   "events": 204,
+   "scored_events": 204,
+   "ece": 0.9037,
+   "bands": [
+    {
+     "band": "0.0-0.5",
+     "events": 204,
+     "accuracy": 0.9608,
+     "mean_confidence": 0.0571
+    },
+    {
+     "band": "0.5-0.7",
+     "events": 0
+    },
+    {
+     "band": "0.7-0.8",
+     "events": 0
+    },
+    {
+     "band": "0.8-0.9",
+     "events": 0
+    },
+    {
+     "band": "0.9-1.0",
+     "events": 0
+    }
+   ],
+   "unscored_accuracy": null
+  }
+ },
+ {
+  "gt": "satb",
+  "pred": "quartet",
+  "comparison": {
+   "engine_ok": true,
+   "gt_staves": 4,
+   "pred_staves": 4,
+   "gt_measures": 32,
+   "pred_measures": 32,
+   "exact_measures": 0,
+   "gt_events": 196,
+   "event_edits": 275,
+   "gt_notes": 196,
+   "pred_notes": 249,
+   "matched_notes": 0,
+   "matched_onsets": 3,
+   "gt_lyrics": 184,
+   "lyric_edits": 184,
+   "gt_chords": 0,
+   "chord_edits": 0,
+   "per_staff_exact": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "measure_accuracy": 0.0,
+   "edit_rate": 1.4031,
+   "note_precision": 0.0,
+   "note_recall": 0.0,
+   "note_f1": 0.0,
+   "onset_f1": 0.0135,
+   "lyric_accuracy": 0.0,
+   "chord_accuracy": null
+  },
+  "calibration": {
+   "events": 268,
+   "scored_events": 268,
+   "ece": 0.0571,
+   "bands": [
+    {
+     "band": "0.0-0.5",
+     "events": 268,
+     "accuracy": 0.0,
+     "mean_confidence": 0.0571
+    },
+    {
+     "band": "0.5-0.7",
+     "events": 0
+    },
+    {
+     "band": "0.7-0.8",
+     "events": 0
+    },
+    {
+     "band": "0.8-0.9",
+     "events": 0
+    },
+    {
+     "band": "0.9-1.0",
+     "events": 0
+    }
+   ],
+   "unscored_accuracy": null
+  }
+ },
+ {
+  "gt": "quartet",
+  "pred": null,
+  "comparison": {
+   "engine_ok": false,
+   "gt_staves": 4,
+   "pred_staves": 0,
+   "gt_measures": 32,
+   "pred_measures": 0,
+   "exact_measures": 0,
+   "gt_events": 268,
+   "event_edits": 268,
+   "gt_notes": 249,
+   "pred_notes": 0,
+   "matched_notes": 0,
+   "matched_onsets": 0,
+   "gt_lyrics": 0,
+   "lyric_edits": 0,
+   "gt_chords": 0,
+   "chord_edits": 0,
+   "per_staff_exact": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "measure_accuracy": 0.0,
+   "edit_rate": 1.0,
+   "note_precision": 0.0,
+   "note_recall": 0.0,
+   "note_f1": 0.0,
+   "onset_f1": 0.0,
+   "lyric_accuracy": null,
+   "chord_accuracy": null
+  },
+  "calibration": null
+ }
+]
