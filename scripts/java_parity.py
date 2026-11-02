@@ -335,7 +335,9 @@ def _write_compare(out: Path) -> None:
     jobs = OUT / "combine" / "jobs"
 
     def load(job: str) -> Score:
-        return Score.model_validate_json((jobs / job / "ir" / "score.json").read_text(encoding="utf-8"))
+        return Score.model_validate_json(
+            (jobs / job / "ir" / "score.json").read_text(encoding="utf-8")
+        )
 
     cases = []
     for gt_job, pred_job in [
@@ -357,8 +359,17 @@ def _write_compare(out: Path) -> None:
                 "calibration": calibration(event_correctness(gt, pred)),
             }
         )
-    cases.append({"gt": "quartet", "pred": None, "comparison": compare(load("quartet"), None).to_dict(), "calibration": None})
-    (out / "compare.json").write_text(json.dumps(cases, indent=1) + "\n", encoding="utf-8", newline="\n")
+    cases.append(
+        {
+            "gt": "quartet",
+            "pred": None,
+            "comparison": compare(load("quartet"), None).to_dict(),
+            "calibration": None,
+        }
+    )
+    (out / "compare.json").write_text(
+        json.dumps(cases, indent=1) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 def _write_calibrate(out: Path) -> None:
@@ -386,7 +397,9 @@ def _write_calibrate(out: Path) -> None:
         "ece_in_sample": ece([(predict(model, s.x), s.y) for s in samples]),
         "ece_out_of_fold": ece([(p, s.y) for p, s in zip(oof, samples, strict=True)]),
     }
-    (out / "calibrate.json").write_text(json.dumps(result, indent=1) + "\n", encoding="utf-8", newline="\n")
+    (out / "calibrate.json").write_text(
+        json.dumps(result, indent=1) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 def main() -> None:
