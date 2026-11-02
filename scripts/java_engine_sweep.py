@@ -2,7 +2,8 @@
 repair, vector-oracle and confidence tests (design-java.md §10). Local only: the engine
 outputs are large and are re-created from the corpus, so nothing here is committed (D11).
 
-    uv run python scripts/java_engine_sweep.py /tmp/engine-sweep --jar lilyscan-cli/build/libs/lilyscan.jar
+    uv run python scripts/java_engine_sweep.py /tmp/engine-sweep \
+        --jar lilyscan-cli/build/libs/lilyscan.jar
     ./gradlew test -PengineSweep=/tmp/engine-sweep
 
 For each piece and input (the born-digital PDF and the degraded scan) it runs Stage 0/1
@@ -51,7 +52,8 @@ def _launcher(out: Path, jar: Path) -> Path:
     path.write_text(
         "#!/bin/sh\n"
         f'exec "{os.environ.get("JAVA", "java")}" -Xmx3G -Djava.awt.headless=true '
-        f'-Dsun.java2d.uiScale=1 -cp "{jar}" org.lilyscan.engine.audiveris.EngineWorker audiveris "$@"\n',
+        f'-Dsun.java2d.uiScale=1 -cp "{jar}" '
+        'org.lilyscan.engine.audiveris.EngineWorker audiveris "$@"\n',
         encoding="utf-8",
     )
     path.chmod(path.stat().st_mode | stat.S_IEXEC)
@@ -69,7 +71,9 @@ def vector_dump(pdf: Path) -> list[dict[str, object]]:
             "height": page.height,
             "staves": [[list(s.lines), s.x0, s.x1] for s in find_staves(page)],
             "italic": [
-                [g.name, g.rect.cx, g.origin[1]] for g in page.glyphs if g.name.startswith("italic.")
+                [g.name, g.rect.cx, g.origin[1]]
+                for g in page.glyphs
+                if g.name.startswith("italic.")
             ],
         }
         for page in read_pdf(pdf)
@@ -109,11 +113,15 @@ def _run(item_root: Path, variant: str, run_dir: Path, settings: Settings) -> st
     }
     _dump(run_dir / "run.json", meta)
     score = imported()
-    (run_dir / "input.score.json").write_text(score.model_dump_json(indent=1), encoding="utf-8", newline="\n")
+    (run_dir / "input.score.json").write_text(
+        score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
+    )
 
     score = imported()
     repairs = apply_repairs(score, book=book)
-    (run_dir / "rules.score.json").write_text(score.model_dump_json(indent=1), encoding="utf-8", newline="\n")
+    (run_dir / "rules.score.json").write_text(
+        score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
+    )
     _dump(run_dir / "rules.repairs.json", [r.to_dict() for r in repairs])
 
     score = imported()
@@ -122,7 +130,9 @@ def _run(item_root: Path, variant: str, run_dir: Path, settings: Settings) -> st
         log += [r.to_dict() for r in apply_vector_oracle(score, source, book)]
     log += [r.to_dict() for r in apply_repairs(score, book=book)]
     calibrated = calibrate_confidence(score)
-    (run_dir / "final.score.json").write_text(score.model_dump_json(indent=1), encoding="utf-8", newline="\n")
+    (run_dir / "final.score.json").write_text(
+        score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
+    )
     _dump(run_dir / "final.repairs.json", {"calibrated": calibrated, "repairs": log})
     return f"{run_dir.name}: {len(log)} repair(s)"
 
@@ -142,7 +152,9 @@ def main() -> None:
     only = set(args.only) if args.only else None
     items = []
     for spec in ("seed.json", "repertoire.json"):
-        items += build_corpus(ROOT / "eval" / "corpus" / spec, out / "corpus", only=only, settings=settings)
+        items += build_corpus(
+            ROOT / "eval" / "corpus" / spec, out / "corpus", only=only, settings=settings
+        )
     for it in items:
         _dump(it.root / "vector.json", vector_dump(it.root / "score.pdf"))
     tasks = [(it.root, v, out / "runs" / f"{it.spec.id}-{v}") for it in items for v in VARIANTS]

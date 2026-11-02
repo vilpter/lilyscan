@@ -30,8 +30,8 @@ sys.path.insert(0, str(ROOT))
 from lilyscan.engine.audiveris.omr import OmrBook, attach_movements, read_omr  # noqa: E402
 from lilyscan.ir.models import Score  # noqa: E402
 from lilyscan.ir.musicxml import load_musicxml  # noqa: E402
-from lilyscan.lilypond.compile import lilypond_version  # noqa: E402
 from lilyscan.ir.to_musicxml import to_musicxml  # noqa: E402
+from lilyscan.lilypond.compile import lilypond_version  # noqa: E402
 from lilyscan.lilypond.generate import LyProject, generate_project  # noqa: E402
 from lilyscan.lilypond.single import single_file  # noqa: E402
 from lilyscan.qa.checks import run_checks  # noqa: E402
@@ -367,7 +367,9 @@ def main() -> None:
         repairs = apply_repairs(score, book=book)
         calibrate_confidence(score)
         (om / f"{name}.repairs.json").write_text(
-            json.dumps([r.to_dict() for r in repairs], indent=1) + "\n", encoding="utf-8", newline="\n"
+            json.dumps([r.to_dict() for r in repairs], indent=1) + "\n",
+            encoding="utf-8",
+            newline="\n",
         )
         (om / f"{name}.repaired.score.json").write_text(
             score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
