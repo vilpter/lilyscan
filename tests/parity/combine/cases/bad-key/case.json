@@ -1,0 +1,18 @@
+{
+ "title": null,
+ "parts": [
+  {
+   "job": "combine/jobs/quartet",
+   "part": "P1",
+   "transpose": "d2",
+   "name": null
+  },
+  {
+   "job": "combine/jobs/quartet",
+   "part": "P2",
+   "transpose": null,
+   "name": null
+  }
+ ],
+ "piano": []
+}

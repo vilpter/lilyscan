@@ -1,0 +1,30 @@
+{
+ "title": "Quartet, combined",
+ "parts": [
+  {
+   "job": "combine/jobs/quartet",
+   "part": "P1",
+   "transpose": "M2",
+   "name": "Violin 1"
+  },
+  {
+   "job": "combine/jobs/quartet-lost",
+   "part": "P2",
+   "transpose": null,
+   "name": null
+  },
+  {
+   "job": "combine/jobs/quartet-rekey",
+   "part": "P3",
+   "transpose": null,
+   "name": null
+  },
+  {
+   "job": "combine/jobs/quartet",
+   "part": "P4",
+   "transpose": null,
+   "name": null
+  }
+ ],
+ "piano": []
+}

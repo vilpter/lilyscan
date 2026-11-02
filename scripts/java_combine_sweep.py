@@ -32,6 +32,54 @@ from lilyscan.runtime.config import Settings  # noqa: E402
 EDIT = "% edited in the review\n"
 
 
+def _mutated(run: Path, out: Path, settings: Settings, change: str, parts: list[str]) -> Path | None:
+    """A job from the engine's reading, changed as other readings go wrong: ``drop`` (the second
+    part lost a measure, a missed barline), ``extra`` (the second part gained one, a stray
+    barline), ``rekey`` (the third part's key misread for a stretch), ``short`` (the second
+    part lost 40% of its measures)."""
+    if (out / "ir" / "score.json").is_file():
+        return out
+    score = Score.model_validate_json((run / "final.score.json").read_text(encoding="utf-8"))
+    by_id = {p.id: p for p in score.parts}
+    if change in ("drop", "extra", "short"):
+        part = by_id[parts[1]]
+        n = len(part.staves[0].measures)
+        if n < 6:
+            return None
+        for staff in part.staves:
+            ms = staff.measures
+            if change == "drop":
+                del ms[n // 2]
+            elif change == "extra":
+                ms.insert(n // 3, ms[n // 3].model_copy(deep=True))
+            else:
+                del ms[n // 3 : n // 3 + max(2, (n * 4) // 10)]
+            for k, m in enumerate(ms):
+                m.index = k
+    elif change == "rekey":
+        if len(parts) < 4:
+            return None
+        part = by_id[parts[2]]
+        ms = part.staves[0].measures
+        n = len(ms)
+        start, end = n // 3, (2 * n) // 3
+        fifths = 0
+        for m in ms[: end + 1]:
+            if m.key is not None:
+                fifths = m.key.fifths
+        for staff in part.staves:
+            sm = staff.measures
+            if start < len(sm) and end < len(sm):
+                keep = sm[end].key
+                sm[start].key = sm[0].key.model_copy(update={"fifths": fifths + 1}) if sm[0].key else None
+                if sm[start].key is None:
+                    return None
+                sm[end].key = keep or sm[0].key.model_copy(update={"fifths": fifths})
+    out.mkdir(parents=True, exist_ok=True)
+    produce(score, out, settings)
+    return out
+
+
 def _job(run: Path, out: Path, settings: Settings) -> Path:
     if (out / "ir" / "score.json").is_file():
         return out
@@ -88,7 +136,25 @@ def main() -> None:
         first = sorted((pdf / "ly" / "parts").glob("*.ly"))[0]
         if not first.read_text(encoding="utf-8").endswith(EDIT):
             first.write_text(first.read_text(encoding="utf-8") + EDIT, encoding="utf-8", newline="\n")
-        for case, request in _cases(pdf, scan, parts).items():
+        requests = _cases(pdf, scan, parts)
+
+        def sel(job: Path, part: str, transpose: str | None = None) -> dict[str, object]:
+            return {"job": str(job), "part": part, "transpose": transpose, "name": None}
+
+        drop = _mutated(runs["scan"], out / "jobs" / f"{piece}-drop", settings, "drop", parts)
+        extra = _mutated(runs["scan"], out / "jobs" / f"{piece}-extra", settings, "extra", parts)
+        if drop is not None and extra is not None:
+            requests["drop"] = {"title": None, "parts": [sel(pdf, parts[0]), sel(drop, parts[1]), *[sel(pdf, p) for p in parts[2:]]], "piano": []}
+            requests["extra"] = {"title": None, "parts": [sel(pdf, parts[0]), sel(extra, parts[1]), *[sel(pdf, p) for p in parts[2:]]], "piano": []}
+            requests["drop-piano"] = {"title": None, "parts": [sel(pdf, parts[0])], "piano": [sel(drop, parts[1]), *[sel(scan, p) for p in parts[2:]]]}
+        short = _mutated(runs["scan"], out / "jobs" / f"{piece}-short", settings, "short", parts)
+        if short is not None:
+            requests["short"] = {"title": None, "parts": [sel(pdf, parts[0]), sel(short, parts[1])], "piano": []}
+        rekey = _mutated(runs["pdf"], out / "jobs" / f"{piece}-rekey", settings, "rekey", parts)
+        if rekey is not None:
+            requests["rekey"] = {"title": None, "parts": [sel(rekey if k == 2 else pdf, p) for k, p in enumerate(parts)], "piano": []}
+        requests["bad-key"] = {"title": None, "parts": [sel(pdf, parts[0], "d2"), sel(pdf, parts[1], "-A7")], "piano": []}
+        for case, request in requests.items():
             name = f"{piece}-{case}"
             d = out / "cases" / name
             if d.exists():
