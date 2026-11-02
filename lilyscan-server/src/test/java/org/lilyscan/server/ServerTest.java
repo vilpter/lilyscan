@@ -216,4 +216,44 @@ class ServerTest {
         assertEquals("done", waitFor(again.get("id").asText()).get("status").asText());
         assertEquals(2, json(get("/api/jobs")).size());
     }
+
+    @Test
+    void combinePartsOfFinishedJobs() throws Exception {
+        byte[] pdf = Files.readAllBytes(Repo.root().resolve("docs/upstream/audiveris/repro/satb-01.pdf"));
+        String a = json(upload("a.pdf", pdf, Map.of())).get("id").asText();
+        String b = json(upload("b.pdf", pdf, Map.of())).get("id").asText();
+        assertEquals("done", waitFor(a).get("status").asText());
+        assertEquals("done", waitFor(b).get("status").asText());
+        String part = json(get("/api/jobs/" + a + "/parts")).get(0).get("id").asText();
+
+        var bad = send(HttpRequest.newBuilder(URI.create(base + "/api/scores")).header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"parts\": [{\"job\": \"" + a + "\", \"part\": \"" + part
+                        + "\", \"transpose\": \"X9\"}]}")));
+        assertEquals(422, bad.statusCode());
+        assertEquals("not an interval: 'X9' (expected e.g. M2, -m3, P5)", json(bad).get("detail").asText());
+        var missing = send(HttpRequest.newBuilder(URI.create(base + "/api/scores")).header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"parts\": [{\"job\": \"nope\", \"part\": \"P1\"}]}")));
+        assertEquals(404, missing.statusCode());
+
+        String body = "{\"title\": \"Two pianos\", \"parts\": [{\"job\": \"" + a + "\", \"part\": \"" + part
+                + "\", \"name\": \"Piano I\"}, {\"job\": \"" + b + "\", \"part\": \"" + part + "\", \"transpose\": \"M2\"}]}";
+        var created = send(HttpRequest.newBuilder(URI.create(base + "/api/scores")).header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body)));
+        assertEquals(201, created.statusCode(), new String(created.body(), StandardCharsets.UTF_8));
+        JsonNode job = json(created);
+        assertEquals("[]", job.get("inputs").toString());
+        assertEquals("Two pianos", job.at("/options/combine/title").asText());
+        job = waitFor(job.get("id").asText());
+        assertEquals("done", job.get("status").asText(), job.toString());
+        assertEquals(2, job.at("/report/combined_from").size());
+        assertEquals("M2", job.at("/report/combined_from/1/transpose").asText());
+        String id = job.get("id").asText();
+        assertEquals(2, json(get("/api/jobs/" + id + "/parts")).size());
+        assertEquals("Piano I", json(get("/api/jobs/" + id + "/parts")).get(0).get("name").asText());
+        assertEquals(200, get("/api/jobs/" + id + "/download/pdf").statusCode());
+        // A combined score has no uploads to transcribe again.
+        var rerun = send(HttpRequest.newBuilder(URI.create(base + "/api/jobs/" + id + "/rerun"))
+                .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString("{}")));
+        assertEquals(409, rerun.statusCode());
+    }
 }

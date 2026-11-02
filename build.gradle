@@ -52,6 +52,12 @@ subprojects {
             systemProperty 'lilyscan.prepareSweep', prepareSweep
             outputs.upToDateWhen { false }
         }
+        // Opt-in combiner sweep: -PcombineSweep=/tmp/combine-sweep (scripts/java_combine_sweep.py).
+        def combineSweep = project.findProperty('combineSweep')
+        if (combineSweep) {
+            systemProperty 'lilyscan.combineSweep', combineSweep
+            outputs.upToDateWhen { false }
+        }
         // Opt-in engine-run sweep: -PengineSweep=/tmp/engine-sweep (scripts/java_engine_sweep.py).
         def engineSweep = project.findProperty('engineSweep')
         if (engineSweep) {
