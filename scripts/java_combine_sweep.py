@@ -32,7 +32,9 @@ from lilyscan.runtime.config import Settings  # noqa: E402
 EDIT = "% edited in the review\n"
 
 
-def _mutated(run: Path, out: Path, settings: Settings, change: str, parts: list[str]) -> Path | None:
+def _mutated(
+    run: Path, out: Path, settings: Settings, change: str, parts: list[str]
+) -> Path | None:
     """A job from the engine's reading, changed as other readings go wrong: ``drop`` (the second
     part lost a measure, a missed barline), ``extra`` (the second part gained one, a stray
     barline), ``rekey`` (the third part's key misread for a stretch), ``short`` (the second
@@ -71,7 +73,9 @@ def _mutated(run: Path, out: Path, settings: Settings, change: str, parts: list[
             sm = staff.measures
             if start < len(sm) and end < len(sm):
                 keep = sm[end].key
-                sm[start].key = sm[0].key.model_copy(update={"fifths": fifths + 1}) if sm[0].key else None
+                sm[start].key = (
+                    sm[0].key.model_copy(update={"fifths": fifths + 1}) if sm[0].key else None
+                )
                 if sm[start].key is None:
                     return None
                 sm[end].key = keep or sm[0].key.model_copy(update={"fifths": fifths})
@@ -90,12 +94,18 @@ def _job(run: Path, out: Path, settings: Settings) -> Path:
 
 
 def _cases(pdf: Path, scan: Path, parts: list[str]) -> dict[str, dict[str, object]]:
-    def sel(job: Path, part: str, transpose: str | None = None, name: str | None = None) -> dict[str, object]:
+    def sel(
+        job: Path, part: str, transpose: str | None = None, name: str | None = None
+    ) -> dict[str, object]:
         return {"job": str(job), "part": part, "transpose": transpose, "name": name}
 
     jobs = [pdf, scan]
     return {
-        "mix": {"title": None, "parts": [sel(jobs[k % 2], p) for k, p in enumerate(parts)], "piano": []},
+        "mix": {
+            "title": None,
+            "parts": [sel(jobs[k % 2], p) for k, p in enumerate(parts)],
+            "piano": [],
+        },
         "transpose": {
             "title": "Transposed",
             "parts": [
@@ -121,13 +131,27 @@ def main() -> None:
     out = args.out.resolve()
     settings = Settings.from_env()
     manifest = []
-    pieces = sorted({p.name.rsplit("-", 1)[0] for p in args.runs.iterdir() if (p / "final.score.json").is_file()})
+    pieces = sorted(
+        {
+            p.name.rsplit("-", 1)[0]
+            for p in args.runs.iterdir()
+            if (p / "final.score.json").is_file()
+        }
+    )
     for piece in pieces:
         runs = {v: args.runs / f"{piece}-{v}" for v in ("pdf", "scan")}
         if not all((r / "final.score.json").is_file() for r in runs.values()):
             continue
-        parts = [p.id for p in Score.model_validate_json((runs["pdf"] / "final.score.json").read_text()).parts]
-        other = {p.id for p in Score.model_validate_json((runs["scan"] / "final.score.json").read_text()).parts}
+        parts = [
+            p.id
+            for p in Score.model_validate_json((runs["pdf"] / "final.score.json").read_text()).parts
+        ]
+        other = {
+            p.id
+            for p in Score.model_validate_json(
+                (runs["scan"] / "final.score.json").read_text()
+            ).parts
+        }
         parts = [p for p in parts if p in other]
         if len(parts) < 2:
             continue
@@ -135,7 +159,9 @@ def main() -> None:
         scan = _job(runs["scan"], out / "jobs" / f"{piece}-scan", settings)
         first = sorted((pdf / "ly" / "parts").glob("*.ly"))[0]
         if not first.read_text(encoding="utf-8").endswith(EDIT):
-            first.write_text(first.read_text(encoding="utf-8") + EDIT, encoding="utf-8", newline="\n")
+            first.write_text(
+                first.read_text(encoding="utf-8") + EDIT, encoding="utf-8", newline="\n"
+            )
         requests = _cases(pdf, scan, parts)
 
         def sel(job: Path, part: str, transpose: str | None = None) -> dict[str, object]:
@@ -144,16 +170,48 @@ def main() -> None:
         drop = _mutated(runs["scan"], out / "jobs" / f"{piece}-drop", settings, "drop", parts)
         extra = _mutated(runs["scan"], out / "jobs" / f"{piece}-extra", settings, "extra", parts)
         if drop is not None and extra is not None:
-            requests["drop"] = {"title": None, "parts": [sel(pdf, parts[0]), sel(drop, parts[1]), *[sel(pdf, p) for p in parts[2:]]], "piano": []}
-            requests["extra"] = {"title": None, "parts": [sel(pdf, parts[0]), sel(extra, parts[1]), *[sel(pdf, p) for p in parts[2:]]], "piano": []}
-            requests["drop-piano"] = {"title": None, "parts": [sel(pdf, parts[0])], "piano": [sel(drop, parts[1]), *[sel(scan, p) for p in parts[2:]]]}
+            requests["drop"] = {
+                "title": None,
+                "parts": [
+                    sel(pdf, parts[0]),
+                    sel(drop, parts[1]),
+                    *[sel(pdf, p) for p in parts[2:]],
+                ],
+                "piano": [],
+            }
+            requests["extra"] = {
+                "title": None,
+                "parts": [
+                    sel(pdf, parts[0]),
+                    sel(extra, parts[1]),
+                    *[sel(pdf, p) for p in parts[2:]],
+                ],
+                "piano": [],
+            }
+            requests["drop-piano"] = {
+                "title": None,
+                "parts": [sel(pdf, parts[0])],
+                "piano": [sel(drop, parts[1]), *[sel(scan, p) for p in parts[2:]]],
+            }
         short = _mutated(runs["scan"], out / "jobs" / f"{piece}-short", settings, "short", parts)
         if short is not None:
-            requests["short"] = {"title": None, "parts": [sel(pdf, parts[0]), sel(short, parts[1])], "piano": []}
+            requests["short"] = {
+                "title": None,
+                "parts": [sel(pdf, parts[0]), sel(short, parts[1])],
+                "piano": [],
+            }
         rekey = _mutated(runs["pdf"], out / "jobs" / f"{piece}-rekey", settings, "rekey", parts)
         if rekey is not None:
-            requests["rekey"] = {"title": None, "parts": [sel(rekey if k == 2 else pdf, p) for k, p in enumerate(parts)], "piano": []}
-        requests["bad-key"] = {"title": None, "parts": [sel(pdf, parts[0], "d2"), sel(pdf, parts[1], "-A7")], "piano": []}
+            requests["rekey"] = {
+                "title": None,
+                "parts": [sel(rekey if k == 2 else pdf, p) for k, p in enumerate(parts)],
+                "piano": [],
+            }
+        requests["bad-key"] = {
+            "title": None,
+            "parts": [sel(pdf, parts[0], "d2"), sel(pdf, parts[1], "-A7")],
+            "piano": [],
+        }
         for case, request in requests.items():
             name = f"{piece}-{case}"
             d = out / "cases" / name

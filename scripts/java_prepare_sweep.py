@@ -72,7 +72,9 @@ def main() -> None:
             entry = {"name": d.name, "input": str(src)}
             if n < args.checkpoints and variant != "png":
                 corners = find_page(gray)
-                (d / "corners.json").write_text(json.dumps(None if corners is None else corners.tolist()))
+                (d / "corners.json").write_text(
+                    json.dumps(None if corners is None else corners.tolist())
+                )
                 flat = flatten_light(gray)
                 _f32(d / "flat", flat)
                 (d / "angle.json").write_text(json.dumps(staff_angle(flat)))
@@ -85,8 +87,12 @@ def main() -> None:
                 info = {
                     "angle": angle,
                     "scale": None if scale is None else [scale.thickness, scale.interline],
-                    "curvature": None if scale is None else curvature(displacement_samples(mask, scale.interline)),
-                    "samples": None if scale is None else len(displacement_samples(mask, scale.interline)),
+                    "curvature": None
+                    if scale is None
+                    else curvature(displacement_samples(mask, scale.interline)),
+                    "samples": None
+                    if scale is None
+                    else len(displacement_samples(mask, scale.interline)),
                     "text_lean": [lean, letters],
                     "start_weight": _start_weight(small),
                     "upside_down": upside_down(level),
