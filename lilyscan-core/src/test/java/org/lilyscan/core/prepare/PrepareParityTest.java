@@ -101,12 +101,8 @@ class PrepareParityTest {
                 }
                 Np.U8 small = PageImage.smallMask(level, 2000);
                 double[] lean = PageImage.textLean(small);
-                // NumPy's argsort breaks ties by CPU (AVX-512 sort or introsort), so Python's own
-                // letter grouping varies by machine; Java's stable order is close, not identical.
-                System.out.printf("%s text lean %.4f/%s letters %s/%d%n", e.get("name").asText(),
-                        info.get("text_lean").get(0).asDouble(), lean[0], info.get("text_lean").get(1), (int) lean[1]);
-                assertEquals(info.get("text_lean").get(1).asInt(), (int) lean[1], 0.05 * lean[1] + 3, "letters");
-                assertEquals(info.get("text_lean").get(0).asDouble(), lean[0], 0.005, "lean");
+                assertEquals(info.get("text_lean").get(1).asInt(), (int) lean[1], "letters");
+                assertEquals(info.get("text_lean").get(0).asDouble(), lean[0], 1e-12, "lean");
                 assertEquals(info.get("start_weight").asDouble(), PageImage.startWeight(small), 1e-12, "start weight");
                 assertEquals(info.get("upside_down").asBoolean(), PageImage.upsideDown(level, false), "upside down");
                 assertEquals(info.get("angle").asDouble(), (double) PageImage.levelStaves(flat)[1], "level angle");
