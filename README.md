@@ -79,6 +79,7 @@ eval/                corpus specs (seed.json, repertoire.json) and committed res
 docs/                design.md (design and status log), upstream/audiveris (bug reports and fixes)
 tests/               parity references for the Java port, and the Python test suite
 docker/              the image (Dockerfile, entrypoint, OCR model checksums)
+packaging/linux/     the desktop app's .deb and .rpm (package.sh)
 docker-compose.yml   the Docker deployment: one service
 ```
 
@@ -279,6 +280,22 @@ user data folder (`~/.local/share/lilyscan` on Linux, `%LOCALAPPDATA%\Lilyscan` 
 and the OCR models as a native install does ([Natively](#natively)). With `--server`, or
 **Connection > Lilyscan server...**, it works on the jobs of a server, such as the Docker one,
 and needs nothing else installed. The app remembers the last choice.
+
+**Installers.** On Linux the desktop app also comes as a `.deb` (Debian, Ubuntu) or `.rpm`
+(Fedora, openSUSE) with everything inside: its own Java runtime, Audiveris, LilyPond 2.26.0 and
+the OCR models for English, Latin, German and French. Nothing else needs installing; Java,
+LilyPond and the models are not needed on the computer. Build one from the jar (needs `fakeroot`
+for a `.deb`, `rpm` for a `.rpm`):
+
+```bash
+packaging/linux/package.sh deb    # or: rpm, app-image
+sudo apt install ./build/packaging/out/lilyscan_*_amd64.deb
+```
+
+It installs to `/opt/lilyscan` with a menu entry **Lilyscan** (or run
+`/opt/lilyscan/bin/Lilyscan`); `sudo apt remove lilyscan` removes it, and keeps your jobs. CI
+builds both packages for every change to the app (`desktop-packages` workflow artifacts).
+`LILYPOND_BIN` and `TESSDATA_PREFIX` still override the bundled LilyPond and models.
 
 It does what the web UI does: upload (or drop files on the window), follow a job, review in
 three panes with click-to-sync, edit and recompile, drop misread lyrics, re-run, combine parts,

@@ -22,6 +22,12 @@ public final class ProcessRunner {
 
     /** Runs {@code cmd} in {@code cwd} (null: this process's), for at most {@code timeoutS} seconds. */
     public static Result run(List<String> cmd, Path cwd, double timeoutS) throws IOException {
+        return run(cmd, cwd, timeoutS, java.util.Map.of());
+    }
+
+    /** {@link #run(List, Path, double)} with {@code env} added to this process's environment. */
+    public static Result run(List<String> cmd, Path cwd, double timeoutS, java.util.Map<String, String> env)
+            throws IOException {
         Path out = Files.createTempFile("lilyscan-proc-", ".out");
         Path err = Files.createTempFile("lilyscan-proc-", ".err");
         try {
@@ -30,6 +36,7 @@ public final class ProcessRunner {
             if (cwd != null) {
                 pb.directory(cwd.toFile());
             }
+            pb.environment().putAll(env);
             Process p = pb.start();
             boolean finished;
             try {
@@ -57,8 +64,13 @@ public final class ProcessRunner {
 
     /** {@link #run}, wrapping I/O failures (e.g. the program does not exist). */
     public static Result runUnchecked(List<String> cmd, Path cwd, double timeoutS) {
+        return runUnchecked(cmd, cwd, timeoutS, java.util.Map.of());
+    }
+
+    /** {@link #run(List, Path, double, java.util.Map)}, wrapping I/O failures. */
+    public static Result runUnchecked(List<String> cmd, Path cwd, double timeoutS, java.util.Map<String, String> env) {
         try {
-            return run(cmd, cwd, timeoutS);
+            return run(cmd, cwd, timeoutS, env);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
