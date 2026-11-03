@@ -406,9 +406,11 @@ accuracy, edit rate, note F1, lyric and chord accuracy, how many engine events w
 on the page, and how well confidence is calibrated.
 
 The current baselines are `base-1031-seed` and `base-1031-rep`: fresh engine runs on Linux
-(Ubuntu, x86-64) with `--repair --prepare --lilypond`. `base-1014-seed` and `base-1014-rep` are
-the same code's results on Windows. Audiveris reads a few pages slightly differently there, so
-compare with the baseline from the same platform, item by item in `results.json`.
+(Ubuntu, x86-64) with `--repair --prepare --lilypond`, on corpora built by the Python builder.
+`java-1103-seed`, `java-1103-repertoire` and `java-1103-openscore` are the same runs on the
+corpora the Java builder makes; compare a Java-built corpus with these. (`base-1014-seed` and
+`base-1014-rep` are results on Windows. Audiveris reads a few pages slightly differently there, so
+compare with a baseline from the same platform, item by item in `results.json`.)
 
 - `--repair` applies Lilyscan's repairs and confidence before scoring, and lists every repair.
 - `--prepare` sends scans and photos through Stage 1 first, as a job does.
