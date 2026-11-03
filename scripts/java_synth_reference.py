@@ -65,7 +65,9 @@ def summary(score: Score) -> dict[str, Any]:
                 measures.append(
                     {
                         "number": m.number,
-                        "clefs": [[c.sign, c.line, c.octave_change, _frac(c.offset)] for c in m.clefs],
+                        "clefs": [
+                            [c.sign, c.line, c.octave_change, _frac(c.offset)] for c in m.clefs
+                        ],
                         "key": [m.key.fifths, m.key.mode] if m.key else None,
                         "time": [m.time.beats, m.time.beat_type] if m.time else None,
                         "barline": m.right_barline.style if m.right_barline else None,
@@ -73,7 +75,9 @@ def summary(score: Score) -> dict[str, Any]:
                         "voices": voices,
                     }
                 )
-            staves.append({"part": part.name, "abbreviation": part.abbreviation, "measures": measures})
+            staves.append(
+                {"part": part.name, "abbreviation": part.abbreviation, "measures": measures}
+            )
     return {"title": score.title, "composer": score.composer, "staves": staves}
 
 
