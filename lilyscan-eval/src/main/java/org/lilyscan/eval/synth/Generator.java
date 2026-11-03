@@ -377,15 +377,15 @@ public final class Generator {
     }
 
     /**
-     * Chord-symbol qualities: the music21 figure suffix and the MusicXML kind music21 writes for
-     * it. music21 10.5 writes {@code m7b5} as a plain {@code minor-seventh} (it drops the flat
-     * fifth), so the Python corpus never has a half-diminished chord; this follows it, so both
-     * generators make the same corpus.
+     * Chord-symbol qualities: the music21 figure suffix and its MusicXML kind. (music21 writes
+     * {@code m7b5} as {@code minor-seventh} with a flat-fifth {@code <degree>}, which engraves as
+     * the same half-diminished chord; Lilyscan's readers ignore degrees, so the parity test counts
+     * the two as one.)
      */
     static final List<String[]> QUALITIES = List.of(
             new String[] {"", "major"}, new String[] {"m", "minor"}, new String[] {"7", "dominant"},
             new String[] {"m7", "minor-seventh"}, new String[] {"maj7", "major-seventh"},
-            new String[] {"m7", "minor-seventh"}, new String[] {"dim", "diminished"},
+            new String[] {"m7b5", "half-diminished"}, new String[] {"dim", "diminished"},
             new String[] {"sus4", "suspended-fourth"});
 
     private static void addChordSymbols(PyRandom rng, Staff staff, KeyCtx k, Meter ts) {

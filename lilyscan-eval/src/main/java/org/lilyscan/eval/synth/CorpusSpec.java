@@ -14,7 +14,7 @@ import java.util.Set;
 
 /**
  * A corpus spec ({@code eval/corpus/*.json}): {@code {"pieces": [{"id", "category", "seed",
- * "measures", "language"?, "work"?, "first"?, "engraver"?, "source"?}, ...]}}, as
+ * "measures", "language"?, "work"?, "first"?, "engraver"?, "source"?, "file"?}, ...]}}, as
  * {@code lilyscan/synth/corpus.py} reads it. A piece with a {@code work} is an excerpt of a real
  * work from {@code source}: {@code music21} (the default, as in Python), {@code openscore-lieder}
  * or {@code openscore-quartets} ({@link Sources}).
@@ -24,7 +24,12 @@ public final class CorpusSpec {
 
     /** One piece of a spec. */
     public record Piece(String id, String category, int seed, int measures, String language, String work,
-            int first, String engraver, String source) {
+            int first, String engraver, String source, String file) {
+
+        /** The work's file in its source: {@code file} when the spec names it, else {@code <work>.mxl}. */
+        public String path() {
+            return file != null ? file : work;
+        }
 
         public boolean generated() {
             return work == null;
@@ -67,7 +72,8 @@ public final class CorpusSpec {
             if (!Sources.KNOWN.contains(source)) throw new IllegalArgumentException("unknown source '" + source + "'");
             Piece piece = new Piece(p.get("id").asText(), p.get("category").asText(), p.get("seed").asInt(),
                     p.get("measures").asInt(), p.path("language").isTextual() ? p.get("language").asText() : null,
-                    work, p.path("first").asInt(1), engraver, source);
+                    work, p.path("first").asInt(1), engraver, source,
+                    p.path("file").isTextual() ? p.get("file").asText() : null);
             if (!ids.add(piece.id())) throw new IllegalArgumentException("duplicate piece ids in " + path);
             pieces.add(piece);
         }

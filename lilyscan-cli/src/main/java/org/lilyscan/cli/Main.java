@@ -35,6 +35,7 @@ import picocli.CommandLine.Option;
             Main.Selftest.class,
             Main.Convert.class,
             EvalCmd.class,
+            CorpusCmd.class,
             Main.DesktopCmd.class,
         })
 public final class Main implements Runnable {

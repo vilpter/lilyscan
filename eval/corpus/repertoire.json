@@ -5,14 +5,14 @@
     "schumann_clara/opus17/movement3": "encoding carries a copyright mark without terms"
   },
   "pieces": [
-    {"id": "bach-bwv66-6", "engraver": "lilyscan", "category": "satb", "seed": 0, "work": "bach/bwv66.6", "first": 1, "measures": 10},
-    {"id": "bach-bwv269", "engraver": "lilyscan", "category": "satb", "seed": 0, "work": "bach/bwv269", "first": 1, "measures": 12, "language": "deu"},
-    {"id": "bach-bwv153-1", "engraver": "lilyscan", "category": "satb", "seed": 0, "work": "bach/bwv153.1", "first": 1, "measures": 12, "language": "deu"},
-    {"id": "joplin-maple-leaf", "engraver": "lilyscan", "category": "piano", "seed": 0, "work": "joplin/maple_leaf_rag", "first": 1, "measures": 16},
-    {"id": "haydn-op74-1", "engraver": "lilyscan", "category": "quartet", "seed": 0, "work": "haydn/opus74no1/movement1", "first": 1, "measures": 12},
-    {"id": "mozart-k80-1", "engraver": "lilyscan", "category": "quartet", "seed": 0, "work": "mozart/k80/movement1", "first": 1, "measures": 12},
-    {"id": "foster-brown-hair", "engraver": "lilyscan", "category": "leadsheet", "seed": 0, "work": "leadSheet/fosterBrownHair", "first": 1, "measures": 16, "language": "eng"},
-    {"id": "handel-lascia", "engraver": "lilyscan", "category": "song", "seed": 0, "work": "handel/rinaldo/lascia_chio_pianga", "first": 1, "measures": 12, "language": "ita"},
-    {"id": "verdi-donna-mobile", "engraver": "lilyscan", "category": "song", "seed": 0, "work": "verdi/laDonnaEMobile", "first": 1, "measures": 16, "language": "ita"}
+    {"id": "bach-bwv66-6", "engraver": "lilyscan", "category": "satb", "seed": 0, "work": "bach/bwv66.6", "first": 1, "measures": 10, "file": "bach/bwv66.6.mxl"},
+    {"id": "bach-bwv269", "engraver": "lilyscan", "category": "satb", "seed": 0, "work": "bach/bwv269", "first": 1, "measures": 12, "language": "deu", "file": "bach/bwv269.mxl"},
+    {"id": "bach-bwv153-1", "engraver": "lilyscan", "category": "satb", "seed": 0, "work": "bach/bwv153.1", "first": 1, "measures": 12, "language": "deu", "file": "bach/bwv153.1.mxl"},
+    {"id": "joplin-maple-leaf", "engraver": "lilyscan", "category": "piano", "seed": 0, "work": "joplin/maple_leaf_rag", "first": 1, "measures": 16, "file": "joplin/maple_leaf_rag.mxl"},
+    {"id": "haydn-op74-1", "engraver": "lilyscan", "category": "quartet", "seed": 0, "work": "haydn/opus74no1/movement1", "first": 1, "measures": 12, "file": "haydn/opus74no1/movement1.mxl"},
+    {"id": "mozart-k80-1", "engraver": "lilyscan", "category": "quartet", "seed": 0, "work": "mozart/k80/movement1", "first": 1, "measures": 12, "file": "mozart/k80/movement1.mxl"},
+    {"id": "foster-brown-hair", "engraver": "lilyscan", "category": "leadsheet", "seed": 0, "work": "leadSheet/fosterBrownHair", "first": 1, "measures": 16, "language": "eng", "file": "leadSheet/fosterBrownHair.mxl"},
+    {"id": "handel-lascia", "engraver": "lilyscan", "category": "song", "seed": 0, "work": "handel/rinaldo/lascia_chio_pianga", "first": 1, "measures": 12, "language": "ita", "file": "handel/rinaldo/Lascia_chio_pianga.mxl"},
+    {"id": "verdi-donna-mobile", "engraver": "lilyscan", "category": "song", "seed": 0, "work": "verdi/laDonnaEMobile", "first": 1, "measures": 16, "language": "ita", "file": "verdi/laDonnaEMobile.mxl"}
   ]
 }

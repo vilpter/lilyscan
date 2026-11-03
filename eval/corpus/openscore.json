@@ -1,0 +1,21 @@
+{
+  "description": "OpenScore corpus: excerpts of CC0 works from OpenScore Lieder (songs for voice and piano in German, French and English, from where the voice enters) and OpenScore String Quartets, at pinned revisions (org.lilyscan.eval.synth.Sources). Built by the Java `lilyscan corpus build` only.",
+  "pieces": [
+    {"id": "schubert-mignon", "engraver": "lilyscan", "category": "song", "seed": 200, "language": "deu", "source": "openscore-lieder", "work": "Schubert,_Franz/4_Gesänge_aus_„Wilhelm_Meister“,_D.877/2_Lied_der_Mignon_(Heiss_mich_nicht_reden)/lc4988600.mxl", "first": 5, "measures": 8},
+    {"id": "schumann-r-saengers-trost", "engraver": "lilyscan", "category": "song", "seed": 201, "language": "deu", "source": "openscore-lieder", "work": "Schumann,_Robert/5_Lieder_und_Gesänge,_Op.127/1_Sängers_Trost/lc6826352.mxl", "first": 2, "measures": 8},
+    {"id": "schumann-c-ich-stand", "engraver": "lilyscan", "category": "song", "seed": 202, "language": "deu", "source": "openscore-lieder", "work": "Schumann,_Clara/6_Lieder,_Op.13/1_Ich_stand_in_dunklen_Träumen/lc5133602.mxl", "first": 5, "measures": 8},
+    {"id": "brahms-die-kraenze", "engraver": "lilyscan", "category": "song", "seed": 203, "language": "deu", "source": "openscore-lieder", "work": "Brahms,_Johannes/4_Gesänge,_Op.46/1_Die_Kränze/lc5084888.mxl", "first": 5, "measures": 8},
+    {"id": "hensel-sehnsucht", "engraver": "lilyscan", "category": "song", "seed": 204, "language": "deu", "source": "openscore-lieder", "work": "Hensel,_Fanny/3_Lieder/1_Sehnsucht/lc6012947.mxl", "first": 1, "measures": 8},
+    {"id": "faure-apres-un-reve", "engraver": "lilyscan", "category": "song", "seed": 205, "language": "fra", "source": "openscore-lieder", "work": "Fauré,_Gabriel/3_Songs,_Op.7/1_Après_un_rêve/lc6810863.mxl", "first": 2, "measures": 8},
+    {"id": "chaminade-alleluia", "engraver": "lilyscan", "category": "song", "seed": 206, "language": "fra", "source": "openscore-lieder", "work": "Chaminade,_Cécile/_/Alleluia/lc6260992.mxl", "first": 6, "measures": 8},
+    {"id": "viardot-a-la-fontaine", "engraver": "lilyscan", "category": "song", "seed": 207, "language": "fra", "source": "openscore-lieder", "work": "Viardot,_Pauline/6_Mélodies,_VWV_1133-11371176/1_À_la_Fontaine,_VWV_1133/lc5978033.mxl", "first": 7, "measures": 8},
+    {"id": "elgar-the-torch", "engraver": "lilyscan", "category": "song", "seed": 208, "language": "eng", "source": "openscore-lieder", "work": "Elgar,_Edward/2_Songs,_Op.60/1_The_Torch/lc6233544.mxl", "first": 2, "measures": 8},
+    {"id": "quilter-come-away-death", "engraver": "lilyscan", "category": "song", "seed": 209, "language": "eng", "source": "openscore-lieder", "work": "Quilter,_Roger/3_Shakespeare_Songs,_Op.6/1_Come_Away,_Death/lc29199584.mxl", "first": 3, "measures": 8},
+    {"id": "coleridge-taylor-sea", "engraver": "lilyscan", "category": "song", "seed": 210, "language": "eng", "source": "openscore-lieder", "work": "Coleridge-Taylor,_Samuel/6_Sorrow_Songs,_Op.57/1_Oh_what_comes_over_the_Sea/lc6189652.mxl", "first": 1, "measures": 8},
+    {"id": "lehmann-seal-song", "engraver": "lilyscan", "category": "song", "seed": 211, "language": "eng", "source": "openscore-lieder", "work": "Lehmann,_Liza/2_Seal_Songs/2_You_mustn’t_swim_till_you’re_six_weeks_old/lc6573701.mxl", "first": 4, "measures": 8},
+    {"id": "haydn-op9-6", "engraver": "lilyscan", "category": "quartet", "seed": 300, "source": "openscore-quartets", "work": "Haydn,_Joseph/String_Quartet_in_A_major,_Hob.III24,_Op.9_No.6/sq9146376.mxl", "first": 1, "measures": 8},
+    {"id": "mozart-k387", "engraver": "lilyscan", "category": "quartet", "seed": 301, "source": "openscore-quartets", "work": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.14_in_G_major,_K.387_(Op._10,_No._1)/sq7103818.mxl", "first": 1, "measures": 8},
+    {"id": "mayer-a-major", "engraver": "lilyscan", "category": "quartet", "seed": 302, "source": "openscore-quartets", "work": "Mayer,_Emilie/String_Quartet_in_A_Major/sq8818128.mxl", "first": 1, "measures": 8},
+    {"id": "beach-op89", "engraver": "lilyscan", "category": "quartet", "seed": 303, "source": "openscore-quartets", "work": "Beach,_Amy/String_Quartet,_Op._89/sq14387632.mxl", "first": 1, "measures": 8}
+  ]
+}

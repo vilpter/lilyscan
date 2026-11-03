@@ -61,7 +61,12 @@ class SynthParityTest {
                     if (m.time == null) mo.putNull("time"); else mo.putArray("time").add(m.time.beats).add(m.time.beatType);
                     if (m.rightBarline == null) mo.putNull("barline"); else mo.put("barline", m.rightBarline.style);
                     ArrayNode chords = mo.putArray("chords");
-                    for (ChordSymbol c : m.chordSymbols) chords.addArray().add(frac(c.offset)).add(c.root).add(c.kind);
+                    // music21 writes a half-diminished chord as minor-seventh plus a flat-fifth
+                    // <degree>, which the readers do not keep (Generator.QUALITIES).
+                    for (ChordSymbol c : m.chordSymbols) {
+                        chords.addArray().add(frac(c.offset)).add(c.root)
+                                .add("half-diminished".equals(c.kind) ? "minor-seventh" : c.kind);
+                    }
                     ArrayNode voices = mo.putArray("voices");
                     List<Voice> sorted = new ArrayList<>(m.voices);
                     sorted.sort(Comparator.comparingInt(v -> v.number));
@@ -93,7 +98,7 @@ class SynthParityTest {
         assertEquals(expected.size(), specs.size());
         List<String> differ = new ArrayList<>();
         for (CorpusSpec.Piece spec : specs) {
-            String xml = MusicXmlWriter.toMusicXml(Generator.build(spec));
+            String xml = MusicXmlWriter.toMusicXml(Generator.build(spec), MusicXmlWriter.Options.ENGRAVING);
             Score back = MusicXml.parse(xml.getBytes(StandardCharsets.UTF_8), "ground-truth");
             ObjectNode got = summary(back);
             JsonNode want = expected.get(spec.id());

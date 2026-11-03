@@ -25,7 +25,7 @@ final class EvalCmd implements Runnable {
 
     @Command(name = "run", description = "Run Audiveris on the corpus and score the output.")
     static final class Run implements Callable<Integer> {
-        @Option(names = "--corpus", description = "A corpus built by `lilyscan corpus build` (Python).")
+        @Option(names = "--corpus", description = "A corpus built by `lilyscan corpus build`.")
         Path corpus = Path.of("eval/corpus/seed");
 
         @Option(names = "--work", description = "Cache of engine output.")

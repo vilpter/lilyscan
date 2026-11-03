@@ -67,7 +67,9 @@ public final class Sources {
     public static Path fetch(String sourceName, String file, Path cache) {
         Source s = source(sourceName);
         String path = file.contains(".") && file.matches(".*\\.(mxl|xml|musicxml)$") ? file : file + ".mxl";
-        Path target = cache.resolve(s.name()).resolve(s.revision()).resolve(path);
+        // Cached under a hash of the path: works' paths carry non-ASCII names (Gesänge, „…“),
+        // which the file system can only take under a UTF-8 locale.
+        Path target = cache.resolve(s.name()).resolve(s.revision()).resolve(hash(path) + suffix(path));
         if (Files.isRegularFile(target)) return target;
         StringBuilder url = new StringBuilder(s.baseUrl());
         String[] parts = path.split("/");
@@ -94,6 +96,20 @@ public final class Sources {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("interrupted", e);
         }
+    }
+
+    private static String hash(String path) {
+        try {
+            byte[] d = java.security.MessageDigest.getInstance("SHA-256").digest(path.getBytes(StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(d, 0, 12);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static String suffix(String path) {
+        int dot = path.lastIndexOf('.');
+        return dot < 0 ? "" : path.substring(dot);
     }
 
     private static final Pattern RIGHTS = Pattern.compile("<rights(?:\\s[^>]*)?>([^<]*)</rights>");
