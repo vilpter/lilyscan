@@ -35,6 +35,7 @@ import picocli.CommandLine.Option;
             Main.Selftest.class,
             Main.Convert.class,
             EvalCmd.class,
+            Main.DesktopCmd.class,
         })
 public final class Main implements Runnable {
 
@@ -66,6 +67,31 @@ public final class Main implements Runnable {
             new LilyscanServer(s).start(port);
             // Javalin/Jetty run on their own threads; block so Main.main's System.exit
             // does not tear the server down.
+            new java.util.concurrent.CountDownLatch(1).await();
+            return 0;
+        }
+    }
+
+    @Command(name = "desktop", mixinStandardHelpOptions = true,
+            description = "Open the desktop app (on this computer, or connected to a server).")
+    static final class DesktopCmd implements Callable<Integer> {
+        @Option(names = "--server", description = "A Lilyscan server's address (default: the last one chosen).")
+        String server;
+
+        @Option(names = "--local", description = "Run on this computer, whatever was chosen last.")
+        boolean local;
+
+        @Option(names = "--data", description = "Folder where this computer's jobs are kept (default: the per-user data folder).")
+        Path data;
+
+        @Override
+        public Integer call() throws InterruptedException {
+            if (java.awt.GraphicsEnvironment.isHeadless()) {
+                System.err.println("The desktop app needs a display; use `lilyscan serve` for the web UI.");
+                return 1;
+            }
+            org.lilyscan.desktop.DesktopApp.run(local ? "" : server, data);
+            // The window runs on the event thread; Main.main exits when it closes.
             new java.util.concurrent.CountDownLatch(1).await();
             return 0;
         }

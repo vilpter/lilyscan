@@ -45,4 +45,26 @@ class JobStoreTest {
             assertNull(rs.getString(3));
         }
     }
+
+    @Test
+    void jobsInterruptedByAStopAreFailedOnTheNextStart(@TempDir Path other) {
+        String queued, running, done;
+        try (JobStore store = new JobStore(other)) {
+            queued = store.create(List.of("00-a.pdf"), null).id();
+            running = store.create(List.of("00-b.pdf"), null).id();
+            done = store.create(List.of("00-c.pdf"), null).id();
+            store.update(running, JobStore.Status.RUNNING, "engine", null, null);
+            store.update(done, JobStore.Status.DONE, "done", null, null);
+        }
+        try (JobStore store = new JobStore(other)) {
+            assertEquals(2, store.failInterrupted());
+            for (String id : List.of(queued, running)) {
+                assertEquals(JobStore.Status.FAILED, store.get(id).status());
+                assertEquals("Lilyscan stopped while this job was running; re-run it.", store.get(id).error());
+            }
+            assertEquals("engine", store.get(running).stage());
+            assertEquals(JobStore.Status.DONE, store.get(done).status());
+            assertEquals(0, store.failInterrupted());
+        }
+    }
 }

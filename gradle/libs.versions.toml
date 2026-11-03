@@ -22,6 +22,8 @@ picocli = "4.7.6"
 # Desktop (optional, JM9)
 flatlaf = "3.7.2"
 rsyntaxtextarea = "3.6.0"
+# SVG rendering for the engraved pane (MIT)
+jsvg = "2.2.0"
 # CV / ML (optional, JM5+; coordinates verified before first use)
 bytedeco-opencv = "4.13.0-1.5.13"
 bytedeco-openblas = "0.3.31-1.5.13"
@@ -45,6 +47,7 @@ sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 flatlaf = { module = "com.formdev:flatlaf", version.ref = "flatlaf" }
 rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", version.ref = "rsyntaxtextarea" }
+jsvg = { module = "com.github.weisj:jsvg", version.ref = "jsvg" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 

@@ -1,7 +1,21 @@
-// lilyscan-desktop — OPTIONAL, secondary front end (D14): a Swing + FlatLaf review app over the
-// same core. Can be dropped with milestones JM9-JM10 and no effect on the server.
+// lilyscan-desktop — OPTIONAL, secondary front end (D14): a Swing + FlatLaf review app. It talks to
+// the Lilyscan HTTP API only: on this computer it starts the same server embedded on a private
+// localhost port; or it connects to a running server. No pipeline code of its own.
+plugins {
+    id 'application'
+}
+
 dependencies {
-    api project(':lilyscan-core')
-    api project(':lilyscan-engine')
+    implementation project(':lilyscan-server')
     implementation libs.flatlaf
+    implementation libs.rsyntaxtextarea
+    implementation libs.jsvg
+    implementation libs.jackson.databind
+    runtimeOnly libs.logback.classic
+    testImplementation testFixtures(project(':lilyscan-core'))
+}
+
+application {
+    mainClass = 'org.lilyscan.desktop.DesktopApp'
+    applicationDefaultJvmArgs = ['-Dsun.java2d.uiScale.enabled=true', '--enable-native-access=ALL-UNNAMED']
 }

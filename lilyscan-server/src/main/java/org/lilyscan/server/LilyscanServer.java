@@ -87,11 +87,21 @@ public final class LilyscanServer implements AutoCloseable {
     public LilyscanServer(Settings settings, Tasks.Engine engine) {
         this.settings = settings;
         this.store = new JobStore(settings.dataDir());
+        int interrupted = store.failInterrupted();
+        if (interrupted > 0) log.warn("{} job(s) were interrupted when Lilyscan last stopped; marked failed", interrupted);
         this.tasks = new Tasks(settings, store, engine);
     }
 
-    /** Builds and starts the app on {@code port} (0: any free port); returns the port. */
+    /** Builds and starts the app on {@code port} (0: any free port), on every interface; returns the port. */
     public int start(int port) {
+        return start(null, port);
+    }
+
+    /**
+     * Builds and starts the app on {@code host} ({@code null}: every interface) and {@code port}
+     * (0: any free port); returns the port. The desktop app binds {@code 127.0.0.1}.
+     */
+    public int start(String host, int port) {
         Path web = settings.webDir();
         app = Javalin.create(config -> {
             config.showJavalinBanner = false;
@@ -119,7 +129,7 @@ public final class LilyscanServer implements AutoCloseable {
             detail(ctx, 500, "Internal Server Error");
         });
         routes(app);
-        app.start(port);
+        if (host == null) app.start(port); else app.start(host, port);
         log.info("Lilyscan server listening on port {} (data dir {})", app.port(), settings.dataDir());
         return app.port();
     }

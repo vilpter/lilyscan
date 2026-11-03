@@ -1,5 +1,5 @@
 // lilyscan-cli — the single entry point (design-java.md §4). picocli dispatches
-// serve | convert | versions | selftest | device | corpus | eval | desktop | --engine-worker.
+// serve | convert | versions | selftest | eval | desktop (and the engine worker's entry point).
 // Builds the Shadow fat jar that the Docker image runs (D22).
 plugins {
     id 'application'
@@ -11,6 +11,7 @@ dependencies {
     implementation project(':lilyscan-engine')
     implementation project(':lilyscan-server')
     implementation project(':lilyscan-eval')
+    implementation project(':lilyscan-desktop')
     implementation libs.picocli
     runtimeOnly libs.logback.classic
 }
