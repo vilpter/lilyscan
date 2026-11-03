@@ -86,7 +86,8 @@ class ApiTest {
         assertNotNull(file);
         String text = api.ly(id, file);
         api.putLy(id, file, text + "\n% edited in the desktop app\n");
-        assertEquals("queued", api.recompile(id).get("status").asText());
+        // Queued, or already started by the time the answer arrives.
+        assertTrue(Labels.busy(api.recompile(id)));
         assertEquals("done", FakeServer.waitFor(api, id).get("status").asText());
         assertTrue(api.ly(id, file).endsWith("% edited in the desktop app\n"));
 
