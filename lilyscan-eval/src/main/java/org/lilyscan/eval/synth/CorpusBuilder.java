@@ -80,11 +80,20 @@ public final class CorpusBuilder {
             MusicXmlWriter.write(score, item.groundTruth(), MusicXmlWriter.Options.ENGRAVING);
             Path png = engrave(item.groundTruth(), root, s, spec.engraver());
             Degrade.Image clean = Degrade.load(png);
-            Degrade.savePng(Degrade.scan(clean, spec.seed() * 10L + 1), root.resolve("scan.png"));
-            Degrade.savePng(Degrade.photo(clean, spec.seed() * 10L + 2), root.resolve("photo.png"));
+            Degrade.savePng(Degrade.scan(clean, degradeSeed(spec, 1)), root.resolve("scan.png"));
+            Degrade.savePng(Degrade.photo(clean, degradeSeed(spec, 2)), root.resolve("photo.png"));
         }
         writeManifest(outDir, specPath, items);
         return items;
+    }
+
+    /**
+     * The seed of a piece's scan ({@code k = 1}) or photo ({@code k = 2}): Python's
+     * {@code seed * 10 + k}, mixed with the piece id, so that pieces sharing a seed (every real
+     * work has seed 0) are still degraded differently.
+     */
+    static long degradeSeed(CorpusSpec.Piece spec, int k) {
+        return (spec.seed() * 10L + k) ^ ((long) spec.id().hashCode() << 32);
     }
 
     /** {@code [source, rights]} for the manifest. */

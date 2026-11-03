@@ -121,6 +121,23 @@ class CorpusTest {
     }
 
     @Test
+    void piecesSharingASeedAreDegradedDifferently() {
+        // Real works all have seed 0; sequential seeds must not give near-identical scans either
+        // (java.util.Random's first draws for nearby seeds are almost equal).
+        var a = new CorpusSpec.Piece("bach-bwv66-6", "satb", 0, 10, null, "w", 1, "lilyscan", Sources.MUSIC21, null);
+        var b = new CorpusSpec.Piece("verdi-donna-mobile", "song", 0, 16, null, "w", 1, "lilyscan", Sources.MUSIC21, null);
+        assertNotEquals(CorpusBuilder.degradeSeed(a, 1), CorpusBuilder.degradeSeed(b, 1));
+        assertNotEquals(CorpusBuilder.degradeSeed(a, 1), CorpusBuilder.degradeSeed(a, 2));
+        java.util.Set<Long> skews = new java.util.HashSet<>();
+        for (int seed = 100; seed < 106; seed++) {
+            long first = new java.util.SplittableRandom(CorpusBuilder.degradeSeed(piece("solo-0" + (seed - 99), "solo", seed, 16), 1))
+                    .nextLong() >>> 54;
+            skews.add(first);
+        }
+        assertTrue(skews.size() >= 5, "first draws of consecutive pieces should spread: " + skews);
+    }
+
+    @Test
     void buildsACorpus() throws Exception {
         Settings s = Settings.fromEnv();
         Assumptions.assumeTrue(Compile.lilypondVersion(s) != null, "LilyPond not found (set LILYPOND_BIN)");

@@ -19,7 +19,7 @@ import static org.bytedeco.opencv.global.opencv_imgproc.warpPerspective;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Random;
+import java.util.SplittableRandom;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
@@ -32,8 +32,9 @@ import org.bytedeco.opencv.opencv_core.Size;
 /**
  * Turns a clean engraving into a simulated flatbed scan or phone photo, deterministically from a
  * seed ({@code lilyscan/synth/degrade.py}): the same steps and parameter ranges as the Python
- * builder. The random draws are Java's, not NumPy's, so the images differ from the Python ones in
- * detail; corpora built here are baselined on their own (D21).
+ * builder. The random draws are Java's ({@link SplittableRandom}, whose nearby seeds give
+ * unrelated streams), not NumPy's, so the images differ from the Python ones in detail; corpora
+ * built here are baselined on their own (D21).
  */
 public final class Degrade {
     private Degrade() {}
@@ -105,7 +106,7 @@ public final class Degrade {
         return fromU8(decoded);
     }
 
-    private static double uniform(Random rng, double lo, double hi) {
+    private static double uniform(SplittableRandom rng, double lo, double hi) {
         return lo + (hi - lo) * rng.nextDouble();
     }
 
@@ -115,7 +116,7 @@ public final class Degrade {
         return image(out);
     }
 
-    private static void noiseAndClip(float[] px, Random rng, double sigma) {
+    private static void noiseAndClip(float[] px, SplittableRandom rng, double sigma) {
         for (int i = 0; i < px.length; i++) {
             px[i] = (float) Math.max(0, Math.min(1, px[i] + rng.nextGaussian() * sigma));
         }
@@ -123,7 +124,7 @@ public final class Degrade {
 
     /** Flatbed scan: small skew, soft focus, grey paper, noise, specks, JPEG. */
     public static Image scan(Image img, long seed) {
-        Random rng = new Random(seed);
+        SplittableRandom rng = new SplittableRandom(seed);
         int w = img.width(), h = img.height();
         double angle = uniform(rng, -1.2, 1.2);
         Mat rot = getRotationMatrix2D(new Point2f(w / 2f, h / 2f), angle, 1.0);
@@ -144,7 +145,7 @@ public final class Degrade {
 
     /** Phone photo: page curl, perspective on a darker background, uneven light, blur, JPEG. */
     public static Image photo(Image img, long seed) {
-        Random rng = new Random(seed);
+        SplittableRandom rng = new SplittableRandom(seed);
         int w = img.width(), h = img.height();
 
         // Page curl: a vertical displacement that bows the page, strongest mid-page.
