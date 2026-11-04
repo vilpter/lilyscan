@@ -15,6 +15,9 @@ dependencies {
     api libs.jackson.databind
     api libs.slf4j.api
     implementation libs.pdfbox
+    // Most scanned PDFs (IMSLP, Internet Archive, HathiTrust) store their pages as JBIG2.
+    // PDFBox finds this decoder through ImageIO's service registry at run time.
+    runtimeOnly libs.jbig2.imageio
     // Stage 1 (page preparation) runs on OpenCV through JavaCPP, the same JavaCPP release
     // Audiveris uses for Tesseract (D10). Natives for the target platform only.
     implementation(libs.opencv) {

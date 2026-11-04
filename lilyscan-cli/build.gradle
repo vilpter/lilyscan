@@ -24,10 +24,33 @@ tasks.named('shadowJar') {
     archiveBaseName = 'lilyscan'
     archiveClassifier = ''
     archiveVersion = ''
-    // Merge service descriptors (SLF4J providers, Javalin/Jetty, JavaCPP) so the fat jar runs.
+    // Merge service descriptors (SLF4J providers, Javalin/Jetty, JavaCPP, ImageIO readers) so
+    // the fat jar runs. The default duplicates strategy (EXCLUDE) drops every copy of a
+    // descriptor but the first before the merge sees them, so keep them all here.
+    filesMatching('META-INF/services/**') {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
     mergeServiceFiles()
     // SQLite's JDBC driver loads its native library (JDK 24+ warns unless this is granted).
     manifest {
         attributes 'Enable-Native-Access': 'ALL-UNNAMED'
+    }
+    // Service descriptors the jar cannot run without: fail the build if a merge loses one.
+    doLast {
+        def required = [
+            'META-INF/services/javax.imageio.spi.ImageReaderSpi': [
+                'org.apache.pdfbox.jbig2.JBIG2ImageReaderSpi',
+                'com.github.jaiimageio.jpeg2000.impl.J2KImageReaderSpi',
+            ],
+        ]
+        def jar = archiveFile.get().asFile
+        new java.util.zip.ZipFile(jar).withCloseable { zip ->
+            required.each { path, providers ->
+                def entry = zip.getEntry(path)
+                def text = entry == null ? '' : zip.getInputStream(entry).getText('UTF-8')
+                def missing = providers.findAll { !text.contains(it) }
+                if (missing) throw new GradleException("${jar.name}: ${path} lacks ${missing}")
+            }
+        }
     }
 }

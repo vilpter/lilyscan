@@ -60,10 +60,14 @@ final class PageImage {
         return new float[][] {quad[amin].clone(), quad[dmin].clone(), quad[amax].clone(), quad[dmax].clone()};
     }
 
-    private static float[][] points(Mat m) {
+    /**
+     * The (x, y) points of {@code m}, which is either a contour (N x 1, two channels, as from
+     * {@code approxPolyDP}) or a point list (N x 2, one channel, as from {@code boxPoints}).
+     */
+    static float[][] points(Mat m) {
         Mat c = new Mat();
         m.convertTo(c, CV_32F);
-        int n = (int) (c.total());
+        int n = (int) (c.total() * c.channels() / 2);
         float[] flat = new float[n * 2];
         ((FloatIndexer) c.reshape(1, n).createIndexer()).get(0L, flat);
         float[][] out = new float[n][2];

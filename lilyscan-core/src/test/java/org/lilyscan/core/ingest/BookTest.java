@@ -85,4 +85,10 @@ class BookTest {
         Path kept = Book.withoutPages(repro("satb-01.pdf"), List.of(1), dir);
         assertEquals(1, PdfPages.pages(kept).size());
     }
+
+    /** Most scanned PDFs store their pages as JBIG2; PDFBox decodes it through ImageIO (#105). */
+    @Test
+    void jbig2DecoderIsInstalled() {
+        assertTrue(javax.imageio.ImageIO.getImageReadersByFormatName("JBIG2").hasNext());
+    }
 }
