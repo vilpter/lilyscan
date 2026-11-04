@@ -350,7 +350,7 @@ LANG=C.UTF-8 ./gradlew build
 builds every module and runs the tests. The parity tests compare the Java code with references
 the original Python implementation of Lilyscan produced (`tests/parity/`). That implementation,
 and the scripts that made the references and the larger local sweeps (`-PengineSweep`,
-`-PprepareSweep`, `-PcombineSweep`, `-PevalSweep`), are kept in the history at the tag
+`-PprepareSweep`, `-PcombineSweep`, `-PevalSweep`), are kept on the branch
 `python-reference`; comments in the Java code that name a `lilyscan/*.py` file refer to it.
 
 Tests that need LilyPond (`LILYPOND_BIN`) or the OCR models (`TESSDATA_PREFIX`) are skipped

@@ -38,7 +38,7 @@ subprojects {
         useJUnitPlatform()
         // Parity tests read the shared fixtures and the references the Python implementation
         // generated (tests/parity/) from the repository root. The Python code, and the scripts
-        // that made the references and the sweep data below, are at the tag python-reference.
+        // that made the references and the sweep data below, are on the branch python-reference.
         systemProperty 'lilyscan.repoRoot', rootProject.projectDir.absolutePath
         inputs.dir(rootProject.file('tests/parity')).optional().withPropertyName('parity')
         // Opt-in full corpus sweep: -PparitySweep=/tmp/parity-sweep (data from scripts/java_parity.py --sweep at python-reference).
