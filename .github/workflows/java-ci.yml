@@ -1,4 +1,4 @@
-# CI for the Lilyscan server (Java). The Python ci.yml checks the reference implementation that
+# CI for Lilyscan in Java: the server, the CLI and the desktop app. The Python ci.yml checks the reference implementation that
 # the parity tests compare against.
 name: java-ci
 
@@ -53,8 +53,15 @@ jobs:
             "https://gitlab.com/lilypond/lilypond/-/releases/v$v/downloads/lilypond-$v-linux-x86_64.tar.gz"
           sudo tar -xzf /tmp/lilypond.tar.gz -C /opt
           echo "LILYPOND_BIN=/opt/lilypond-$v/bin/lilypond" >> "$GITHUB_ENV"
-      - name: Build and test
-        run: ./gradlew build --no-daemon
+      - name: Build and test (a virtual display for the desktop app's window test)
+        run: xvfb-run -a -s "-screen 0 1600x1000x24" ./gradlew build --no-daemon
+      - name: Desktop app screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-screenshots
+          path: lilyscan-desktop/build/screenshots/
+          if-no-files-found: ignore
       - name: Fat jar + CLI smoke test
         run: |
           ./gradlew :lilyscan-cli:shadowJar --no-daemon

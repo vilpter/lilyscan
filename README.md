@@ -71,7 +71,7 @@ lilyscan-engine/     Audiveris run in-process inside a separate worker JVM
 lilyscan-server/     the web server (Javalin), job store (SQLite) and job steps
 lilyscan-eval/       corpus scoring and confidence fitting
 lilyscan-cli/        the command line (`serve`, `convert`, `eval`, ...); builds lilyscan.jar
-lilyscan-desktop/    the desktop review app (in progress)
+lilyscan-desktop/    the desktop app (Swing): the review in a window, on this computer or a server
 services/web/        the browser UI (plain HTML, CSS and JavaScript, no build step)
 third_party/         Audiveris 5.11.0 (git submodule)
 lilyscan/            the Python reference implementation: corpus generation and parity references
@@ -264,6 +264,27 @@ violin part and a cello part scanned separately.
 
 The combined score is a job like any other: review it, edit it, download it.
 
+### Desktop app
+
+The same review, as a desktop window instead of a browser tab:
+
+```bash
+java -jar lilyscan.jar desktop                                # on this computer
+java -jar lilyscan.jar desktop --server http://homelab:8000    # with a Lilyscan server
+```
+
+On this computer it starts the Lilyscan engine inside the app, and keeps the jobs in your
+user data folder (`~/.local/share/lilyscan` on Linux, `%LOCALAPPDATA%\Lilyscan` on Windows,
+`~/Library/Application Support/Lilyscan` on macOS; `--data` sets another). It needs LilyPond
+and the OCR models as a native install does ([Natively](#natively)). With `--server`, or
+**Connection > Lilyscan server...**, it works on the jobs of a server, such as the Docker one,
+and needs nothing else installed. The app remembers the last choice.
+
+It does what the web UI does: upload (or drop files on the window), follow a job, review in
+three panes with click-to-sync, edit and recompile, drop misread lyrics, re-run, combine parts,
+and download every format. **Ctrl + mouse wheel** or the **- Fit +** buttons zoom the page and
+the engraved score.
+
 ### Command line
 
 ```bash
@@ -271,7 +292,8 @@ java -jar lilyscan.jar convert score.mxl --out out/score
 ```
 
 `convert` turns a MusicXML file (for example Audiveris output) into a LilyPond project with a
-QA report. The other commands: `serve` (above), `versions`, `selftest` and `eval` (below).
+QA report. The other commands: `serve` (above), `desktop` (above), `versions`, `selftest` and
+`eval` (below).
 `java -jar lilyscan.jar <command> --help` shows the options.
 
 ### What a job keeps

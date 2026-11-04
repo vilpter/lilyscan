@@ -215,6 +215,23 @@ public final class JobStore implements AutoCloseable {
         }
     }
 
+    /**
+     * Marks the jobs a stopped server left queued or running as failed, so they do not show as
+     * running for ever (the dispatcher runs in the server's process, so nothing else will finish
+     * them). Returns how many there were.
+     */
+    public synchronized int failInterrupted() {
+        try (PreparedStatement ps = db.prepareStatement("UPDATE jobs SET status = ?, error = ? WHERE status IN (?, ?)")) {
+            ps.setString(1, Status.FAILED.value());
+            ps.setString(2, "Lilyscan stopped while this job was running; re-run it.");
+            ps.setString(3, Status.QUEUED.value());
+            ps.setString(4, Status.RUNNING.value());
+            return ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private static String dumps(JsonNode node) {
         return PyJson.write(node, PyJson.Style.JSON_DUMPS_COMPACT);
     }
