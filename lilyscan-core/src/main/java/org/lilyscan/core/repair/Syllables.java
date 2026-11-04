@@ -94,12 +94,12 @@ public final class Syllables {
         int n = cps.length, k = anchors.size();
         if (k < 2 || n < k) return null;
         double[] widths = new double[n];
-        double total = 0;
+        Py.Sum total = new Py.Sum(); // Python's sum() of floats is compensated
         for (int i = 0; i < n; i++) {
             widths[i] = width(cps[i]);
-            total += widths[i];
+            total.add(widths[i]);
         }
-        double scale = box.w() / total;
+        double scale = box.w() / total.value();
         double[] edges = new double[n + 1];
         edges[0] = box.x();
         for (int i = 0; i < n; i++) edges[i + 1] = edges[i] + widths[i] * scale;

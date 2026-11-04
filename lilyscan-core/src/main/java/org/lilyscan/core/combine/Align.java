@@ -156,14 +156,14 @@ public final class Align {
     }
 
     private static double meanConfidence(Part part) {
-        double sum = 0;
+        org.lilyscan.core.util.Py.Sum sum = new org.lilyscan.core.util.Py.Sum(); // Python's sum() of floats
         int n = 0;
         for (Staff st : part.staves) {
             for (Measure m : st.measures) {
-                for (Voice v : m.voices) for (Event e : v.events) if (e.confidence != null) { sum += e.confidence; n++; }
+                for (Voice v : m.voices) for (Event e : v.events) if (e.confidence != null) { sum.add(e.confidence); n++; }
             }
         }
-        return n > 0 ? sum / n : 0.0;
+        return n > 0 ? sum.value() / n : 0.0;
     }
 
     /** The longest measure count at least two parts share (else the median one), then the most confident part. */

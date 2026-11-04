@@ -82,6 +82,30 @@ public final class Prepare {
         return new Result(toImage((Np.F) out[0]), (Report) out[1]);
     }
 
+    /**
+     * Writes the prepared page for the image {@code src} to {@code dst} (PNG) and returns the
+     * report (Python {@code prepare_image}); images are read and written with OpenCV, as
+     * {@code cv2} does.
+     */
+    public static Report prepareImage(java.nio.file.Path src, java.nio.file.Path dst) {
+        org.bytedeco.opencv.opencv_core.Mat raw = org.bytedeco.opencv.global.opencv_imgcodecs.imread(src.toString(),
+                org.bytedeco.opencv.global.opencv_imgcodecs.IMREAD_GRAYSCALE);
+        if (raw == null || raw.empty()) throw new IllegalArgumentException("cannot read image " + src);
+        Np.U8 u = Np.u8(raw);
+        Np.F gray = new Np.F(u.w, u.h);
+        for (int i = 0; i < gray.a.length; i++) gray.a[i] = (float) (u.a[i] & 255) / 255f;
+        Object[] out = preparePage(gray, src.getFileName().toString(), true, true, "auto");
+        try {
+            java.nio.file.Files.createDirectories(dst.getParent());
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+        if (!org.bytedeco.opencv.global.opencv_imgcodecs.imwrite(dst.toString(), Np.mat(Np.toU8((Np.F) out[0], 0.5f)))) {
+            throw new java.io.UncheckedIOException(new java.io.IOException("cannot write " + dst));
+        }
+        return (Report) out[1];
+    }
+
     static Np.F fromImage(BufferedImage img) {
         if (img.getType() != BufferedImage.TYPE_BYTE_GRAY) throw new IllegalArgumentException("expected an 8-bit gray image");
         byte[] px = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();

@@ -1,6 +1,16 @@
-// lilyscan-eval — the evaluation harness and the synthetic-corpus generator (D21).
-// Test/dev scope; not shipped in the Docker image or the desktop installer.
+// lilyscan-eval — the evaluation harness (`lilyscan eval run | calibrate`). Corpora are built by
+// the Python `lilyscan corpus build` for now; a Java generator is a later, optional step (D21).
 dependencies {
     api project(':lilyscan-core')
     api project(':lilyscan-engine')
+}
+
+dependencies {
+    testImplementation testFixtures(project(':lilyscan-core'))
+}
+
+tasks.withType(Test).configureEach {
+    // .omr projects are read with Audiveris in-process (as the engine module's tests do).
+    systemProperty 'java.awt.headless', 'true'
+    systemProperty 'sun.java2d.uiScale', '1'
 }

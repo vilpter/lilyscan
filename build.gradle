@@ -58,6 +58,12 @@ subprojects {
             systemProperty 'lilyscan.combineSweep', combineSweep
             outputs.upToDateWhen { false }
         }
+        // Opt-in evaluation sweep: -PevalSweep=/tmp/eval (Python eval runs to compare with).
+        def evalSweep = project.findProperty('evalSweep')
+        if (evalSweep) {
+            systemProperty 'lilyscan.evalSweep', evalSweep
+            outputs.upToDateWhen { false }
+        }
         // Opt-in engine-run sweep: -PengineSweep=/tmp/engine-sweep (scripts/java_engine_sweep.py).
         def engineSweep = project.findProperty('engineSweep')
         if (engineSweep) {
