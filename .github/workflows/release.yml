@@ -1,0 +1,130 @@
+# A Lilyscan release (docs/RELEASING.md). Start it by pushing a tag (git tag v0.2.0 && git push
+# origin v0.2.0) or from the Actions tab (Run workflow, with the version). It:
+#   1. builds the .deb and .rpm of the desktop app at that version;
+#   2. creates the GitHub Release v<version> with them and docker-compose.yml attached;
+#   3. updates the apt repository (the `apt` release: a signed flat repository holding the
+#      newest .deb), so `sudo apt update && sudo apt upgrade` installs it;
+#   4. publishes the server image as ghcr.io/vilpter/lilyscan:<version> and :latest.
+# Needs the repository secret APT_SIGNING_KEY (and APT_SIGNING_PASSPHRASE if the key has one).
+name: release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 0.2.0 (creates the tag v0.2.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write   # create the release and its tag, upload assets
+  packages: write   # publish the image
+
+env:
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - id: v
+        env:
+          INPUT: ${{ inputs.version }}
+        run: |
+          v="${INPUT:-${GITHUB_REF_NAME#v}}"
+          v="${v#v}"
+          if ! printf '%s' "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$v' is not a version like 0.2.0"; exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Releasing $v"
+
+  packages:
+    needs: version
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: The apt signing key is set
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          if [ -z "$APT_SIGNING_KEY" ]; then
+            echo "::error::The repository secret APT_SIGNING_KEY is missing: create it as described in docs/RELEASING.md"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive   # third_party/audiveris
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Packaging tools
+        run: sudo apt-get update && sudo apt-get install -y fakeroot rpm dpkg-dev apt-utils gnupg
+      - name: Fat jar
+        run: ./gradlew :lilyscan-cli:shadowJar --no-daemon
+      - name: .deb and .rpm
+        env:
+          LILYSCAN_VERSION: ${{ env.VERSION }}
+        run: |
+          packaging/linux/package.sh deb dist
+          packaging/linux/package.sh rpm dist
+          ls -la dist
+      - name: GitHub Release v${{ env.VERSION }}
+        run: |
+          tag="v$VERSION"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            cat > notes.md <<EOF
+          Lilyscan $VERSION.
+
+          - **Web server (Docker):** \`docker compose up -d\` with the attached \`docker-compose.yml\`; the image is \`ghcr.io/vilpter/lilyscan:$VERSION\`.
+          - **Desktop app (Ubuntu/Debian):** from the apt repository (\`sudo apt install lilyscan\`), or the attached \`.deb\`.
+          - **Desktop app (Fedora/openSUSE):** the attached \`.rpm\`.
+
+          Step-by-step instructions: [docs/INSTALL.md](https://github.com/${GITHUB_REPOSITORY}/blob/$tag/docs/INSTALL.md).
+          EOF
+            gh release create "$tag" --target "$GITHUB_SHA" --title "Lilyscan $VERSION" --notes-file notes.md
+          fi
+          gh release upload "$tag" dist/lilyscan_*_amd64.deb dist/lilyscan-*.x86_64.rpm docker-compose.yml --clobber
+      - name: Signed apt repository
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+          APT_SIGNING_PASSPHRASE: ${{ secrets.APT_SIGNING_PASSPHRASE }}
+        run: packaging/linux/apt-repo.sh "dist/lilyscan_${VERSION}_amd64.deb" apt
+      - name: Publish the apt repository (the `apt` release)
+        run: |
+          if ! gh release view apt >/dev/null 2>&1; then
+            cat > apt-notes.md <<EOF
+          The Lilyscan apt repository: the newest \`.deb\` and its signed index. Not a release of its own;
+          see the numbered releases. To use it, follow "Desktop app" in [docs/INSTALL.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/INSTALL.md).
+          EOF
+            gh release create apt --target "$GITHUB_SHA" --title "apt repository" --notes-file apt-notes.md --latest=false
+          fi
+          old="$(gh release view apt --json assets -q '.assets[].name' | grep '\.deb$' | grep -vx "lilyscan_${VERSION}_amd64.deb" || true)"
+          # The package first, then the index that names it, then the old package: apt never sees an
+          # index whose package is missing.
+          gh release upload apt "apt/lilyscan_${VERSION}_amd64.deb" --clobber
+          gh release upload apt apt/Packages apt/Packages.gz apt/Release apt/InRelease apt/Release.gpg \
+            apt/lilyscan-archive-keyring.gpg apt/lilyscan-archive-keyring.asc --clobber
+          for name in $old; do gh release delete-asset apt "$name" --yes; done
+          gh release view apt --json assets -q '.assets[] | "\(.name) \(.size)"'
+
+  image:
+    needs: version
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+    permissions:
+      contents: read
+      packages: write

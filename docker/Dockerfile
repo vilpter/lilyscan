@@ -3,11 +3,16 @@
 # OCR), LilyPond and the OCR models, so `docker compose up` needs nothing on the host but Docker.
 #
 # The fat jar is built by CI (it needs the Audiveris submodule + a UTF-8 locale + JDK 25) and
-# copied in here; CI publishes the image to GHCR so users pull rather than build. To build
-# locally, run first:
+# copied in here; CI publishes the image to ghcr.io/vilpter/lilyscan (publish-image.yml) so users
+# pull rather than build. To build locally, run first:
 #   LANG=C.UTF-8 ./gradlew :lilyscan-cli:shadowJar   # requires: git submodule update --init
 #   docker build -f docker/Dockerfile -t lilyscan .
 FROM eclipse-temurin:25-jre
+
+# Links the published image to its repository on GitHub (and its description on the package page).
+LABEL org.opencontainers.image.source="https://github.com/vilpter/lilyscan" \
+      org.opencontainers.image.description="Lilyscan: sheet music in, editable LilyPond out (web server)" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later"
 
 # LilyPond 2.26.0 (D5) and the pinned Tesseract OCR models (D10), both fetched at build time (not
 # committed — model binaries are large and are not redistributed in the repo, D11). The full

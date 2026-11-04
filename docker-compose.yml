@@ -1,25 +1,28 @@
-# Lilyscan: sheet music in, editable LilyPond out. One service, one image, no Redis.
+# Lilyscan: sheet music in, editable LilyPond out. One container, nothing else to install.
 #
-# Build and start (needs JDK 25, Docker, the Audiveris submodule and a UTF-8 locale):
-#   git submodule update --init
-#   LANG=C.UTF-8 ./gradlew :lilyscan-cli:shadowJar
-#   docker compose up -d --build
-#   # then open http://localhost:8000/
+# Start it (Docker with the Compose plugin; see docs/INSTALL.md for a step-by-step guide):
+#   docker compose up -d
+#   # then open http://<this machine's address>:8000/
 #
-# The image carries everything: the server, Audiveris (with its OCR engine), LilyPond and the
-# OCR models for English, Latin, German and French. Other OCR languages listed in
-# LILYSCAN_OCR_LANGUAGES are downloaded once at startup and kept in the tessdata-cache volume.
-# Once CI publishes the image to ghcr.io, `docker compose pull && docker compose up -d` will
-# skip the build.
+# The image (ghcr.io/vilpter/lilyscan) carries everything: the server, Audiveris with its OCR
+# engine, LilyPond, and the OCR models for English, Latin, German and French. Other OCR languages
+# named in LILYSCAN_OCR_LANGUAGES are downloaded once at startup and kept in the tessdata-cache
+# volume.
+#
+# Settings: put any of the variables below in a file named .env next to this one, e.g.
+#   LILYSCAN_PORT=8080
+#   LILYSCAN_TAG=0.1.0          # a released version instead of the latest build
+#
+# Lilyscan has no login: anyone who can reach the port can upload and see every job. Keep it on
+# your home network or behind a VPN or a reverse proxy that asks for a password (docs/INSTALL.md).
+#
+# Building the image from source instead of pulling it: see docker/compose.build.yml.
 services:
   lilyscan:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
     image: ghcr.io/vilpter/lilyscan:${LILYSCAN_TAG:-latest}
     restart: unless-stopped
     ports:
-      - "${LILYSCAN_PORT:-8000}:8000"
+      - "${LILYSCAN_BIND:-0.0.0.0}:${LILYSCAN_PORT:-8000}:8000"
     environment:
       # OCR languages for lyrics and text (Tesseract codes joined with +).
       LILYSCAN_OCR_LANGUAGES: "${LILYSCAN_OCR_LANGUAGES:-eng+lat+deu+fra}"

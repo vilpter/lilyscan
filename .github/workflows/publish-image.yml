@@ -1,0 +1,76 @@
+# Publishes the server image to ghcr.io/vilpter/lilyscan, after the same end-to-end check as CI.
+#   - every push to main:    :latest and :sha-<commit>
+#   - a release (release.yml calls this with its version, e.g. 0.2.0): also :0.2.0 and :0.2
+# The image must be public for `docker compose pull` to work without a login: see
+# docs/RELEASING.md (one-time setting on the package page).
+name: publish-image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lilyscan-*/**"
+      - "services/web/**"
+      - "docker/**"
+      - "settings.gradle"
+      - "build.gradle"
+      - "gradle/**"
+      - ".github/workflows/publish-image.yml"
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        description: "Release version, e.g. 0.2.0 (adds the :0.2.0 and :0.2 tags)"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+  IMAGE: ghcr.io/vilpter/lilyscan
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive   # third_party/audiveris
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Build the fat jar
+        run: ./gradlew :lilyscan-cli:shadowJar --no-daemon
+      - name: Build the image
+        run: docker build -f docker/Dockerfile -t lilyscan:candidate .
+      - name: End to end (upload a page, transcribe, review, download)
+        run: docker/smoke-test.sh lilyscan:candidate
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag and push
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          tags="sha-${GITHUB_SHA::7}"
+          # A release run tags the version; only builds of main move :latest.
+          if [ -n "$VERSION" ]; then
+            tags="$tags $VERSION ${VERSION%.*}"
+          fi
+          if [ "$GITHUB_REF" = refs/heads/main ] || [ -n "$VERSION" ]; then
+            tags="$tags latest"
+          fi
+          for t in $tags; do
+            docker tag lilyscan:candidate "$IMAGE:$t"
+            docker push "$IMAGE:$t"
+            echo "pushed $IMAGE:$t"
+          done
