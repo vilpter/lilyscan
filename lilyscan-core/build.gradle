@@ -1,0 +1,6 @@
+// lilyscan-core — the whole pipeline, IR, generator, repair, QA, config, device.
+// No Swing, no HTTP, no web dependencies (design-java.md §4).
+dependencies {
+    api libs.jackson.databind
+    api libs.slf4j.api
+}

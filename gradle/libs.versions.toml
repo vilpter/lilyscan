@@ -1,0 +1,43 @@
+# Pinned dependency versions for the Java port (design-java.md §9).
+# Only the entries actually referenced by a module are resolved; the rest are
+# declared here so later milestones (JM4+ CV/ML, JM9 desktop) can wire them in.
+[versions]
+# External engines (pinned, D5/D7)
+audiveris = "5.11.0"
+lilypond = "2.26.0"
+# Core libraries
+proxymusic = "4.0.3"
+pdfbox = "3.0.6"
+jackson = "2.18.2"
+slf4j = "2.0.16"
+logback = "1.5.12"
+# Server + store
+javalin = "6.3.0"
+sqlite = "3.47.1.0"
+# CLI
+picocli = "4.7.6"
+# Desktop (optional, JM9)
+flatlaf = "3.7.2"
+rsyntaxtextarea = "3.6.0"
+# CV / ML (optional, JM5+; coordinates verified before first use)
+bytedeco-opencv = "4.11.0-1.5.13"
+onnxruntime = "1.20.0"
+# Tests
+junit = "5.11.3"
+# Plugins
+shadow = "8.3.5"
+
+[libraries]
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+javalin = { module = "io.javalin:javalin", version.ref = "javalin" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+flatlaf = { module = "com.formdev:flatlaf", version.ref = "flatlaf" }
+rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", version.ref = "rsyntaxtextarea" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

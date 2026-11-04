@@ -1,0 +1,27 @@
+// lilyscan-cli — the single entry point (design-java.md §4). picocli dispatches
+// serve | convert | versions | selftest | device | corpus | eval | desktop | --engine-worker.
+// Builds the Shadow fat jar that the Docker image runs (D22).
+plugins {
+    id 'application'
+    alias(libs.plugins.shadow)
+}
+
+dependencies {
+    implementation project(':lilyscan-core')
+    implementation project(':lilyscan-engine')
+    implementation project(':lilyscan-server')
+    implementation libs.picocli
+    runtimeOnly libs.logback.classic
+}
+
+application {
+    mainClass = 'org.lilyscan.cli.Main'
+}
+
+tasks.named('shadowJar') {
+    archiveBaseName = 'lilyscan'
+    archiveClassifier = ''
+    archiveVersion = ''
+    // Merge service descriptors (SLF4J providers, Javalin/Jetty, JavaCPP) so the fat jar runs.
+    mergeServiceFiles()
+}

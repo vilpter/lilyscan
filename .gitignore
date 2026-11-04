@@ -17,5 +17,9 @@ eval/work/
 # Local planning document; the public copy is docs/design.md.
 /omr-lilypond-scope.md
 
+# Gradle / Java (the port, design-java.md). build/ is already ignored above.
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
 # Local editor and app settings
 .claude/

@@ -1,0 +1,9 @@
+// lilyscan-server — the primary front end (D17): Javalin serves the services/web/ SPA and the
+// /api/jobs + /api/scores API; SQLite job store (D18).
+dependencies {
+    api project(':lilyscan-core')
+    api project(':lilyscan-engine')
+    implementation libs.javalin
+    implementation libs.sqlite.jdbc
+    runtimeOnly libs.logback.classic
+}

@@ -1,0 +1,35 @@
+pluginManagement {
+    repositories {
+        // Google-hosted Maven Central mirror first (Central's shared-IP rate limiting
+        // 429s cloud builds); Gradle Plugin Portal and Central as fallbacks.
+        maven { url = 'https://maven-central.storage-download.googleapis.com/maven2' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+plugins {
+    // Lets the Java toolchain auto-provision JDK 25 (D13) when it is not installed.
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
+}
+
+dependencyResolutionManagement {
+    repositories {
+        maven { url = 'https://maven-central.storage-download.googleapis.com/maven2' }
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'lilyscan-desktop'
+
+include 'lilyscan-core'
+include 'lilyscan-engine'
+include 'lilyscan-server'
+include 'lilyscan-cli'
+include 'lilyscan-eval'
+include 'lilyscan-desktop'   // optional, secondary front end (D14)
+
+// Audiveris is linked in-process (D15) as a composite build against a pinned
+// submodule. Wired by the JM0 "Audiveris submodule" step once third_party/audiveris
+// is present:
+//   includeBuild 'third_party/audiveris'
