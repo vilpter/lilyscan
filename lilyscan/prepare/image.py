@@ -331,11 +331,13 @@ def _text_lean(mask: NDArray[np.uint8]) -> tuple[float, int]:
     centre = top + height / 2
     used = np.zeros(len(boxes), dtype=bool)
     lean, letters = 0.0, 0
-    for i in np.argsort(centre):
+    # Stable sorts: NumPy's default sort orders ties differently by CPU (an AVX-512 sort or
+    # introsort), which would make the letter grouping, and so the result, machine-dependent.
+    for i in np.argsort(centre, kind="stable"):
         if used[i]:
             continue
         row = np.flatnonzero(~used & (np.abs(centre - centre[i]) < 0.6 * height[i]))
-        row = row[np.argsort(left[row])]
+        row = row[np.argsort(left[row], kind="stable")]
         # Split the row into words and phrases: letters close side by side.
         runs: list[list[int]] = [[int(row[0])]]
         for a, b in pairwise(row):

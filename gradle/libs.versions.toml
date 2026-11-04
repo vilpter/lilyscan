@@ -23,7 +23,8 @@ picocli = "4.7.6"
 flatlaf = "3.7.2"
 rsyntaxtextarea = "3.6.0"
 # CV / ML (optional, JM5+; coordinates verified before first use)
-bytedeco-opencv = "4.11.0-1.5.13"
+bytedeco-opencv = "4.13.0-1.5.13"
+bytedeco-openblas = "0.3.31-1.5.13"
 onnxruntime = "1.20.0"
 # Tests
 junit = "5.11.3"
@@ -31,6 +32,8 @@ junit = "5.11.3"
 shadow = "9.6.1"
 
 [libraries]
+opencv = { module = "org.bytedeco:opencv", version.ref = "bytedeco-opencv" }
+openblas = { module = "org.bytedeco:openblas", version.ref = "bytedeco-openblas" }
 pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }

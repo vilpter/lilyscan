@@ -61,7 +61,10 @@ class BookTest {
         Path bogus = Files.writeString(dir.resolve("notes.txt"), "x");
         Book book = Book.assemble(List.of(repro("satb-01.pdf"), png, bogus, repro("two-movements.pdf")), dir.resolve("prepared"));
         assertEquals(dir.resolve("prepared/pages.tif"), book.prepared);
-        assertNull(book.uploaded);
+        // The image went through Stage 1: its entry carries the preparation report.
+        assertEquals("no-clef.png", book.pages.get(1).get("source"));
+        assertTrue(book.pages.get(1).containsKey("page_found"));
+        assertEquals(book.scanLike(), book.uploaded != null);
         assertEquals(4, book.pages.size());
         assertEquals(Map.of("input", "satb-01.pdf", "page", 0, "kind", "vector", "born_digital", true,
                 "rendered_dpi", 400, "passed", true), book.pages.get(0));
@@ -71,9 +74,9 @@ class BookTest {
         assertEquals(3, Book.imagePages(book.prepared).size());
 
         Path kept = Book.withoutPages(book.prepared, List.of(1, 3), dir.resolve("kept"));
-        List<BufferedImage> pages = Book.imagePages(kept);
+        List<Book.Gray> pages = Book.imagePages(kept);
         assertEquals(2, pages.size());
-        assertEquals(3308, pages.get(0).getWidth());
+        assertEquals(3308, pages.get(0).w());
         assertEquals(dir.resolve("kept/pages.tif"), kept);
     }
 

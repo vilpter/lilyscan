@@ -46,6 +46,12 @@ subprojects {
             systemProperty 'lilyscan.paritySweep', sweep
             outputs.upToDateWhen { false }
         }
+        // Opt-in Stage 1 sweep: -PprepareSweep=/tmp/prepare-sweep (scripts/java_prepare_sweep.py).
+        def prepareSweep = project.findProperty('prepareSweep')
+        if (prepareSweep) {
+            systemProperty 'lilyscan.prepareSweep', prepareSweep
+            outputs.upToDateWhen { false }
+        }
         // Opt-in engine-run sweep: -PengineSweep=/tmp/engine-sweep (scripts/java_engine_sweep.py).
         def engineSweep = project.findProperty('engineSweep')
         if (engineSweep) {
