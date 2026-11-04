@@ -84,15 +84,48 @@ docker-compose.yml   the Docker deployment: one service
 
 ## Install
 
-Lilyscan is one Java program, `lilyscan.jar`, with Audiveris built in. It needs LilyPond and
-the Tesseract OCR models next to it. There are two ways to run it:
+**Step-by-step guide for beginners: [docs/INSTALL.md](docs/INSTALL.md)** (installing Docker,
+keeping Lilyscan private, settings, updates, backups, troubleshooting).
 
-- **With Docker** (the simplest): Docker is the only thing to install. The image carries the
-  server, Audiveris, LilyPond and the OCR models at the pinned versions.
-- **Natively**: Java 25, LilyPond and the OCR models installed on the machine itself.
+### Web server, on a home server (Docker)
 
-Either way the jar is built from source for now (a published image is planned). Building it
-needs a JDK 25 and the Audiveris submodule:
+On a 64-bit Intel/AMD Linux machine with [Docker](https://docs.docker.com/engine/install/) and its
+Compose plugin, 4 GB of memory or more:
+
+```bash
+mkdir -p ~/lilyscan && cd ~/lilyscan
+curl -fsSLO https://github.com/vilpter/lilyscan/releases/latest/download/docker-compose.yml
+docker compose up -d
+```
+
+Then open `http://<the server's address>:8000/` from any browser on your network. The image
+(`ghcr.io/vilpter/lilyscan`, about 700 MB) carries everything: the server, Audiveris, LilyPond and
+the OCR models. Jobs are kept in the Docker volume `lilyscan-data`. Update with
+`docker compose pull && docker compose up -d`.
+
+**Lilyscan has no login:** keep it on your home network, or reach it through a VPN or a reverse
+proxy that asks for a password ([how](docs/INSTALL.md#step-6-keep-it-private)).
+
+### Desktop app, on Ubuntu 24.04+ or Debian 13+ (apt)
+
+```bash
+sudo install -d -m 0755 /etc/apt/keyrings
+sudo curl -fsSLo /etc/apt/keyrings/lilyscan.gpg \
+  https://github.com/vilpter/lilyscan/releases/download/apt/lilyscan-archive-keyring.gpg
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/lilyscan.gpg] https://github.com/vilpter/lilyscan/releases/download/apt ./" \
+  | sudo tee /etc/apt/sources.list.d/lilyscan.list
+sudo apt update && sudo apt install lilyscan
+```
+
+It brings its own Java, Audiveris, LilyPond and OCR models, appears in the applications menu as
+**Lilyscan**, and updates with `sudo apt upgrade`. It works on its own, or on your server's jobs
+(**Connection → Lilyscan server…**). The [Releases page](https://github.com/vilpter/lilyscan/releases)
+also has the `.deb` and an `.rpm` (Fedora, openSUSE) to install directly.
+
+### Building from source
+
+Lilyscan is one Java program, `lilyscan.jar`, with Audiveris built in. Building it needs a JDK 25
+and the Audiveris submodule:
 
 ```bash
 git clone --recurse-submodules https://github.com/vilpter/lilyscan.git
@@ -102,33 +135,20 @@ LANG=C.UTF-8 ./gradlew :lilyscan-cli:shadowJar
 
 The jar is `lilyscan-cli/build/libs/lilyscan.jar` (about 120 MB). Run the build again after
 `git pull`. If the clone was made without `--recurse-submodules`, run
-`git submodule update --init` first.
-
-### With Docker
-
-You need Docker Engine with the Compose plugin, or Docker Desktop. The image is built for
-x86-64 Linux (`linux/amd64`). [Install Docker](https://docs.docker.com/engine/install/), build
-the jar (above), then:
+`git submodule update --init` first. Then either build the image from it:
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker/compose.build.yml up -d --build
 ```
 
-Then open <http://localhost:8000/>. Jobs are kept in the Docker volume `lilyscan-data`.
+(tagged `lilyscan:local`; the image is built for x86-64 Linux), or run it natively (below), or
+build the desktop packages: `packaging/linux/package.sh deb` (or `rpm`, `app-image`; needs
+`fakeroot` for a `.deb`, `rpm` for a `.rpm`). Releases are made by CI ([docs/RELEASING.md](docs/RELEASING.md)).
 
-- **Check:** `docker compose ps` shows the service. `docker compose logs -f` follows its log.
-- **Update:** `git pull`, build the jar again, then `docker compose up -d --build`.
-- **Stop:** `docker compose down`. The jobs are kept; `docker compose down -v` deletes them
-  too.
-- **Port:** `LILYSCAN_PORT=8080 docker compose up -d`.
-- **OCR languages:** English, Latin, German and French are in the image. Other languages named
-  in `LILYSCAN_OCR_LANGUAGES` (say `eng+ita`) are downloaded once at startup and kept in the
-  volume `tessdata-cache`; a custom `*.traineddata` placed there is used too.
-- **Memory:** each Audiveris run gets a JVM heap of `AUDIVERIS_MAX_HEAP` (default `3G`).
+#### Natively
 
-### Natively
-
-Lilyscan runs on Linux and Windows (macOS should work, but is untested). You need:
+To run the jar directly, Lilyscan runs on Linux and Windows (macOS should work, but is untested).
+You need:
 
 | Tool | Version | Notes | Ubuntu |
 |---|---|---|---|
@@ -140,7 +160,7 @@ Audiveris is inside the jar; it needs no install of its own. It needs the full O
 the legacy engine: `tessdata_fast` and distribution `tesseract-ocr-*` packages do not work.
 The versions are pinned: Lilyscan is tested against exactly these.
 
-#### On Ubuntu
+##### On Ubuntu
 
 These steps are for Ubuntu 24.04 or later on x86-64. Run each block in a terminal; each one
 is safe to run again. First:
@@ -149,7 +169,7 @@ is safe to run again. First:
 sudo apt install git curl
 ```
 
-##### Java
+###### Java
 
 ```bash
 sudo apt install openjdk-25-jdk
@@ -159,7 +179,7 @@ java -version
 If your Ubuntu has no `openjdk-25-jdk` package, install
 [Eclipse Temurin 25](https://adoptium.net/installation/linux/) instead.
 
-##### LilyPond
+###### LilyPond
 
 Ubuntu's own `lilypond` package is too old (2.24), so this installs the official 2.26.0 build
 in `/opt`. It takes precedence over the Ubuntu package if that is installed too.
@@ -175,7 +195,7 @@ lilypond --version
 
 The last line should print `GNU LilyPond 2.26.0`.
 
-##### OCR models
+###### OCR models
 
 ```bash
 sudo mkdir -p /usr/local/share/tessdata
@@ -210,7 +230,7 @@ Then open <http://localhost:8000/>. `--port` changes the port and `--data` the f
 jobs are kept (default `./data`). Jobs run inside the server: Audiveris in a separate JVM per
 run, so a crash or a runaway page cannot take the server down.
 
-With Docker: `docker compose up -d --build` ([above](#with-docker)).
+With Docker: `docker compose up -d` ([above](#web-server-on-a-home-server-docker)).
 
 ## Use
 
@@ -280,21 +300,10 @@ and the OCR models as a native install does ([Natively](#natively)). With `--ser
 **Connection > Lilyscan server...**, it works on the jobs of a server, such as the Docker one,
 and needs nothing else installed. The app remembers the last choice.
 
-**Installers.** On Linux the desktop app also comes as a `.deb` (Debian, Ubuntu) or `.rpm`
-(Fedora, openSUSE) with everything inside: its own Java runtime, Audiveris, LilyPond 2.26.0 and
-the OCR models for English, Latin, German and French. Nothing else needs installing; Java,
-LilyPond and the models are not needed on the computer. Build one from the jar (needs `fakeroot`
-for a `.deb`, `rpm` for a `.rpm`):
-
-```bash
-packaging/linux/package.sh deb    # or: rpm, app-image
-sudo apt install ./build/packaging/out/lilyscan_*_amd64.deb
-```
-
-It installs to `/opt/lilyscan` with a menu entry **Lilyscan** (or run
-`/opt/lilyscan/bin/Lilyscan`); `sudo apt remove lilyscan` removes it, and keeps your jobs. CI
-builds both packages for every change to the app (`desktop-packages` workflow artifacts).
-`LILYPOND_BIN` and `TESSDATA_PREFIX` still override the bundled LilyPond and models.
+**Installers.** On Ubuntu and Debian, install it with apt ([above](#desktop-app-on-ubuntu-2404-or-debian-13-apt)):
+it brings its own Java runtime, Audiveris, LilyPond 2.26.0 and the OCR models, installs to
+`/opt/lilyscan` with a menu entry **Lilyscan**, and `sudo apt remove lilyscan` removes it, keeping
+your jobs. `LILYPOND_BIN` and `TESSDATA_PREFIX` still override the bundled LilyPond and models.
 
 It does what the web UI does: upload (or drop files on the window), follow a job, review in
 three panes with click-to-sync, edit and recompile, drop misread lyrics, re-run, combine parts,

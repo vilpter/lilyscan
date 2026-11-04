@@ -24,9 +24,13 @@ jar="$root/lilyscan-cli/build/libs/lilyscan.jar"
 
 lilypond_version="$(sed -n 's/^ARG LILYPOND_VERSION=//p' "$root/docker/Dockerfile")"
 tessdata_commit="$(sed -n 's/^ARG TESSDATA_COMMIT=//p' "$root/docker/Dockerfile")"
-# The app version: the Gradle project's, without -SNAPSHOT (packages need plain numbers).
-version="$(sed -n "s/^version *= *'\([0-9.]*\).*/\1/p" "$root/build.gradle" | head -n 1)"
+# The app version: LILYSCAN_VERSION (the release workflow sets it from the tag), else the Gradle
+# project's without -SNAPSHOT (packages need plain numbers).
+version="${LILYSCAN_VERSION:-$(sed -n "s/^version *= *'\([0-9.]*\).*/\1/p" "$root/build.gradle" | head -n 1)}"
 version="${version:-0.1.0}"
+case "$version" in
+  *[!0-9.]* | .* | *. | '') echo "invalid version '$version' (use numbers and dots, e.g. 0.2.0)" >&2; exit 64 ;;
+esac
 
 jbin="${JAVA_HOME:+$JAVA_HOME/bin/}"
 [ -f "$jar" ] || { echo "no $jar: run ./gradlew :lilyscan-cli:shadowJar first" >&2; exit 1; }
