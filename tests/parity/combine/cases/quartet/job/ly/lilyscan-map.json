@@ -1,0 +1,20 @@
+{
+ "staff_vars": {
+  "violinOneMusic": [
+   "P1",
+   1
+  ],
+  "violinIIMusic": [
+   "P2",
+   1
+  ],
+  "violaMusic": [
+   "P3",
+   1
+  ],
+  "violoncelloMusic": [
+   "P4",
+   1
+  ]
+ }
+}

@@ -27,6 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from lilyscan.combine import Selection, combine  # noqa: E402
 from lilyscan.engine.audiveris.omr import OmrBook, attach_movements, read_omr  # noqa: E402
 from lilyscan.ir.models import Score  # noqa: E402
 from lilyscan.ir.musicxml import load_musicxml  # noqa: E402
@@ -205,6 +206,127 @@ def _write_manifest(out_dir: Path, manifest: list[dict[str, str]]) -> None:
     )
 
 
+def _combine_job(root: Path, score: Score) -> None:
+    """A finished job as the combiner reads it: its IR and its LilyPond parts."""
+    (root / "ir").mkdir(parents=True, exist_ok=True)
+    (root / "ir" / "score.json").write_text(
+        score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
+    )
+    project = generate_project(score)
+    project.write(root / "ly")
+    for path in (root / "ly").rglob("*.ly"):
+        if "parts" not in path.relative_to(root / "ly").parts:
+            path.unlink()  # only the parts are read
+
+
+def _write_combine(out: Path) -> None:
+    import shutil
+
+    if out.exists():
+        shutil.rmtree(out)
+    jobs = out / "jobs"
+    quartet = Score.model_validate_json(
+        (OUT / "musicxml" / "quartet-01.score.json").read_text(encoding="utf-8")
+    )
+    satb = Score.model_validate_json(
+        (OUT / "musicxml" / "satb-01.score.json").read_text(encoding="utf-8")
+    )
+    _combine_job(jobs / "quartet", quartet)
+    _combine_job(jobs / "satb", satb)
+    # A reading that lost measure 4 of the second violin (a missed barline).
+    lost = quartet.model_copy(deep=True)
+    for staff in lost.parts[1].staves:
+        del staff.measures[3]
+        for k, m in enumerate(staff.measures):
+            m.index = k
+    _combine_job(jobs / "quartet-lost", lost)
+    # A reading with an extra measure in the alto (a stray barline).
+    extra = satb.model_copy(deep=True)
+    for staff in extra.parts[1].staves:
+        staff.measures.insert(2, staff.measures[2].model_copy(deep=True))
+        for k, m in enumerate(staff.measures):
+            m.index = k
+    _combine_job(jobs / "satb-extra", extra)
+    # A reading of the viola with its key misread (a sharp too many) in measures 3-5.
+    rekey = quartet.model_copy(deep=True)
+    ms = rekey.parts[2].staves[0].measures
+    first = ms[0].key
+    assert first is not None
+    ms[2].key = first.model_copy(update={"fifths": first.fifths + 1})
+    ms[5].key = first.model_copy()
+    _combine_job(jobs / "quartet-rekey", rekey)
+    # A part that lines up with too little of the score.
+    short = quartet.model_copy(deep=True)
+    for staff in short.parts[0].staves:
+        del staff.measures[2:6]
+    _combine_job(jobs / "quartet-short", short)
+
+    def sel(
+        job: str, part: str, transpose: str | None = None, name: str | None = None
+    ) -> dict[str, object]:
+        return {"job": f"combine/jobs/{job}", "part": part, "transpose": transpose, "name": name}
+
+    cases = {
+        "quartet": {
+            "title": "Quartet, combined",
+            "parts": [
+                sel("quartet", "P1", "M2", "Violin 1"),
+                sel("quartet-lost", "P2"),
+                sel("quartet-rekey", "P3"),
+                sel("quartet", "P4"),
+            ],
+            "piano": [],
+        },
+        "satb-piano": {
+            "title": None,
+            "parts": [sel("satb", "P1", None, "Soprano solo")],
+            "piano": [sel("satb-extra", "P2"), sel("satb", "P3"), sel("satb", "P4", "-P8")],
+        },
+        "short": {
+            "title": None,
+            "parts": [sel("quartet-short", "P1"), sel("quartet", "P2")],
+            "piano": [],
+        },
+        "bad-key": {
+            "title": None,
+            "parts": [sel("quartet", "P1", "d2"), sel("quartet", "P2")],
+            "piano": [],
+        },
+    }
+    for name, request in cases.items():
+        d = out / "cases" / name
+        d.mkdir(parents=True)
+        (d / "case.json").write_text(
+            json.dumps(request, indent=1) + "\n", encoding="utf-8", newline="\n"
+        )
+
+        def selections(items: list[dict[str, object]]) -> list[Selection]:
+            return [
+                Selection(OUT / str(s["job"]), str(s["part"]), s["transpose"], s["name"])  # type: ignore[arg-type]
+                for s in items
+            ]
+
+        try:
+            combine(
+                selections(request["parts"]),  # type: ignore[arg-type]
+                d / "job",
+                request["title"],  # type: ignore[arg-type]
+                piano=selections(request["piano"]) or None,  # type: ignore[arg-type]
+            )
+        except ValueError as exc:
+            (d / "error.txt").write_text(
+                f"{type(exc).__name__}: {exc}", encoding="utf-8", newline="\n"
+            )
+            continue
+        job = d / "job"
+        for p in sorted(job.rglob("*")):  # keep the text outputs only
+            rel = p.relative_to(job).as_posix()
+            if p.is_file() and (rel.startswith("ly/svg/") or p.suffix in (".pdf", ".midi", ".mid")):
+                p.unlink()
+        shutil.rmtree(job / "ly" / "svg", ignore_errors=True)
+    _write_manifest(out, sorted(cases))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sweep", type=Path, help="also write every corpus piece here (local only)")
@@ -297,6 +419,11 @@ def main() -> None:
         if with_lilypond:
             _write_qa(ly, entry["name"], OUT / entry["score"])
     _write_manifest(ly, ly_manifest)
+
+    # The score combiner (M9): small jobs from committed scores, some read "wrong" (a lost or
+    # an extra measure, a misread key), combined as a user would. Needs LilyPond (QA).
+    if with_lilypond:
+        _write_combine(OUT / "combine")
 
     if args.sweep is not None:
         sweep = args.sweep.resolve()

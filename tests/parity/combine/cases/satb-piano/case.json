@@ -1,0 +1,31 @@
+{
+ "title": null,
+ "parts": [
+  {
+   "job": "combine/jobs/satb",
+   "part": "P1",
+   "transpose": null,
+   "name": "Soprano solo"
+  }
+ ],
+ "piano": [
+  {
+   "job": "combine/jobs/satb-extra",
+   "part": "P2",
+   "transpose": null,
+   "name": null
+  },
+  {
+   "job": "combine/jobs/satb",
+   "part": "P3",
+   "transpose": null,
+   "name": null
+  },
+  {
+   "job": "combine/jobs/satb",
+   "part": "P4",
+   "transpose": "-P8",
+   "name": null
+  }
+ ]
+}

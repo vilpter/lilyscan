@@ -1,0 +1,16 @@
+{
+ "staff_vars": {
+  "sopranoSoloMusic": [
+   "P1",
+   1
+  ],
+  "pianoUpperMusic": [
+   "Piano",
+   1
+  ],
+  "pianoLowerMusic": [
+   "Piano",
+   2
+  ]
+ }
+}

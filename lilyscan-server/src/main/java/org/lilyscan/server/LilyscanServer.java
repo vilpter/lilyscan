@@ -51,7 +51,6 @@ import org.slf4j.LoggerFactory;
  * and the {@code services/web/} single-page app, on one process with the SQLite job store (D18)
  * and the in-process dispatcher. Errors are {@code {"detail": ...}} as FastAPI sends them.
  *
- * <p>Combining parts of finished jobs ({@code POST /api/scores}) arrives with JM7.
  */
 public final class LilyscanServer implements AutoCloseable {
 
@@ -147,9 +146,7 @@ public final class LilyscanServer implements AutoCloseable {
         });
         app.get("/api/jobs/{id}/parts", ctx -> ctx.json(parts(jobRoot(ctx.pathParam("id")))));
         app.post("/api/jobs/{id}/rerun", this::rerun);
-        app.post("/api/scores", ctx -> {
-            throw new HttpError(501, "combining parts of finished jobs is not available yet");
-        });
+        app.post("/api/scores", this::createScore);
         app.post("/api/jobs", this::createJob);
         app.get("/api/jobs", ctx -> {
             ArrayNode out = JsonNodeFactory.instance.arrayNode();
@@ -289,6 +286,49 @@ public final class LilyscanServer implements AutoCloseable {
             }
         }
         submit(job.id());
+        ctx.status(201).json(job.toJson());
+    }
+
+    /** A new score from parts of finished jobs, built by the dispatcher (the combiner). */
+    private void createScore(Context ctx) throws IOException {
+        JsonNode body = ctx.body().isBlank() ? JsonNodeFactory.instance.objectNode() : MAPPER.readTree(ctx.body());
+        if (!body.path("parts").isArray()) throw new HttpError(422, "parts: field required");
+        if (body.get("parts").isEmpty()) throw new HttpError(422, "choose at least one part");
+        ObjectNode spec = JsonNodeFactory.instance.objectNode();
+        JsonNode title = body.get("title");
+        if (title == null || title.isNull()) spec.putNull("title"); else spec.put("title", title.asText());
+        ArrayNode parts = spec.putArray("parts"), piano = spec.putArray("piano");
+        List<JsonNode> all = new ArrayList<>();
+        body.get("parts").forEach(all::add);
+        int count = all.size();
+        body.path("piano").forEach(all::add);
+        for (int i = 0; i < all.size(); i++) {
+            JsonNode p = all.get(i);
+            if (!p.path("job").isTextual() || !p.path("part").isTextual()) throw new HttpError(422, "job and part: field required");
+            String job = p.get("job").asText(), part = p.get("part").asText();
+            JobStore.Job source = store.get(job);
+            if (source == null) throw new HttpError(404, "job " + job + " not found");
+            if (source.status() != JobStore.Status.DONE) throw new HttpError(409, "job " + job + " is not finished");
+            boolean has = parts(store.jobDir(job).toAbsolutePath().normalize()).stream().anyMatch(x -> part.equals(x.get("id")));
+            if (!has) throw new HttpError(422, "job " + job + " has no part " + part);
+            String transpose = p.path("transpose").isTextual() ? p.get("transpose").asText() : null;
+            if (transpose != null && !transpose.isEmpty() && !transpose.equals("concert")) {
+                try {
+                    org.lilyscan.core.ir.Transpose.Interval.parse(transpose);
+                } catch (IllegalArgumentException e) {
+                    throw new HttpError(422, e.getMessage());
+                }
+            }
+            ObjectNode sel = (i < count ? parts : piano).addObject();
+            sel.put("job", job);
+            sel.put("part", part);
+            if (transpose == null) sel.putNull("transpose"); else sel.put("transpose", transpose);
+            if (p.path("name").isTextual()) sel.put("name", p.get("name").asText()); else sel.putNull("name");
+        }
+        ObjectNode options = JsonNodeFactory.instance.objectNode();
+        options.set("combine", spec);
+        JobStore.Job job = store.create(List.of(), options);
+        dispatcher.run(job.id(), List.of(tasks::combineJob));
         ctx.status(201).json(job.toJson());
     }
 

@@ -67,10 +67,11 @@ public final class Generate {
      *  instead of on every event they touched. */
     public static final Set<String> STAFF_REPAIRS = Set.of("octave-clef", "part-merge", "lyric-verse");
 
-    private static final class StaffVars {
-        final String music; // variable name, e.g. "violinIMusic"
-        final String voice; // context name of the staff's main voice, for \lyricsto
-        final List<String> lyrics = new ArrayList<>(); // one variable per verse
+    /** One staff's variable names in the generated project. */
+    public static final class StaffVars {
+        public final String music; // variable name, e.g. "violinIMusic"
+        public final String voice; // context name of the staff's main voice, for \lyricsto
+        public final List<String> lyrics = new ArrayList<>(); // one variable per verse
 
         StaffVars(String music, String voice) {
             this.music = music;
@@ -78,11 +79,12 @@ public final class Generate {
         }
     }
 
-    private static final class PartVars {
-        final Part part;
-        final String slug; // file name stem, e.g. "violin-i"
-        final String base; // identifier stem, e.g. "violinI"
-        final List<StaffVars> staves = new ArrayList<>();
+    /** One part's file name and variable names in the generated project. */
+    public static final class PartVars {
+        public final Part part;
+        public final String slug; // file name stem, e.g. "violin-i"
+        public final String base; // identifier stem, e.g. "violinI"
+        public final List<StaffVars> staves = new ArrayList<>();
 
         PartVars(Part part, String slug, String base) {
             this.part = part;
@@ -280,7 +282,8 @@ public final class Generate {
             if (e.bbox != null) {
                 where = " bbox=p" + (e.bbox.page + 1) + ":(" + Py.round(e.bbox.x) + "," + Py.round(e.bbox.y) + ")";
             }
-            out.add("%{ ?? conf=" + String.format(java.util.Locale.ROOT, "%.2f", e.confidence) + where + " %}");
+            // Python's {:.2f}: half-even on the exact value (alignment caps confidences at 1/n, so ties occur).
+            out.add("%{ ?? conf=" + org.lilyscan.core.util.Py.fixed(e.confidence, 2) + where + " %}");
         }
         for (Provenance prov : e.provenance) {
             if ("repair".equals(prov.stage) && (prov.rule == null || !STAFF_REPAIRS.contains(prov.rule))) {
@@ -903,7 +906,8 @@ public final class Generate {
                 || VOCAL.matcher(part.abbreviation == null ? "" : part.abbreviation).find();
     }
 
-    private static List<PartVars> plan(Score score) {
+    /** The project's names for each part (Python {@code _plan}), as the generator assigns them. */
+    public static List<PartVars> plan(Score score) {
         Set<String> usedIds = new HashSet<>();
         Set<String> usedSlugs = new HashSet<>();
         List<PartVars> plans = new ArrayList<>();

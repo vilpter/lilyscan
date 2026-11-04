@@ -310,4 +310,89 @@ public final class Keys {
             }
         }
     }
+
+    /**
+     * Parts of a combined score, lined up measure by measure, where one or two read another key
+     * than the others at the same measures: set to the others' key, with the notes it alters
+     * respelled. {@code keeps.get(k)}: part {@code k} transposes (or may), so its key is its
+     * own. Returns the measures changed, by part index (in part order).
+     */
+    public static Map<Integer, List<String>> ensembleKeys(List<Part> parts, List<Boolean> keeps) {
+        List<Integer> voters = new ArrayList<>();
+        for (int k = 0; k < keeps.size(); k++) if (!keeps.get(k)) voters.add(k);
+        if (voters.size() < 3) return new LinkedHashMap<>();
+        Map<Integer, List<Integer>> inForce = new LinkedHashMap<>();
+        for (int k : voters) {
+            int fifths = 0;
+            List<Integer> keys = new ArrayList<>();
+            for (Measure m : parts.get(k).staves.get(0).measures) {
+                if (m.key != null) fifths = m.key.fifths;
+                keys.add(fifths);
+            }
+            inForce.put(k, keys);
+        }
+        int columns = Integer.MAX_VALUE;
+        for (List<Integer> v : inForce.values()) columns = Math.min(columns, v.size());
+        List<Integer> majority = new ArrayList<>();
+        for (int c = 0; c < columns; c++) {
+            // Counter(...).most_common()[0]: the highest count, first seen on a tie.
+            Map<Integer, Integer> counts = new LinkedHashMap<>();
+            for (int k : voters) counts.merge(inForce.get(k).get(c), 1, Integer::sum);
+            Map.Entry<Integer, Integer> top = null;
+            for (Map.Entry<Integer, Integer> e : counts.entrySet()) if (top == null || e.getValue() > top.getValue()) top = e;
+            int n = top.getValue();
+            majority.add(n >= 2 && n > voters.size() - n ? top.getKey() : null);
+        }
+        Set<Integer> turns = new HashSet<>();
+        for (int c = 1; c < columns; c++) if (!java.util.Objects.equals(majority.get(c), majority.get(c - 1))) turns.add(c);
+        Map<Integer, List<String>> changed = new LinkedHashMap<>();
+        Map<Integer, List<Integer>> targets = new LinkedHashMap<>();
+        inForce.forEach((k, v) -> targets.put(k, new ArrayList<>(v)));
+        for (int k : voters) {
+            int c = 0;
+            while (c < columns) {
+                Integer maj = majority.get(c);
+                if (maj == null || inForce.get(k).get(c).equals(maj)) {
+                    c++;
+                    continue;
+                }
+                int end = c;
+                while (end + 1 < columns && java.util.Objects.equals(majority.get(end + 1), maj)
+                        && !inForce.get(k).get(end + 1).equals(maj)) {
+                    end++;
+                }
+                boolean nearTurn = false;
+                for (int t = c; t < end + 2; t++) if (turns.contains(t)) nearTurn = true;
+                if (!nearTurn) {
+                    for (int col = c; col <= end; col++) {
+                        int old = inForce.get(k).get(col), target = majority.get(col);
+                        targets.get(k).set(col, target);
+                        for (Staff staff : parts.get(k).staves) {
+                            if (col < staff.measures.size()) respell(staff.measures.get(col), old, target);
+                        }
+                        Measure m = parts.get(k).staves.get(0).measures.get(col);
+                        changed.computeIfAbsent(k, x -> new ArrayList<>()).add(Repair.label(m));
+                    }
+                }
+                c = end + 1;
+            }
+        }
+        for (int k : changed.keySet()) {
+            for (Staff staff : parts.get(k).staves) {
+                Integer previous = null;
+                for (int c = 0; c < Math.min(columns, staff.measures.size()); c++) {
+                    Measure m = staff.measures.get(c);
+                    int key = targets.get(k).get(c);
+                    if (previous == null || key != previous) {
+                        String mode = m.key != null ? m.key.mode : null;
+                        m.key = newKey(key, mode);
+                    } else if (m.key != null) {
+                        m.key = null;
+                    }
+                    previous = key;
+                }
+            }
+        }
+        return changed;
+    }
 }

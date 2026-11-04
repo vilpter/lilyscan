@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.lilyscan.core.Pipeline;
+import org.lilyscan.core.combine.Combine;
 import org.lilyscan.core.ingest.Book;
 import org.lilyscan.core.ir.Event;
 import org.lilyscan.core.ir.IrJson;
@@ -425,6 +426,25 @@ public final class Tasks {
             report.put("repairs", repairs);
             report.putAll(Pipeline.produce(imported.score(), root, settings, null));
             writeJson(root.resolve("report.json"), report);
+            store.update(jobId, JobStore.Status.DONE, "done", null, MAPPER.valueToTree(report));
+        });
+    }
+
+    /** A new score from parts of finished jobs ({@code options.combine}). */
+    public void combineJob(String jobId) throws Exception {
+        step(jobId, "combine", (job, root) -> {
+            store.update(jobId, JobStore.Status.RUNNING, "combine", null, null);
+            JsonNode spec = job.options().get("combine");
+            java.util.function.Function<JsonNode, Combine.Selection> selection = p -> new Combine.Selection(
+                    store.jobDir(p.get("job").asText()), p.get("part").asText(),
+                    p.path("transpose").isTextual() ? p.get("transpose").asText() : null,
+                    p.path("name").isTextual() ? p.get("name").asText() : null);
+            List<Combine.Selection> parts = new ArrayList<>();
+            spec.path("parts").forEach(p -> parts.add(selection.apply(p)));
+            List<Combine.Selection> piano = new ArrayList<>();
+            spec.path("piano").forEach(p -> piano.add(selection.apply(p)));
+            String title = spec.path("title").isTextual() ? spec.get("title").asText() : null;
+            Map<String, Object> report = Combine.combine(parts, root, title, settings, piano);
             store.update(jobId, JobStore.Status.DONE, "done", null, MAPPER.valueToTree(report));
         });
     }

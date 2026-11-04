@@ -1,0 +1,141 @@
+{
+  "ir": "ir/score.json",
+  "musicxml": "score.musicxml",
+  "lilypond": {
+    "project": "ly",
+    "files": [
+      "ly/layout/part-piano.ly",
+      "ly/layout/part-soprano-solo.ly",
+      "ly/layout/score.ly",
+      "ly/main.ly",
+      "ly/parts/piano.ly",
+      "ly/parts/soprano-solo.ly"
+    ],
+    "outputs": [
+      "ly/main.pdf",
+      "ly/main.midi"
+    ],
+    "svg": [
+      "ly/svg/main.svg"
+    ]
+  },
+  "qa": {
+    "passed": false,
+    "checks": [
+      {
+        "id": "Q1",
+        "name": "compiles",
+        "passed": true,
+        "details": [],
+        "summary": "compiled"
+      },
+      {
+        "id": "Q2",
+        "name": "bar checks",
+        "passed": true,
+        "details": [],
+        "summary": "0 failing bar check(s)"
+      },
+      {
+        "id": "Q3",
+        "name": "rhythmic integrity",
+        "passed": true,
+        "details": [],
+        "summary": "0 voice-measure(s) not matching the time signature"
+      },
+      {
+        "id": "Q4",
+        "name": "pitch range",
+        "passed": false,
+        "details": [
+          {
+            "part": "Piano",
+            "staff": 2,
+            "measure": "1",
+            "offset": "2/3",
+            "pitch": "F#0",
+            "range": [
+              21,
+              108
+            ],
+            "rule": "piano|pno|keyboard|organ|harp"
+          }
+        ],
+        "summary": "1 note(s) outside the instrument's practical range"
+      },
+      {
+        "id": "Q5",
+        "name": "cross-part alignment",
+        "passed": true,
+        "details": [],
+        "summary": "0 alignment problem(s)"
+      },
+      {
+        "id": "Q9",
+        "name": "lyrics in instrumental parts",
+        "passed": true,
+        "details": [],
+        "summary": "0 instrumental part(s) with lyrics"
+      }
+    ],
+    "outputs": [
+      "main.pdf",
+      "main.midi"
+    ]
+  },
+  "review": "review.json",
+  "counts": {
+    "parts": 2,
+    "staves": 3,
+    "measures": 9,
+    "notes": 204
+  },
+  "device": "cpu (no CUDA device detected)",
+  "combined_from": [
+    {
+      "job": "satb",
+      "part": "P1",
+      "transpose": null
+    }
+  ],
+  "alignment": {
+    "measures": 9,
+    "reference": "Soprano solo",
+    "rests_added": {
+      "Soprano solo": [
+        4
+      ],
+      "Tenor": [
+        4
+      ],
+      "Bass": [
+        4
+      ]
+    },
+    "placement_unsure": {
+      "Alto": [
+        [
+          3,
+          4
+        ]
+      ]
+    }
+  },
+  "piano_from": [
+    {
+      "job": "satb-extra",
+      "part": "P2",
+      "transpose": null
+    },
+    {
+      "job": "satb",
+      "part": "P3",
+      "transpose": null
+    },
+    {
+      "job": "satb",
+      "part": "P4",
+      "transpose": "-P8"
+    }
+  ]
+}
