@@ -7,10 +7,10 @@ optional native desktop front end. The move to Java was decided by the owner (Gi
 `vilpter`); the Docker-first delivery was chosen over per-OS desktop installers to keep installing
 the whole stack as simple as `docker compose up`.
 
-**Repository:** `github.com/vilpter/lilyscan-desktop` — a full-history copy of
-`github.com/vilpter/lilyscan`. AGPL-3.0-or-later (unchanged). The two repos share history so
-either can later merge into or replace the other; that is the owner's call. Never push to
-`vilpter/lilyscan`.
+**Repository:** `github.com/vilpter/lilyscan`. The port was developed in
+`github.com/vilpter/lilyscan-desktop`, a full-history copy of it, and is meant to land in
+`vilpter/lilyscan` as a fast-forward of its `main` (the two share history; `lilyscan`'s `main`
+is an ancestor of the port's). AGPL-3.0-or-later (unchanged).
 
 **Read first:** [`README.md`](../README.md) and [`docs/design.md`](design.md). The Python design
 doc holds decisions D1–D12 and the M0–M9 status log, and it remains the authority on *what each
@@ -94,7 +94,7 @@ corpora and `eval/results/` layout; the public web SPA in `services/web/` (reuse
 | D3, D4 | Transposing instruments; absolute `\fixed` pitch. | **Kept** (generator behaviour, unchanged). |
 | D5 | LilyPond 2.26.0, pinned, invoked as a subprocess. | **Kept.** LilyPond stays an external program invoked as a subprocess, installed into the Docker image (and bundled by the optional jpackage installer). |
 | D7 | Audiveris 5.11.0 pinned; the reader is versioned to it. | **Kept and strengthened:** the pin is now a build-time source dependency, so a version mismatch fails at compile time, not at parse time. |
-| D8 | Name, public repo, conventional commits, GitHub milestones. | **Kept**, in `vilpter/lilyscan-desktop`. GHCR publishing is reduced to the one server image (D22). |
+| D8 | Name, public repo, conventional commits, GitHub milestones. | **Kept**, in `vilpter/lilyscan` (developed in `vilpter/lilyscan-desktop`). GHCR publishing is reduced to the one server image (D22). |
 | D10 | OCR languages `eng+lat+deu+fra`, overridable. | **Kept.** tessdata is baked into the Docker image (and the optional desktop installer); languages resolve the same way. |
 | D11 | Real repertoire in the eval corpus, reported separately. | **Kept**, but the repertoire fetch (music21's bundled corpus) is re-sourced — see D20. |
 
@@ -274,7 +274,7 @@ one image, so the host needs nothing but Docker.
   # open http://localhost:8000/
   ```
   No `.env` to fill in to get started; `LILYSCAN_*` variables (below) stay optional overrides.
-- **Build vs pull.** CI publishes the image to `ghcr.io/vilpter/lilyscan-desktop` (D8); the compose
+- **Build vs pull.** CI publishes the image to `ghcr.io/vilpter/lilyscan` (D8); the compose
   file points at it, so `docker compose up` pulls rather than builds. `docker compose up --build`
   builds locally. The CUDA variant is a build arg / second tag, enabled by a compose profile; the
   default image is CPU-only (D1), and Audiveris is CPU-only regardless.
@@ -407,7 +407,7 @@ wanted. Nothing in the Python *server* feature set is dropped.
 ## 13. Repo layout (target)
 
 ```
-lilyscan-desktop/
+lilyscan/
   settings.gradle              # includeBuild third_party/audiveris; the subprojects below
   build.gradle                 # Java 25 toolchain, shared config
   gradle/libs.versions.toml    # pinned dependency versions
@@ -452,4 +452,4 @@ of golden/baseline data, and is removed only once the Java build meets the accur
 | 2026-11-03 | JM9 | **Done — desktop app** (PR #11). Swing + FlatLaf (D14), web-UI parity: upload (chooser or drop), job list, combine parts (with piano reduction), progress, QA badges, notes, repairs, the lyrics check, re-run, every download, and the three-pane review with click-to-sync (Source boxes, Engraved SVG via jsvg (MIT) with LilyPond's point-and-click links hit-tested, the LilyPond editor via RSyntaxTextArea, the review list), zoom, save & recompile. **One code path for both modes:** the app is an HTTP client of the Lilyscan API; on this computer it starts the server embedded on `127.0.0.1` with jobs in the per-user data folder, or it connects to a server (`--server`). Found on the way: jobs a stopped server left queued/running stayed "running" for ever; the server now fails them on start. Verified by API, SVG and window tests (Xvfb in CI) and real Audiveris runs in both modes driven by mouse and keyboard. |
 | 2026-11-03 | JM10 | **Done (Linux) — desktop installers** (PR #12). `packaging/linux/package.sh` builds a `.deb`/`.rpm` with jpackage: a jlinked Java 25 runtime, the fat jar, LilyPond 2.26.0 and the pinned eng/lat/deu/fra OCR models, installed to `/opt/lilyscan` (391 MB; 226/244 MB downloads). The app finds the bundled tools itself; the engine runner passes `TESSDATA_PREFIX` to the forked worker. Found on the way: an installed jpackage launcher finds its Java runtime by a package file named `runtime`, and Guile's elisp front end in the bundled LilyPond has one (left out; LilyPond does not use it); jpackage's menu scripts failed installs/removals on systems without a desktop menu (own postinst/prerm/spec). Verified by installing both packages and transcribing through the installed app with only its bundled tools. Windows/macOS installers and signing deferred (decision 2026-11-03). |
 | 2026-11-03 | JM11 | **Done — corpus builder in Java** (`lilyscan corpus build`). **Seed:** `PyRandom` reproduces CPython's `random.Random` draw for draw (MT19937, str seeding, `randint`/`choice`/`choices`; 2,800 draws checked), so the Java generator writes the *same pieces* as `generate.py`: all 30 seed pieces equal Python's note for note (notes, ties, tuplets, lyrics, chord symbols, clefs, keys, meters), read back from each builder's MusicXML. Ground truth is written by Lilyscan's own MusicXML writer with new opt-in engraving options (beams by beat as music21 draws them, chord symbols inline; musicxml2ly otherwise engraves flags and bunches chords) — the server's export keeps its Python parity. Scans and photos are simulated in Java (OpenCV), re-baselined. **Repertoire:** music21 corpus files fetched at the pinned tag v10.5.0, excerpted in Java (clef/key/meter restated). **New: OpenScore corpus** (`eval/corpus/openscore.json`): 12 CC0 songs from OpenScore Lieder (German, French, English; 12 composers; excerpts from where the voice enters) and 4 CC0 string quartets, at pinned commits. **Baselines** `java-1103-seed/-repertoire/-openscore`: seed 86.4% exact measures (Python-built 83.9%), repertoire 88.5% (88.4%), OpenScore 71.5%. Found on the way: music21 engraves two-voice piano measures with colliding stems (no voice separation), which cost the Python seed corpus about 10 points on piano — the Java corpus engraves the voices apart; music21 writes m7b5 as minor-seventh plus a flat-fifth degree, which the readers see as minor-seventh; `java.util.Random` gives near-identical first draws for nearby seeds (degradations now use `SplittableRandom`, mixed with the piece id); three Lieder pages fail in Audiveris on every variant ("Error in reaching step PAGE") — candidates for an upstream report. |
-| 2026-11-04 | — | **Python reference removed** from the tree: the `lilyscan` package, its tests, the parity scripts, `pyproject.toml`/`uv.lock` and the Python CI job (the repository was still about a third Python). It is kept on the branch `python-reference`; comments naming a `lilyscan/*.py` file refer to it. The parity references it produced stay committed (`tests/parity/`), so the parity tests keep running, frozen at the Python results. The confidence model moved into `lilyscan-core`'s resources (`eval calibrate` writes it there); the lilypond-next check moved into java-ci (`-PlilypondNext` skips only the pin check); the Docker smoke test uses `jq`. |
+| 2026-11-04 | — | **Python reference removed** from the tree: the `lilyscan` package, its tests, the parity scripts, `pyproject.toml`/`uv.lock` and the Python CI job (the repository was still about a third Python). It stays in the history (last at commit `83e824c`; also the branch `python-reference` of `lilyscan-desktop`); comments naming a `lilyscan/*.py` file refer to it. The parity references it produced stay committed (`tests/parity/`), so the parity tests keep running, frozen at the Python results. The confidence model moved into `lilyscan-core`'s resources (`eval calibrate` writes it there); the lilypond-next check moved into java-ci (`-PlilypondNext` skips only the pin check); the Docker smoke test uses `jq`. |

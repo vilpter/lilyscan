@@ -20,7 +20,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'lilyscan-desktop'
+rootProject.name = 'lilyscan'
 
 include 'lilyscan-core'
 include 'lilyscan-engine'

@@ -38,34 +38,34 @@ subprojects {
         useJUnitPlatform()
         // Parity tests read the shared fixtures and the references the Python implementation
         // generated (tests/parity/) from the repository root. The Python code, and the scripts
-        // that made the references and the sweep data below, are on the branch python-reference.
+        // that made the references and the sweep data below, are in the history, last at commit 83e824c.
         systemProperty 'lilyscan.repoRoot', rootProject.projectDir.absolutePath
         inputs.dir(rootProject.file('tests/parity')).optional().withPropertyName('parity')
-        // Opt-in full corpus sweep: -PparitySweep=/tmp/parity-sweep (data from scripts/java_parity.py --sweep at python-reference).
+        // Opt-in full corpus sweep: -PparitySweep=/tmp/parity-sweep (data from scripts/java_parity.py --sweep at 83e824c).
         def sweep = project.findProperty('paritySweep')
         if (sweep) {
             systemProperty 'lilyscan.paritySweep', sweep
             outputs.upToDateWhen { false }
         }
-        // Opt-in Stage 1 sweep: -PprepareSweep=/tmp/prepare-sweep (data from scripts/java_prepare_sweep.py at python-reference).
+        // Opt-in Stage 1 sweep: -PprepareSweep=/tmp/prepare-sweep (data from scripts/java_prepare_sweep.py at 83e824c).
         def prepareSweep = project.findProperty('prepareSweep')
         if (prepareSweep) {
             systemProperty 'lilyscan.prepareSweep', prepareSweep
             outputs.upToDateWhen { false }
         }
-        // Opt-in combiner sweep: -PcombineSweep=/tmp/combine-sweep (data from scripts/java_combine_sweep.py at python-reference).
+        // Opt-in combiner sweep: -PcombineSweep=/tmp/combine-sweep (data from scripts/java_combine_sweep.py at 83e824c).
         def combineSweep = project.findProperty('combineSweep')
         if (combineSweep) {
             systemProperty 'lilyscan.combineSweep', combineSweep
             outputs.upToDateWhen { false }
         }
-        // Opt-in evaluation sweep: -PevalSweep=/tmp/eval (Python eval runs to compare with, from python-reference).
+        // Opt-in evaluation sweep: -PevalSweep=/tmp/eval (Python eval runs to compare with, from 83e824c).
         def evalSweep = project.findProperty('evalSweep')
         if (evalSweep) {
             systemProperty 'lilyscan.evalSweep', evalSweep
             outputs.upToDateWhen { false }
         }
-        // Opt-in engine-run sweep: -PengineSweep=/tmp/engine-sweep (data from scripts/java_engine_sweep.py at python-reference).
+        // Opt-in engine-run sweep: -PengineSweep=/tmp/engine-sweep (data from scripts/java_engine_sweep.py at 83e824c).
         // -PlilypondNext: a run against the next LilyPond release (java-ci's lilypond-next job),
         // which skips only the check that the installed LilyPond is the pinned one.
         if (project.hasProperty('lilypondNext')) systemProperty 'lilyscan.lilypondNext', 'true'
