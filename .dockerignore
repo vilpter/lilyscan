@@ -2,6 +2,8 @@
 # Java / Gradle (the port)
 .gradle
 **/build
+# ...except the fat jar the server image copies in (built by CI first, docker/Dockerfile)
+!lilyscan-cli/build/libs/lilyscan.jar
 # Python (the reference implementation)
 .venv
 **/__pycache__

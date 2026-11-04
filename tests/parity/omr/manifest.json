@@ -1,0 +1,16 @@
+[
+ {
+  "name": "piano-two-voices",
+  "dir": "eval/fixtures/omr/5.11.0/piano-two-voices",
+  "movements": [
+   "output.mxl"
+  ]
+ },
+ {
+  "name": "split-flute",
+  "dir": "eval/fixtures/omr/5.11.0/split-flute",
+  "movements": [
+   "output.mxl"
+  ]
+ }
+]

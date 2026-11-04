@@ -1,0 +1,58 @@
+package org.lilyscan.core.testing;
+
+import static org.junit.jupiter.api.Assertions.fail;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Comparisons against the Python references, with readable failure messages. */
+public final class Parity {
+    private Parity() {}
+
+    /** Fails with the first differing line (and a little context) when the texts differ. */
+    public static void assertSameText(String expected, String actual, String label) {
+        if (expected.equals(actual)) {
+            return;
+        }
+        String[] e = expected.split("\n", -1);
+        String[] a = actual.split("\n", -1);
+        int n = Math.min(e.length, a.length);
+        int i = 0;
+        while (i < n && e[i].equals(a[i])) {
+            i++;
+        }
+        StringBuilder sb = new StringBuilder(label + ": differs from the Python reference at line "
+                + (i + 1) + " (expected " + e.length + " lines, got " + a.length + ")\n");
+        for (int k = Math.max(0, i - 6); k < i; k++) {
+            sb.append("    ").append(e[k]).append('\n');
+        }
+        sb.append("  - ").append(i < e.length ? e[i] : "<end>").append('\n');
+        sb.append("  + ").append(i < a.length ? a[i] : "<end>").append('\n');
+        fail(sb.toString());
+    }
+
+    /** One reference case: a name, an input path and the reader's source label. */
+    public record Case(String name, Path input, String source, Path reference) {}
+
+    /** The committed MusicXML cases, plus the local sweep when -PparitySweep is set. */
+    public static List<Case> musicXmlCases() {
+        List<Case> out = new ArrayList<>();
+        for (JsonNode e : Repo.readJson(Repo.parity("musicxml/manifest.json"))) {
+            String name = e.get("name").asText();
+            out.add(new Case(name, Repo.path(e.get("input").asText()), e.get("source").asText(),
+                    Repo.parity("musicxml/" + name + ".score.json")));
+        }
+        String sweep = System.getProperty("lilyscan.paritySweep");
+        if (sweep != null && !sweep.isBlank()) {
+            Path dir = Path.of(sweep);
+            for (JsonNode e : Repo.readJson(dir.resolve("manifest.json"))) {
+                String name = e.get("name").asText();
+                out.add(new Case("sweep/" + name, Path.of(e.get("input").asText()),
+                        e.get("source").asText(), dir.resolve(name + ".score.json")));
+            }
+        }
+        return out;
+    }
+}

@@ -1,8 +1,20 @@
 // lilyscan-engine — the Audiveris adapter (design-java.md §5): forked worker (D16),
 // in-process transcription, and the .omr -> IR reader.
-//
-// The Audiveris :app dependency (D15) is added in JM1 once the composite build is wired:
-//   dependencies { implementation 'org.audiveris:audiveris-app' }
 dependencies {
     api project(':lilyscan-core')
+    // Audiveris linked in-process (D15). The coordinate is substituted in
+    // settings.gradle to the pinned Audiveris :app project (composite build).
+    api 'org.audiveris:audiveris-app'
+    // Audiveris's own dependencies are 'implementation' (runtime only); the few API types
+    // our code touches go on the compile classpath, at Audiveris's pinned versions.
+    implementation libs.jgrapht.core
+    implementation libs.jaxb.api
+    testImplementation testFixtures(project(':lilyscan-core'))
+}
+
+tasks.withType(Test).configureEach {
+    // Audiveris probes GTK for HiDPI scaling in a static initializer; headless JVMs need
+    // this to skip it (design.md §5), and the engine never opens a window.
+    systemProperty 'java.awt.headless', 'true'
+    systemProperty 'sun.java2d.uiScale', '1'
 }

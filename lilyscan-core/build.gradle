@@ -1,6 +1,13 @@
 // lilyscan-core — the whole pipeline, IR, generator, repair, QA, config, device.
 // No Swing, no HTTP, no web dependencies (design-java.md §4).
+plugins {
+    // Shared test helpers (repo root, parity references) for every module's tests.
+    id 'java-test-fixtures'
+}
+
 dependencies {
     api libs.jackson.databind
     api libs.slf4j.api
+    testFixturesApi libs.junit.jupiter
+    testFixturesApi libs.jackson.databind
 }

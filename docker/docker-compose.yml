@@ -1,8 +1,14 @@
 # Lilyscan (Java) — the primary install (design-java.md D22, §7).
 # One service, one volume, no Redis, no multi-container split.
 #
-#   docker compose -f docker/docker-compose.yml up -d --build
+#   docker compose -f docker/docker-compose.yml up -d      # pulls the CI-published image
 #   # open http://localhost:8000/
+#
+# To build locally instead of pulling, first build the fat jar (needs the Audiveris submodule
+# and a UTF-8 locale), then `up --build`:
+#   git submodule update --init
+#   LANG=C.UTF-8 ./gradlew :lilyscan-cli:shadowJar
+#   docker compose -f docker/docker-compose.yml up -d --build
 #
 # Once the Java server reaches full parity (JM8), this replaces the Python
 # docker-compose.yml at the repo root; until then the Python compose stays as

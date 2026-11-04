@@ -1,0 +1,12 @@
+{
+ "events": 118,
+ "mappable": 102,
+ "located": 102,
+ "pitch_mismatch": 0,
+ "measures": 32,
+ "measures_located": 16,
+ "unmapped_staves": [
+  "P1/1",
+  "P2/1"
+ ]
+}

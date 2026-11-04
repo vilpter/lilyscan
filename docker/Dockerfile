@@ -1,17 +1,12 @@
 # Lilyscan server image (design-java.md D22, §7) — the primary delivery.
-# One image, one service: the JVM, Audiveris (via the fat jar's JavaCPP natives, wired in JM1),
-# LilyPond and the OCR models, so `docker compose up` needs nothing on the host but Docker.
+# One image, one service: the JVM, Audiveris (bundled in the fat jar, with its JavaCPP native
+# OCR), LilyPond and the OCR models, so `docker compose up` needs nothing on the host but Docker.
 #
-# Build the fat jar first:  ./gradlew :lilyscan-cli:shadowJar
-# then:                     docker build -f docker/Dockerfile -t lilyscan .
-
-# ---- stage 1: build the fat jar inside the image (reproducible, no host JDK needed) ----
-FROM eclipse-temurin:25-jdk AS build
-WORKDIR /src
-COPY . .
-RUN ./gradlew --no-daemon :lilyscan-cli:shadowJar
-
-# ---- stage 2: the runtime image ----
+# The fat jar is built by CI (it needs the Audiveris submodule + a UTF-8 locale + JDK 25) and
+# copied in here; CI publishes the image to GHCR so users pull rather than build. To build
+# locally, run first:
+#   LANG=C.UTF-8 ./gradlew :lilyscan-cli:shadowJar   # requires: git submodule update --init
+#   docker build -f docker/Dockerfile -t lilyscan .
 FROM eclipse-temurin:25-jre
 
 # LilyPond 2.26.0 (D5) and the pinned Tesseract OCR models (D10), both fetched at build time (not
@@ -19,9 +14,11 @@ FROM eclipse-temurin:25-jre
 # tessdata models with the legacy engine are required, or Audiveris skips text silently (design.md
 # §5). LilyPond is launched as a subprocess; the models are read by Audiveris via TESSDATA_PREFIX.
 ARG LILYPOND_VERSION=2.26.0
-# Pin the tessdata commit so the models are reproducible (mirror of the Python audiveris-worker).
-ARG TESSDATA_REF=main
+# The tessdata commit and checksums are the Python audiveris-worker's pin (D10); the models are
+# verified against docker/tessdata.sha256.
+ARG TESSDATA_COMMIT=ced78752cc61322fb554c280d13360b35b8684e4
 ENV TESSDATA_PREFIX=/opt/tessdata
+COPY docker/tessdata.sha256 /opt/tessdata/SHA256SUMS
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends curl ca-certificates fontconfig; \
@@ -30,15 +27,17 @@ RUN set -eux; \
     tar -xzf /tmp/lilypond.tar.gz -C /opt; \
     ln -sf "/opt/lilypond-${LILYPOND_VERSION}/bin/lilypond" /usr/local/bin/lilypond; \
     rm -f /tmp/lilypond.tar.gz; \
-    mkdir -p "${TESSDATA_PREFIX}"; \
+    cd "${TESSDATA_PREFIX}"; \
     for lang in eng lat deu fra; do \
-      curl -fL -o "${TESSDATA_PREFIX}/${lang}.traineddata" \
-        "https://github.com/tesseract-ocr/tessdata/raw/${TESSDATA_REF}/${lang}.traineddata"; \
+      curl -fsSL -o "${lang}.traineddata" \
+        "https://raw.githubusercontent.com/tesseract-ocr/tessdata/${TESSDATA_COMMIT}/${lang}.traineddata"; \
     done; \
+    sha256sum -c SHA256SUMS; \
+    cd /; \
     apt-get purge -y curl; apt-get autoremove -y; rm -rf /var/lib/apt/lists/*; \
     lilypond --version
 
-COPY --from=build /src/lilyscan-cli/build/libs/lilyscan.jar /app/lilyscan.jar
+COPY lilyscan-cli/build/libs/lilyscan.jar /app/lilyscan.jar
 
 ENV LILYSCAN_DATA_DIR=/data
 VOLUME ["/data"]

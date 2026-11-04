@@ -20,6 +20,13 @@ subprojects {
     repositories {
         maven { url = 'https://maven-central.storage-download.googleapis.com/maven2' }
         mavenCentral()
+        // Audiveris (linked in-process, D15) pulls non-free JAI from JBoss; our build
+        // must resolve those transitive deps. Scoped to the javax.media group.
+        maven {
+            name = 'jboss-jai'
+            url = 'https://repository.jboss.org/maven2'
+            content { includeGroup 'javax.media' }
+        }
     }
 
     dependencies {
@@ -29,6 +36,16 @@ subprojects {
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        // Parity tests read the shared fixtures and the Python-generated references
+        // (tests/parity/, scripts/java_parity.py) from the repository root.
+        systemProperty 'lilyscan.repoRoot', rootProject.projectDir.absolutePath
+        inputs.dir(rootProject.file('tests/parity')).optional().withPropertyName('parity')
+        // Opt-in full corpus sweep: -PparitySweep=/tmp/parity-sweep (scripts/java_parity.py --sweep).
+        def sweep = project.findProperty('paritySweep')
+        if (sweep) {
+            systemProperty 'lilyscan.paritySweep', sweep
+            outputs.upToDateWhen { false }
+        }
     }
 
     tasks.withType(JavaCompile).configureEach {
