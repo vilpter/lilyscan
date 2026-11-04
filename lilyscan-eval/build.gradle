@@ -1,8 +1,12 @@
-// lilyscan-eval — the evaluation harness (`lilyscan eval run | calibrate`). Corpora are built by
-// the Python `lilyscan corpus build` for now; a Java generator is a later, optional step (D21).
+// lilyscan-eval — the evaluation harness (`lilyscan eval run | calibrate`) and the corpus builder
+// (`lilyscan corpus build`, D21): generated pieces, real works, engraving, simulated scans/photos.
 dependencies {
     api project(':lilyscan-core')
     api project(':lilyscan-engine')
+    // The scan and photo simulation (the natives come with lilyscan-core).
+    implementation(libs.opencv) {
+        exclude group: 'org.bytedeco', module: 'numpy'
+    }
 }
 
 dependencies {

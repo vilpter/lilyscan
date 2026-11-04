@@ -353,7 +353,7 @@ references committed in `tests/parity/`. Larger local sweeps compare the two imp
 on the whole corpus (`-PengineSweep`, `-PprepareSweep`, `-PcombineSweep`, `-PevalSweep`; see
 `scripts/java_*_sweep.py`).
 
-The Python implementation stays as the reference and builds the evaluation corpus:
+The Python implementation stays as the reference the parity tests compare against:
 
 ```bash
 uv sync --all-extras
@@ -369,24 +369,36 @@ Dockerfile and the Audiveris submodule, then re-run the evaluation.
 
 ### Evaluation
 
-Two corpora measure every change against ground truth. The seed corpus is generated from
-`eval/corpus/seed.json`: random but valid music with exact MusicXML, engraved with LilyPond,
-then degraded to simulated scans and photos. The repertoire corpus holds excerpts of
-public-domain works from music21's bundled corpus (`eval/corpus/repertoire.json`), fetched
-from the installed package, with each work's rights recorded in the manifest.
+Three corpora measure every change against ground truth, each built from a committed spec:
+
+- **Seed** (`eval/corpus/seed.json`): random but valid music in six categories (solo, piano,
+  choir, lead sheet, quartet, song) with exact MusicXML, engraved with LilyPond, then degraded
+  to simulated scans and photos.
+- **Repertoire** (`eval/corpus/repertoire.json`): excerpts of public-domain works from
+  music21's corpus, with each work's rights recorded in the manifest.
+- **OpenScore** (`eval/corpus/openscore.json`): excerpts of CC0 works from
+  [OpenScore Lieder](https://github.com/OpenScore/Lieder) (songs for voice and piano in German,
+  French and English, from where the voice enters) and
+  [OpenScore String Quartets](https://github.com/OpenScore/StringQuartets).
+
+Real works are fetched once, at pinned revisions, into `eval/corpus/cache/`:
 
 ```bash
-uv run lilyscan corpus build
-uv run lilyscan corpus build --spec eval/corpus/repertoire.json --out eval/corpus/repertoire
+java -jar lilyscan.jar corpus build
+java -jar lilyscan.jar corpus build --spec eval/corpus/repertoire.json
+java -jar lilyscan.jar corpus build --spec eval/corpus/openscore.json
 ```
+
+The Java builder writes the same seed pieces as the Python one (`uv run lilyscan corpus build`,
+which also still builds the seed and repertoire corpora): its random draws reproduce Python's
+exactly, and a test compares every piece note for note. The simulated scans and photos use
+Java's own random numbers, so they differ from Python's in detail; compare a Java-built corpus
+with the `java-*` baselines.
 
 ```bash
 java -jar lilyscan.jar eval run --repair --prepare --label my-run
 java -jar lilyscan.jar eval run --corpus eval/corpus/repertoire --repair --prepare --label my-run-rep
 ```
-
-The corpora are built by the Python tools (`uv run lilyscan corpus build`, above); the
-evaluation itself runs in Java, and `uv run lilyscan eval run` gives the same results.
 
 Results go to `eval/results/<label>/` (`summary.md`, `results.json`), and Audiveris's output is
 cached in `eval/work/`, so later runs only re-score. The summary reports exact-measure
@@ -394,9 +406,11 @@ accuracy, edit rate, note F1, lyric and chord accuracy, how many engine events w
 on the page, and how well confidence is calibrated.
 
 The current baselines are `base-1031-seed` and `base-1031-rep`: fresh engine runs on Linux
-(Ubuntu, x86-64) with `--repair --prepare --lilypond`. `base-1014-seed` and `base-1014-rep` are
-the same code's results on Windows. Audiveris reads a few pages slightly differently there, so
-compare with the baseline from the same platform, item by item in `results.json`.
+(Ubuntu, x86-64) with `--repair --prepare --lilypond`, on corpora built by the Python builder.
+`java-1103-seed`, `java-1103-repertoire` and `java-1103-openscore` are the same runs on the
+corpora the Java builder makes; compare a Java-built corpus with these. (`base-1014-seed` and
+`base-1014-rep` are results on Windows. Audiveris reads a few pages slightly differently there, so
+compare with a baseline from the same platform, item by item in `results.json`.)
 
 - `--repair` applies Lilyscan's repairs and confidence before scoring, and lists every repair.
 - `--prepare` sends scans and photos through Stage 1 first, as a job does.

@@ -1,0 +1,3890 @@
+{
+  "environment": {
+    "label": "java-1103-repertoire",
+    "created": "2026-11-03T03:15:06+00:00",
+    "lilyscan": "0.1.0-SNAPSHOT",
+    "audiveris": "5.11.0",
+    "lilypond": "2.26.0",
+    "platform": "Linux-6.18.44-fc-v230-amd64-with-java-25.0.5",
+    "processor": "",
+    "notes": ""
+  },
+  "summary": {
+    "all": {
+      "items": 36,
+      "engine_ok": 36,
+      "measure_accuracy": 0.8852,
+      "edit_rate": 0.0849,
+      "note_f1": 0.9191,
+      "onset_f1": 0.9306,
+      "lyric_accuracy": 0.5285,
+      "chord_accuracy": 0.6184,
+      "mean_wall_s": 34.0492,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.8056,
+      "box_coverage": 0.9808,
+      "calibration": {
+        "events": 5428,
+        "scored_events": 5428,
+        "ece": 0.0487,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 266,
+            "accuracy": 0.3759,
+            "mean_confidence": 0.3795
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 389,
+            "accuracy": 0.7532,
+            "mean_confidence": 0.6158
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 166,
+            "accuracy": 0.9157,
+            "mean_confidence": 0.7594
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 850,
+            "accuracy": 0.9541,
+            "mean_confidence": 0.8406
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 3757,
+            "accuracy": 0.9939,
+            "mean_confidence": 0.9706
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 10,
+        "lyric-text": 29,
+        "part-merge": 28,
+        "rhythm": 5
+      }
+    },
+    "category:leadsheet": {
+      "items": 4,
+      "engine_ok": 4,
+      "measure_accuracy": 0.7812,
+      "edit_rate": 0.2386,
+      "note_f1": 0.7864,
+      "onset_f1": 0.7864,
+      "lyric_accuracy": 0.8,
+      "chord_accuracy": 0.6184,
+      "mean_wall_s": 27.1975,
+      "compiles": 1.0,
+      "bar_checks_clean": 1.0,
+      "box_coverage": 0.9517,
+      "calibration": {
+        "events": 145,
+        "scored_events": 145,
+        "ece": 0.0712,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 13,
+            "accuracy": 0.3846,
+            "mean_confidence": 0.0584
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 0
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 0
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 9,
+            "accuracy": 1.0,
+            "mean_confidence": 0.8399
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 123,
+            "accuracy": 1.0,
+            "mean_confidence": 0.9622
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 3
+      }
+    },
+    "category:piano": {
+      "items": 4,
+      "engine_ok": 4,
+      "measure_accuracy": 0.9453,
+      "edit_rate": 0.0266,
+      "note_f1": 0.9836,
+      "onset_f1": 0.9836,
+      "lyric_accuracy": null,
+      "chord_accuracy": null,
+      "mean_wall_s": 37.8625,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.25,
+      "box_coverage": 1.0,
+      "calibration": {
+        "events": 671,
+        "scored_events": 671,
+        "ece": 0.0452,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 0
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 5,
+            "accuracy": 0.2,
+            "mean_confidence": 0.663
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 11,
+            "accuracy": 0.6364,
+            "mean_confidence": 0.733
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 49,
+            "accuracy": 1.0,
+            "mean_confidence": 0.8528
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 606,
+            "accuracy": 1.0,
+            "mean_confidence": 0.9674
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {}
+    },
+    "category:quartet": {
+      "items": 8,
+      "engine_ok": 8,
+      "measure_accuracy": 0.7734,
+      "edit_rate": 0.1402,
+      "note_f1": 0.9069,
+      "onset_f1": 0.9444,
+      "lyric_accuracy": null,
+      "chord_accuracy": null,
+      "mean_wall_s": 36.8325,
+      "compiles": 1.0,
+      "bar_checks_clean": 1.0,
+      "box_coverage": 0.9407,
+      "calibration": {
+        "events": 1637,
+        "scored_events": 1637,
+        "ece": 0.0725,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 213,
+            "accuracy": 0.4038,
+            "mean_confidence": 0.3866
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 221,
+            "accuracy": 0.7919,
+            "mean_confidence": 0.6167
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 41,
+            "accuracy": 0.9756,
+            "mean_confidence": 0.7589
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 221,
+            "accuracy": 1.0,
+            "mean_confidence": 0.8459
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 941,
+            "accuracy": 1.0,
+            "mean_confidence": 0.9645
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-text": 6,
+        "part-merge": 16,
+        "rhythm": 3
+      }
+    },
+    "category:satb": {
+      "items": 12,
+      "engine_ok": 12,
+      "measure_accuracy": 0.9924,
+      "edit_rate": 0.0026,
+      "note_f1": 0.9978,
+      "onset_f1": 0.9978,
+      "lyric_accuracy": 0.4792,
+      "chord_accuracy": null,
+      "mean_wall_s": 32.1483,
+      "compiles": 1.0,
+      "bar_checks_clean": 1.0,
+      "box_coverage": 1.0,
+      "calibration": {
+        "events": 1947,
+        "scored_events": 1947,
+        "ece": 0.0389,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 0
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 7,
+            "accuracy": 0.8571,
+            "mean_confidence": 0.6721
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 13,
+            "accuracy": 1.0,
+            "mean_confidence": 0.7728
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 186,
+            "accuracy": 1.0,
+            "mean_confidence": 0.8248
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 1741,
+            "accuracy": 0.9983,
+            "mean_confidence": 0.976
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 3,
+        "lyric-text": 23,
+        "part-merge": 12
+      }
+    },
+    "category:song": {
+      "items": 8,
+      "engine_ok": 8,
+      "measure_accuracy": 0.8309,
+      "edit_rate": 0.1641,
+      "note_f1": 0.8475,
+      "onset_f1": 0.8615,
+      "lyric_accuracy": 0.442,
+      "chord_accuracy": null,
+      "mean_wall_s": 35.6363,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.5,
+      "box_coverage": 1.0,
+      "calibration": {
+        "events": 1028,
+        "scored_events": 1028,
+        "ece": 0.068,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 40,
+            "accuracy": 0.225,
+            "mean_confidence": 0.4457
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 156,
+            "accuracy": 0.7115,
+            "mean_confidence": 0.6107
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 101,
+            "accuracy": 0.9109,
+            "mean_confidence": 0.7608
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 385,
+            "accuracy": 0.8987,
+            "mean_confidence": 0.8437
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 346,
+            "accuracy": 0.9422,
+            "mean_confidence": 0.9682
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 4,
+        "rhythm": 2
+      }
+    },
+    "variant:pdf": {
+      "items": 9,
+      "engine_ok": 9,
+      "measure_accuracy": 0.9593,
+      "edit_rate": 0.0336,
+      "note_f1": 0.9679,
+      "onset_f1": 0.9717,
+      "lyric_accuracy": 0.57,
+      "chord_accuracy": 0.7368,
+      "mean_wall_s": 35.41,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.8889,
+      "box_coverage": 0.9985,
+      "calibration": {
+        "events": 1366,
+        "scored_events": 1366,
+        "ece": 0.0407,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 12,
+            "accuracy": 0.0833,
+            "mean_confidence": 0.4432
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 27,
+            "accuracy": 0.5926,
+            "mean_confidence": 0.6104
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 19,
+            "accuracy": 0.8947,
+            "mean_confidence": 0.7764
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 210,
+            "accuracy": 0.9667,
+            "mean_confidence": 0.8434
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 1098,
+            "accuracy": 0.9936,
+            "mean_confidence": 0.973
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 3,
+        "lyric-text": 9,
+        "part-merge": 8,
+        "rhythm": 1
+      }
+    },
+    "variant:pdf, gate passed": {
+      "items": 9,
+      "engine_ok": 9,
+      "measure_accuracy": 0.9593,
+      "edit_rate": 0.0336,
+      "note_f1": 0.9679,
+      "onset_f1": 0.9717,
+      "lyric_accuracy": 0.57,
+      "chord_accuracy": 0.7368,
+      "mean_wall_s": 35.41,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.8889,
+      "box_coverage": 0.9985,
+      "calibration": {
+        "events": 1366,
+        "scored_events": 1366,
+        "ece": 0.0407,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 12,
+            "accuracy": 0.0833,
+            "mean_confidence": 0.4432
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 27,
+            "accuracy": 0.5926,
+            "mean_confidence": 0.6104
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 19,
+            "accuracy": 0.8947,
+            "mean_confidence": 0.7764
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 210,
+            "accuracy": 0.9667,
+            "mean_confidence": 0.8434
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 1098,
+            "accuracy": 0.9936,
+            "mean_confidence": 0.973
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 3,
+        "lyric-text": 9,
+        "part-merge": 8,
+        "rhythm": 1
+      }
+    },
+    "variant:photo": {
+      "items": 9,
+      "engine_ok": 9,
+      "measure_accuracy": 0.8023,
+      "edit_rate": 0.1417,
+      "note_f1": 0.9051,
+      "onset_f1": 0.9288,
+      "lyric_accuracy": 0.575,
+      "chord_accuracy": 0.6842,
+      "mean_wall_s": 24.0233,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.7778,
+      "box_coverage": 0.9582,
+      "calibration": {
+        "events": 1363,
+        "scored_events": 1363,
+        "ece": 0.0672,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 175,
+            "accuracy": 0.4686,
+            "mean_confidence": 0.3901
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 213,
+            "accuracy": 0.8216,
+            "mean_confidence": 0.625
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 25,
+            "accuracy": 0.92,
+            "mean_confidence": 0.7388
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 140,
+            "accuracy": 0.9143,
+            "mean_confidence": 0.839
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 810,
+            "accuracy": 0.9926,
+            "mean_confidence": 0.9667
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 3,
+        "lyric-text": 5,
+        "part-merge": 8,
+        "rhythm": 2
+      }
+    },
+    "variant:photo, gate passed": {
+      "items": 9,
+      "engine_ok": 9,
+      "measure_accuracy": 0.8023,
+      "edit_rate": 0.1417,
+      "note_f1": 0.9051,
+      "onset_f1": 0.9288,
+      "lyric_accuracy": 0.575,
+      "chord_accuracy": 0.6842,
+      "mean_wall_s": 24.0233,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.7778,
+      "box_coverage": 0.9582,
+      "calibration": {
+        "events": 1363,
+        "scored_events": 1363,
+        "ece": 0.0672,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 175,
+            "accuracy": 0.4686,
+            "mean_confidence": 0.3901
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 213,
+            "accuracy": 0.8216,
+            "mean_confidence": 0.625
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 25,
+            "accuracy": 0.92,
+            "mean_confidence": 0.7388
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 140,
+            "accuracy": 0.9143,
+            "mean_confidence": 0.839
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 810,
+            "accuracy": 0.9926,
+            "mean_confidence": 0.9667
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 3,
+        "lyric-text": 5,
+        "part-merge": 8,
+        "rhythm": 2
+      }
+    },
+    "variant:png": {
+      "items": 9,
+      "engine_ok": 9,
+      "measure_accuracy": 0.9535,
+      "edit_rate": 0.0329,
+      "note_f1": 0.9675,
+      "onset_f1": 0.9706,
+      "lyric_accuracy": 0.5583,
+      "chord_accuracy": 0.8421,
+      "mean_wall_s": 21.4033,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.7778,
+      "box_coverage": 0.9993,
+      "calibration": {
+        "events": 1366,
+        "scored_events": 1366,
+        "ece": 0.0441,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 10,
+            "accuracy": 0.1,
+            "mean_confidence": 0.4562
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 28,
+            "accuracy": 0.6071,
+            "mean_confidence": 0.603
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 42,
+            "accuracy": 0.9524,
+            "mean_confidence": 0.7625
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 209,
+            "accuracy": 0.9617,
+            "mean_confidence": 0.8446
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 1077,
+            "accuracy": 0.9944,
+            "mean_confidence": 0.972
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 3,
+        "lyric-text": 6,
+        "part-merge": 8,
+        "rhythm": 1
+      }
+    },
+    "variant:scan": {
+      "items": 9,
+      "engine_ok": 9,
+      "measure_accuracy": 0.8256,
+      "edit_rate": 0.1315,
+      "note_f1": 0.836,
+      "onset_f1": 0.851,
+      "lyric_accuracy": 0.4105,
+      "chord_accuracy": 0.2105,
+      "mean_wall_s": 55.36,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.7778,
+      "box_coverage": 0.967,
+      "calibration": {
+        "events": 1333,
+        "scored_events": 1333,
+        "ece": 0.064,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 69,
+            "accuracy": 0.2319,
+            "mean_confidence": 0.3303
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 121,
+            "accuracy": 0.7025,
+            "mean_confidence": 0.6039
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 80,
+            "accuracy": 0.9,
+            "mean_confidence": 0.7602
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 291,
+            "accuracy": 0.9588,
+            "mean_confidence": 0.8366
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 772,
+            "accuracy": 0.9948,
+            "mean_confidence": 0.9691
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 1,
+        "lyric-text": 9,
+        "part-merge": 4,
+        "rhythm": 1
+      }
+    },
+    "variant:scan, gate passed": {
+      "items": 9,
+      "engine_ok": 9,
+      "measure_accuracy": 0.8256,
+      "edit_rate": 0.1315,
+      "note_f1": 0.836,
+      "onset_f1": 0.851,
+      "lyric_accuracy": 0.4105,
+      "chord_accuracy": 0.2105,
+      "mean_wall_s": 55.36,
+      "compiles": 1.0,
+      "bar_checks_clean": 0.7778,
+      "box_coverage": 0.967,
+      "calibration": {
+        "events": 1333,
+        "scored_events": 1333,
+        "ece": 0.064,
+        "bands": [
+          {
+            "band": "0.0-0.5",
+            "events": 69,
+            "accuracy": 0.2319,
+            "mean_confidence": 0.3303
+          },
+          {
+            "band": "0.5-0.7",
+            "events": 121,
+            "accuracy": 0.7025,
+            "mean_confidence": 0.6039
+          },
+          {
+            "band": "0.7-0.8",
+            "events": 80,
+            "accuracy": 0.9,
+            "mean_confidence": 0.7602
+          },
+          {
+            "band": "0.8-0.9",
+            "events": 291,
+            "accuracy": 0.9588,
+            "mean_confidence": 0.8366
+          },
+          {
+            "band": "0.9-1.0",
+            "events": 772,
+            "accuracy": 0.9948,
+            "mean_confidence": 0.9691
+          }
+        ],
+        "unscored_accuracy": null
+      },
+      "repairs": {
+        "lyric-split": 1,
+        "lyric-text": 9,
+        "part-merge": 4,
+        "rhythm": 1
+      }
+    }
+  },
+  "items": [
+    {
+      "id": "bach-bwv66-6",
+      "category": "satb",
+      "language": null,
+      "variant": "pdf",
+      "wall_s": 30.61,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 158,
+      "mappable_events": 158,
+      "repairs": [],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 36,
+      "pred_measures": 36,
+      "exact_measures": 36,
+      "gt_events": 158,
+      "event_edits": 0,
+      "gt_notes": 158,
+      "pred_notes": 158,
+      "matched_notes": 158,
+      "matched_onsets": 158,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv66-6",
+      "category": "satb",
+      "language": null,
+      "variant": "png",
+      "wall_s": 18.85,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 158,
+      "mappable_events": 158,
+      "repairs": [],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 36,
+      "pred_measures": 36,
+      "exact_measures": 36,
+      "gt_events": 158,
+      "event_edits": 0,
+      "gt_notes": 158,
+      "pred_notes": 158,
+      "matched_notes": 158,
+      "matched_onsets": 158,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv66-6",
+      "category": "satb",
+      "language": null,
+      "variant": "scan",
+      "wall_s": 48.21,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 158,
+      "mappable_events": 158,
+      "repairs": [],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.2998,
+        "curvature_after": 0.05,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 152.32,
+          "uploaded": 152.4
+        },
+        "chosen": "uploaded"
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 36,
+      "pred_measures": 36,
+      "exact_measures": 36,
+      "gt_events": 158,
+      "event_edits": 0,
+      "gt_notes": 158,
+      "pred_notes": 158,
+      "matched_notes": 158,
+      "matched_onsets": 158,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv66-6",
+      "category": "satb",
+      "language": null,
+      "variant": "photo",
+      "wall_s": 21.43,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 158,
+      "mappable_events": 158,
+      "repairs": [],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2514,
+          3325
+        ],
+        "interline": 20.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.4828,
+        "curvature_after": 0.061,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 36,
+      "pred_measures": 36,
+      "exact_measures": 36,
+      "gt_events": 158,
+      "event_edits": 0,
+      "gt_notes": 158,
+      "pred_notes": 158,
+      "matched_notes": 158,
+      "matched_onsets": 158,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv269",
+      "category": "satb",
+      "language": "deu",
+      "variant": "pdf",
+      "wall_s": 30.36,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 137,
+      "mappable_events": 137,
+      "repairs": [
+        {
+          "rule": "lyric-text",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Soprano: dropped stray marks read as lyrics",
+          "measures": [
+            "4",
+            "7",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P2",
+          "staff": 1,
+          "detail": "Alto: dropped stray marks read as lyrics",
+          "measures": [
+            "4"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P3",
+          "staff": 1,
+          "detail": "Tenor: dropped stray marks read as lyrics",
+          "measures": [
+            "4"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 52,
+      "pred_measures": 52,
+      "exact_measures": 52,
+      "gt_events": 137,
+      "event_edits": 0,
+      "gt_notes": 137,
+      "pred_notes": 137,
+      "matched_notes": 137,
+      "matched_onsets": 137,
+      "gt_lyrics": 12,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": 1.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv269",
+      "category": "satb",
+      "language": "deu",
+      "variant": "png",
+      "wall_s": 19.31,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 137,
+      "mappable_events": 137,
+      "repairs": [
+        {
+          "rule": "lyric-text",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Soprano: dropped stray marks read as lyrics",
+          "measures": [
+            "4",
+            "7",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P2",
+          "staff": 1,
+          "detail": "Alto: dropped stray marks read as lyrics",
+          "measures": [
+            "4"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P3",
+          "staff": 1,
+          "detail": "Tenor: dropped stray marks read as lyrics",
+          "measures": [
+            "4"
+          ]
+        }
+      ],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 52,
+      "pred_measures": 52,
+      "exact_measures": 52,
+      "gt_events": 137,
+      "event_edits": 0,
+      "gt_notes": 137,
+      "pred_notes": 137,
+      "matched_notes": 137,
+      "matched_onsets": 137,
+      "gt_lyrics": 12,
+      "lyric_edits": 1,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": 0.9167,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv269",
+      "category": "satb",
+      "language": "deu",
+      "variant": "scan",
+      "wall_s": 49.99,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 137,
+      "mappable_events": 137,
+      "repairs": [
+        {
+          "rule": "lyric-text",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Soprano: dropped stray marks read as lyrics",
+          "measures": [
+            "4",
+            "7",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P2",
+          "staff": 1,
+          "detail": "Alto: dropped stray marks read as lyrics",
+          "measures": [
+            "4"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P3",
+          "staff": 1,
+          "detail": "Tenor: dropped stray marks read as lyrics",
+          "measures": [
+            "4"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.0743,
+        "curvature_after": 0.0743,
+        "dewarped": false,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 131.97,
+          "uploaded": 132.02
+        },
+        "chosen": "uploaded"
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 52,
+      "pred_measures": 52,
+      "exact_measures": 52,
+      "gt_events": 137,
+      "event_edits": 0,
+      "gt_notes": 137,
+      "pred_notes": 137,
+      "matched_notes": 137,
+      "matched_onsets": 137,
+      "gt_lyrics": 12,
+      "lyric_edits": 1,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": 0.9167,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv269",
+      "category": "satb",
+      "language": "deu",
+      "variant": "photo",
+      "wall_s": 22.38,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 136,
+      "mappable_events": 136,
+      "repairs": [
+        {
+          "rule": "lyric-text",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Soprano: dropped stray marks read as lyrics",
+          "measures": [
+            "4",
+            "7",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P2",
+          "staff": 1,
+          "detail": "Alto: dropped stray marks read as lyrics",
+          "measures": [
+            "4",
+            "7",
+            "10"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2590,
+          3453
+        ],
+        "interline": 20.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.3622,
+        "curvature_after": 0.0411,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 52,
+      "pred_measures": 52,
+      "exact_measures": 51,
+      "gt_events": 137,
+      "event_edits": 2,
+      "gt_notes": 137,
+      "pred_notes": 136,
+      "matched_notes": 135,
+      "matched_onsets": 135,
+      "gt_lyrics": 12,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.9231,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 0.9808,
+      "edit_rate": 0.0146,
+      "note_precision": 0.9926,
+      "note_recall": 0.9854,
+      "note_f1": 0.989,
+      "onset_f1": 0.989,
+      "lyric_accuracy": 1.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv153-1",
+      "category": "satb",
+      "language": "deu",
+      "variant": "pdf",
+      "wall_s": 37.7,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 192,
+      "mappable_events": 192,
+      "repairs": [
+        {
+          "rule": "part-merge",
+          "part": "P5",
+          "staff": null,
+          "detail": "merged P1 (S.) into P5 (Soprano)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P6",
+          "staff": null,
+          "detail": "merged P2 (A.) into P6 (Alto)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P7",
+          "staff": null,
+          "detail": "merged P3 (T.) into P7 (Tenor)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P8",
+          "staff": null,
+          "detail": "merged P4 (B.) into P8 (Bass)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P5",
+          "staff": 1,
+          "detail": "Soprano: dropped stray marks read as lyrics",
+          "measures": [
+            "2",
+            "4",
+            "6",
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P6",
+          "staff": 1,
+          "detail": "Alto: dropped stray marks read as lyrics",
+          "measures": [
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P7",
+          "staff": 1,
+          "detail": "Tenor: dropped stray marks read as lyrics",
+          "measures": [
+            "2",
+            "4",
+            "6",
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-split",
+          "part": "P5",
+          "staff": 1,
+          "detail": "Soprano: split syllables the engine read as one word",
+          "measures": [
+            "1",
+            "2",
+            "7"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 44,
+      "pred_measures": 44,
+      "exact_measures": 43,
+      "gt_events": 192,
+      "event_edits": 1,
+      "gt_notes": 192,
+      "pred_notes": 192,
+      "matched_notes": 191,
+      "matched_onsets": 191,
+      "gt_lyrics": 14,
+      "lyric_edits": 14,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        0.9091,
+        1.0
+      ],
+      "measure_accuracy": 0.9773,
+      "edit_rate": 0.0052,
+      "note_precision": 0.9948,
+      "note_recall": 0.9948,
+      "note_f1": 0.9948,
+      "onset_f1": 0.9948,
+      "lyric_accuracy": 0.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv153-1",
+      "category": "satb",
+      "language": "deu",
+      "variant": "png",
+      "wall_s": 22.76,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 192,
+      "mappable_events": 192,
+      "repairs": [
+        {
+          "rule": "part-merge",
+          "part": "P5",
+          "staff": null,
+          "detail": "merged P1 (S.) into P5 (Soprano)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P6",
+          "staff": null,
+          "detail": "merged P2 (A.) into P6 (Alto)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P7",
+          "staff": null,
+          "detail": "merged P3 (T.) into P7 (Tenor)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P8",
+          "staff": null,
+          "detail": "merged P4 (B.) into P8 (Bass)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P5",
+          "staff": 1,
+          "detail": "Soprano: dropped stray marks read as lyrics",
+          "measures": [
+            "2",
+            "4",
+            "6",
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P6",
+          "staff": 1,
+          "detail": "Alto: dropped stray marks read as lyrics",
+          "measures": [
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P7",
+          "staff": 1,
+          "detail": "Tenor: dropped stray marks read as lyrics",
+          "measures": [
+            "2",
+            "4",
+            "6",
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-split",
+          "part": "P5",
+          "staff": 1,
+          "detail": "Soprano: split syllables the engine read as one word",
+          "measures": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 44,
+      "pred_measures": 44,
+      "exact_measures": 43,
+      "gt_events": 192,
+      "event_edits": 1,
+      "gt_notes": 192,
+      "pred_notes": 192,
+      "matched_notes": 191,
+      "matched_onsets": 191,
+      "gt_lyrics": 14,
+      "lyric_edits": 14,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        0.9091,
+        1.0
+      ],
+      "measure_accuracy": 0.9773,
+      "edit_rate": 0.0052,
+      "note_precision": 0.9948,
+      "note_recall": 0.9948,
+      "note_f1": 0.9948,
+      "onset_f1": 0.9948,
+      "lyric_accuracy": 0.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv153-1",
+      "category": "satb",
+      "language": "deu",
+      "variant": "scan",
+      "wall_s": 60.489999999999995,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 192,
+      "mappable_events": 192,
+      "repairs": [
+        {
+          "rule": "lyric-text",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Soprano: dropped stray marks read as lyrics",
+          "measures": [
+            "2",
+            "4",
+            "6",
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P2",
+          "staff": 1,
+          "detail": "Alto: dropped stray marks read as lyrics",
+          "measures": [
+            "4",
+            "6"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P3",
+          "staff": 1,
+          "detail": "Tenor: dropped stray marks read as lyrics",
+          "measures": [
+            "2",
+            "4",
+            "6"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.4472,
+        "curvature_after": 0.0813,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 182.56,
+          "uploaded": 182.98
+        },
+        "chosen": "uploaded"
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 44,
+      "pred_measures": 44,
+      "exact_measures": 44,
+      "gt_events": 192,
+      "event_edits": 0,
+      "gt_notes": 192,
+      "pred_notes": 192,
+      "matched_notes": 192,
+      "matched_onsets": 192,
+      "gt_lyrics": 14,
+      "lyric_edits": 14,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": 0.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "bach-bwv153-1",
+      "category": "satb",
+      "language": "deu",
+      "variant": "photo",
+      "wall_s": 23.69,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 192,
+      "mappable_events": 192,
+      "repairs": [
+        {
+          "rule": "part-merge",
+          "part": "P5",
+          "staff": null,
+          "detail": "merged P1 (S.) into P5 (Soprano)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P6",
+          "staff": null,
+          "detail": "merged P2 (A.) into P6 (Alto)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P7",
+          "staff": null,
+          "detail": "merged P3 (T.) into P7 (Tenor)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P8",
+          "staff": null,
+          "detail": "merged P4 (B.) into P8 (Bass)",
+          "measures": [
+            "4",
+            "X4",
+            "5",
+            "6"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P5",
+          "staff": 1,
+          "detail": "Soprano: dropped stray marks read as lyrics",
+          "measures": [
+            "2",
+            "4",
+            "6",
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P6",
+          "staff": 1,
+          "detail": "Alto: dropped stray marks read as lyrics",
+          "measures": [
+            "4",
+            "6",
+            "7",
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P7",
+          "staff": 1,
+          "detail": "Tenor: dropped stray marks read as lyrics",
+          "measures": [
+            "2",
+            "4",
+            "6",
+            "8",
+            "10"
+          ]
+        },
+        {
+          "rule": "lyric-split",
+          "part": "P5",
+          "staff": 1,
+          "detail": "Soprano: split syllables the engine read as one word",
+          "measures": [
+            "1",
+            "2"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2398,
+          3451
+        ],
+        "interline": 20.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.201,
+        "curvature_after": 0.0539,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 44,
+      "pred_measures": 44,
+      "exact_measures": 43,
+      "gt_events": 192,
+      "event_edits": 1,
+      "gt_notes": 192,
+      "pred_notes": 192,
+      "matched_notes": 191,
+      "matched_onsets": 191,
+      "gt_lyrics": 14,
+      "lyric_edits": 14,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0,
+        0.9091,
+        1.0
+      ],
+      "measure_accuracy": 0.9773,
+      "edit_rate": 0.0052,
+      "note_precision": 0.9948,
+      "note_recall": 0.9948,
+      "note_f1": 0.9948,
+      "onset_f1": 0.9948,
+      "lyric_accuracy": 0.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "joplin-maple-leaf",
+      "category": "piano",
+      "language": null,
+      "variant": "pdf",
+      "wall_s": 39.36,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 169,
+      "mappable_events": 169,
+      "repairs": [],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 2,
+      "pred_staves": 2,
+      "gt_measures": 32,
+      "pred_measures": 32,
+      "exact_measures": 32,
+      "gt_events": 169,
+      "event_edits": 0,
+      "gt_notes": 289,
+      "pred_notes": 289,
+      "matched_notes": 289,
+      "matched_onsets": 289,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "joplin-maple-leaf",
+      "category": "piano",
+      "language": null,
+      "variant": "png",
+      "wall_s": 25.01,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": false,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 170,
+      "mappable_events": 170,
+      "repairs": [],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 2,
+      "pred_staves": 2,
+      "gt_measures": 32,
+      "pred_measures": 32,
+      "exact_measures": 31,
+      "gt_events": 169,
+      "event_edits": 1,
+      "gt_notes": 289,
+      "pred_notes": 291,
+      "matched_notes": 289,
+      "matched_onsets": 289,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        0.9375
+      ],
+      "measure_accuracy": 0.9688,
+      "edit_rate": 0.0059,
+      "note_precision": 0.9931,
+      "note_recall": 1.0,
+      "note_f1": 0.9966,
+      "onset_f1": 0.9966,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "joplin-maple-leaf",
+      "category": "piano",
+      "language": null,
+      "variant": "scan",
+      "wall_s": 59.65,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": false,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 161,
+      "mappable_events": 161,
+      "repairs": [],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.5098,
+        "curvature_after": 0.0416,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 150.98,
+          "uploaded": 146.8
+        },
+        "chosen": "prepared"
+      },
+      "engine_ok": true,
+      "gt_staves": 2,
+      "pred_staves": 2,
+      "gt_measures": 32,
+      "pred_measures": 32,
+      "exact_measures": 28,
+      "gt_events": 169,
+      "event_edits": 14,
+      "gt_notes": 289,
+      "pred_notes": 270,
+      "matched_notes": 265,
+      "matched_onsets": 265,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.875,
+        0.875
+      ],
+      "measure_accuracy": 0.875,
+      "edit_rate": 0.0828,
+      "note_precision": 0.9815,
+      "note_recall": 0.917,
+      "note_f1": 0.9481,
+      "onset_f1": 0.9481,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "joplin-maple-leaf",
+      "category": "piano",
+      "language": null,
+      "variant": "photo",
+      "wall_s": 27.43,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": false,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 171,
+      "mappable_events": 171,
+      "repairs": [],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2503,
+          3638
+        ],
+        "interline": 22.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.3681,
+        "curvature_after": 0.0387,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 2,
+      "pred_staves": 2,
+      "gt_measures": 32,
+      "pred_measures": 32,
+      "exact_measures": 30,
+      "gt_events": 169,
+      "event_edits": 3,
+      "gt_notes": 289,
+      "pred_notes": 291,
+      "matched_notes": 287,
+      "matched_onsets": 287,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.9375,
+        0.9375
+      ],
+      "measure_accuracy": 0.9375,
+      "edit_rate": 0.0178,
+      "note_precision": 0.9863,
+      "note_recall": 0.9931,
+      "note_f1": 0.9897,
+      "onset_f1": 0.9897,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "haydn-op74-1",
+      "category": "quartet",
+      "language": null,
+      "variant": "pdf",
+      "wall_s": 37.61,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 174,
+      "mappable_events": 175,
+      "repairs": [
+        {
+          "rule": "lyric-text",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Violin 1: dropped stray marks read as lyrics",
+          "measures": [
+            "1"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P2",
+          "staff": 1,
+          "detail": "Violin 2: dropped stray marks read as lyrics",
+          "measures": [
+            "1"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P3",
+          "staff": 1,
+          "detail": "Viola: dropped stray marks read as lyrics",
+          "measures": [
+            "1"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 48,
+      "pred_measures": 48,
+      "exact_measures": 47,
+      "gt_events": 176,
+      "event_edits": 5,
+      "gt_notes": 170,
+      "pred_notes": 169,
+      "matched_notes": 166,
+      "matched_onsets": 167,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.9167,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 0.9792,
+      "edit_rate": 0.0284,
+      "note_precision": 0.9822,
+      "note_recall": 0.9765,
+      "note_f1": 0.9794,
+      "onset_f1": 0.9853,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "haydn-op74-1",
+      "category": "quartet",
+      "language": null,
+      "variant": "png",
+      "wall_s": 22.36,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 174,
+      "mappable_events": 174,
+      "repairs": [],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 48,
+      "pred_measures": 48,
+      "exact_measures": 47,
+      "gt_events": 176,
+      "event_edits": 2,
+      "gt_notes": 170,
+      "pred_notes": 168,
+      "matched_notes": 168,
+      "matched_onsets": 168,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.9167,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "measure_accuracy": 0.9792,
+      "edit_rate": 0.0114,
+      "note_precision": 1.0,
+      "note_recall": 0.9882,
+      "note_f1": 0.9941,
+      "onset_f1": 0.9941,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "haydn-op74-1",
+      "category": "quartet",
+      "language": null,
+      "variant": "scan",
+      "wall_s": 55.010000000000005,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 158,
+      "mappable_events": 176,
+      "repairs": [
+        {
+          "rule": "lyric-text",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Violin 1: dropped stray marks read as lyrics",
+          "measures": [
+            "1"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P2",
+          "staff": 1,
+          "detail": "Violin 2: dropped stray marks read as lyrics",
+          "measures": [
+            "1"
+          ]
+        },
+        {
+          "rule": "lyric-text",
+          "part": "P3",
+          "staff": 1,
+          "detail": "Viola: dropped stray marks read as lyrics",
+          "measures": [
+            "1"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.0487,
+        "curvature_after": 0.0487,
+        "dewarped": false,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 116.98,
+          "uploaded": 117.02
+        },
+        "chosen": "uploaded"
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 48,
+      "pred_measures": 48,
+      "exact_measures": 31,
+      "gt_events": 176,
+      "event_edits": 53,
+      "gt_notes": 170,
+      "pred_notes": 154,
+      "matched_notes": 131,
+      "matched_onsets": 143,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.5833,
+        0.6667,
+        0.6667,
+        0.6667
+      ],
+      "measure_accuracy": 0.6458,
+      "edit_rate": 0.3011,
+      "note_precision": 0.8506,
+      "note_recall": 0.7706,
+      "note_f1": 0.8086,
+      "onset_f1": 0.8827,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "haydn-op74-1",
+      "category": "quartet",
+      "language": null,
+      "variant": "photo",
+      "wall_s": 24.15,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 148,
+      "mappable_events": 180,
+      "repairs": [],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2537,
+          3511
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.2736,
+        "curvature_after": 0.0627,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 48,
+      "pred_measures": 48,
+      "exact_measures": 20,
+      "gt_events": 176,
+      "event_edits": 79,
+      "gt_notes": 170,
+      "pred_notes": 148,
+      "matched_notes": 115,
+      "matched_onsets": 135,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.4167,
+        0.4167,
+        0.4167,
+        0.4167
+      ],
+      "measure_accuracy": 0.4167,
+      "edit_rate": 0.4489,
+      "note_precision": 0.777,
+      "note_recall": 0.6765,
+      "note_f1": 0.7233,
+      "onset_f1": 0.8491,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "mozart-k80-1",
+      "category": "quartet",
+      "language": null,
+      "variant": "pdf",
+      "wall_s": 39.93,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 231,
+      "mappable_events": 232,
+      "repairs": [
+        {
+          "rule": "part-merge",
+          "part": "P7",
+          "staff": null,
+          "detail": "merged P3 (Vln. I), P1 (Vln. I) into P7 (Violin I)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P8",
+          "staff": null,
+          "detail": "merged P2 (Vln. II), P4 (Voice) into P8 (Violin II)",
+          "measures": [
+            "9",
+            "10",
+            "11",
+            "12",
+            "5",
+            "6",
+            "7",
+            "8"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P9",
+          "staff": null,
+          "detail": "merged P5 (Vla.) into P9 (Viola)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P10",
+          "staff": null,
+          "detail": "merged P6 (Vc.) into P10 (Cello)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8"
+          ]
+        },
+        {
+          "rule": "rhythm",
+          "part": "P9",
+          "staff": 1,
+          "detail": "Viola: undot to fill the measure",
+          "measures": [
+            "6"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 48,
+      "pred_measures": 48,
+      "exact_measures": 45,
+      "gt_events": 234,
+      "event_edits": 6,
+      "gt_notes": 216,
+      "pred_notes": 214,
+      "matched_notes": 211,
+      "matched_onsets": 212,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.8333,
+        1.0,
+        0.9167,
+        1.0
+      ],
+      "measure_accuracy": 0.9375,
+      "edit_rate": 0.0256,
+      "note_precision": 0.986,
+      "note_recall": 0.9769,
+      "note_f1": 0.9814,
+      "onset_f1": 0.986,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "mozart-k80-1",
+      "category": "quartet",
+      "language": null,
+      "variant": "png",
+      "wall_s": 23.26,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 231,
+      "mappable_events": 232,
+      "repairs": [
+        {
+          "rule": "part-merge",
+          "part": "P5",
+          "staff": null,
+          "detail": "merged P1 (Vln. I) into P5 (Violin I)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P6",
+          "staff": null,
+          "detail": "merged P2 (Vln. II) into P6 (Violin II)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P7",
+          "staff": null,
+          "detail": "merged P3 (Vla.) into P7 (Viola)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P8",
+          "staff": null,
+          "detail": "merged P4 (Vc.) into P8 (Cello)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8"
+          ]
+        },
+        {
+          "rule": "rhythm",
+          "part": "P7",
+          "staff": 1,
+          "detail": "Viola: undot to fill the measure",
+          "measures": [
+            "6"
+          ]
+        }
+      ],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 48,
+      "pred_measures": 48,
+      "exact_measures": 45,
+      "gt_events": 234,
+      "event_edits": 6,
+      "gt_notes": 216,
+      "pred_notes": 214,
+      "matched_notes": 211,
+      "matched_onsets": 212,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.8333,
+        1.0,
+        0.9167,
+        1.0
+      ],
+      "measure_accuracy": 0.9375,
+      "edit_rate": 0.0256,
+      "note_precision": 0.986,
+      "note_recall": 0.9769,
+      "note_f1": 0.9814,
+      "onset_f1": 0.986,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "mozart-k80-1",
+      "category": "quartet",
+      "language": null,
+      "variant": "scan",
+      "wall_s": 65.86,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 218,
+      "mappable_events": 237,
+      "repairs": [
+        {
+          "rule": "part-merge",
+          "part": "P6",
+          "staff": null,
+          "detail": "merged P2 (Vln. 1), P1 (Vln. I) into P6 (Violin I)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P7",
+          "staff": null,
+          "detail": "merged P3 (Vln. II) into P7 (Violin II)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P8",
+          "staff": null,
+          "detail": "merged P4 (Vla.) into P8 (Viola)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P9",
+          "staff": null,
+          "detail": "merged P5 (Vc.) into P9 (Cello)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+          ]
+        },
+        {
+          "rule": "rhythm",
+          "part": "P8",
+          "staff": 1,
+          "detail": "Viola: undot to fill the measure",
+          "measures": [
+            "6"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.2344,
+        "curvature_after": 0.1357,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 194.33,
+          "uploaded": 39.71
+        },
+        "chosen": "prepared"
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 48,
+      "pred_measures": 48,
+      "exact_measures": 33,
+      "gt_events": 234,
+      "event_edits": 35,
+      "gt_notes": 216,
+      "pred_notes": 207,
+      "matched_notes": 191,
+      "matched_onsets": 199,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.5833,
+        0.75,
+        0.6667,
+        0.75
+      ],
+      "measure_accuracy": 0.6875,
+      "edit_rate": 0.1496,
+      "note_precision": 0.9227,
+      "note_recall": 0.8843,
+      "note_f1": 0.9031,
+      "onset_f1": 0.9409,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "mozart-k80-1",
+      "category": "quartet",
+      "language": null,
+      "variant": "photo",
+      "wall_s": 26.48,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 206,
+      "mappable_events": 231,
+      "repairs": [
+        {
+          "rule": "part-merge",
+          "part": "P6",
+          "staff": null,
+          "detail": "merged P5 (Vln. I), P1 (Voice) into P6 (Violin I)",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P7",
+          "staff": null,
+          "detail": "merged P2 (Voice) into P7 (Violin II)",
+          "measures": [
+            "8",
+            "9"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P8",
+          "staff": null,
+          "detail": "merged P3 (Voice) into P8 (Viola)",
+          "measures": [
+            "8",
+            "9"
+          ]
+        },
+        {
+          "rule": "part-merge",
+          "part": "P9",
+          "staff": null,
+          "detail": "merged P4 (Vc.) into P9 (Cello)",
+          "measures": [
+            "8",
+            "9"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2483,
+          3333
+        ],
+        "interline": 20.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.3206,
+        "curvature_after": 0.1104,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 4,
+      "pred_staves": 4,
+      "gt_measures": 48,
+      "pred_measures": 48,
+      "exact_measures": 29,
+      "gt_events": 234,
+      "event_edits": 44,
+      "gt_notes": 216,
+      "pred_notes": 205,
+      "matched_notes": 186,
+      "matched_onsets": 196,
+      "gt_lyrics": 0,
+      "lyric_edits": 0,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.4167,
+        0.75,
+        0.5833,
+        0.6667
+      ],
+      "measure_accuracy": 0.6042,
+      "edit_rate": 0.188,
+      "note_precision": 0.9073,
+      "note_recall": 0.8611,
+      "note_f1": 0.8836,
+      "onset_f1": 0.9311,
+      "lyric_accuracy": null,
+      "chord_accuracy": null
+    },
+    {
+      "id": "foster-brown-hair",
+      "category": "leadsheet",
+      "language": "eng",
+      "variant": "pdf",
+      "wall_s": 28.92,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 44,
+      "mappable_events": 44,
+      "repairs": [
+        {
+          "rule": "lyric-split",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: split syllables the engine read as one word",
+          "measures": [
+            "3",
+            "6"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 1,
+      "pred_staves": 1,
+      "gt_measures": 16,
+      "pred_measures": 16,
+      "exact_measures": 16,
+      "gt_events": 44,
+      "event_edits": 0,
+      "gt_notes": 43,
+      "pred_notes": 43,
+      "matched_notes": 43,
+      "matched_onsets": 43,
+      "gt_lyrics": 40,
+      "lyric_edits": 1,
+      "gt_chords": 19,
+      "chord_edits": 5,
+      "per_staff_exact": [
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": 0.975,
+      "chord_accuracy": 0.7368
+    },
+    {
+      "id": "foster-brown-hair",
+      "category": "leadsheet",
+      "language": "eng",
+      "variant": "png",
+      "wall_s": 16.03,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 44,
+      "mappable_events": 44,
+      "repairs": [
+        {
+          "rule": "lyric-split",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: split syllables the engine read as one word",
+          "measures": [
+            "3",
+            "6",
+            "8",
+            "15"
+          ]
+        }
+      ],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 1,
+      "pred_staves": 1,
+      "gt_measures": 16,
+      "pred_measures": 16,
+      "exact_measures": 16,
+      "gt_events": 44,
+      "event_edits": 0,
+      "gt_notes": 43,
+      "pred_notes": 43,
+      "matched_notes": 43,
+      "matched_onsets": 43,
+      "gt_lyrics": 40,
+      "lyric_edits": 0,
+      "gt_chords": 19,
+      "chord_edits": 3,
+      "per_staff_exact": [
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": 1.0,
+      "chord_accuracy": 0.8421
+    },
+    {
+      "id": "foster-brown-hair",
+      "category": "leadsheet",
+      "language": "eng",
+      "variant": "scan",
+      "wall_s": 46.18,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 6,
+      "mappable_events": 13,
+      "repairs": [],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.0609,
+        "curvature_after": 0.0609,
+        "dewarped": false,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 0.73,
+          "uploaded": 0.76
+        },
+        "chosen": "uploaded"
+      },
+      "engine_ok": true,
+      "gt_staves": 1,
+      "pred_staves": 1,
+      "gt_measures": 16,
+      "pred_measures": 21,
+      "exact_measures": 2,
+      "gt_events": 44,
+      "event_edits": 42,
+      "gt_notes": 43,
+      "pred_notes": 12,
+      "matched_notes": 4,
+      "matched_onsets": 4,
+      "gt_lyrics": 40,
+      "lyric_edits": 31,
+      "gt_chords": 19,
+      "chord_edits": 15,
+      "per_staff_exact": [
+        0.125
+      ],
+      "measure_accuracy": 0.125,
+      "edit_rate": 0.9545,
+      "note_precision": 0.3333,
+      "note_recall": 0.093,
+      "note_f1": 0.1455,
+      "onset_f1": 0.1455,
+      "lyric_accuracy": 0.225,
+      "chord_accuracy": 0.2105
+    },
+    {
+      "id": "foster-brown-hair",
+      "category": "leadsheet",
+      "language": "eng",
+      "variant": "photo",
+      "wall_s": 17.66,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 44,
+      "mappable_events": 44,
+      "repairs": [
+        {
+          "rule": "lyric-split",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: split syllables the engine read as one word",
+          "measures": [
+            "3",
+            "6",
+            "11"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2464,
+          3453
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.3102,
+        "curvature_after": 0.0889,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 1,
+      "pred_staves": 1,
+      "gt_measures": 16,
+      "pred_measures": 16,
+      "exact_measures": 16,
+      "gt_events": 44,
+      "event_edits": 0,
+      "gt_notes": 43,
+      "pred_notes": 43,
+      "matched_notes": 43,
+      "matched_onsets": 43,
+      "gt_lyrics": 40,
+      "lyric_edits": 0,
+      "gt_chords": 19,
+      "chord_edits": 6,
+      "per_staff_exact": [
+        1.0
+      ],
+      "measure_accuracy": 1.0,
+      "edit_rate": 0.0,
+      "note_precision": 1.0,
+      "note_recall": 1.0,
+      "note_f1": 1.0,
+      "onset_f1": 1.0,
+      "lyric_accuracy": 1.0,
+      "chord_accuracy": 0.6842
+    },
+    {
+      "id": "handel-lascia",
+      "category": "song",
+      "language": "ita",
+      "variant": "pdf",
+      "wall_s": 40.19,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 134,
+      "mappable_events": 134,
+      "repairs": [
+        {
+          "rule": "lyric-split",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: split syllables the engine read as one word",
+          "measures": [
+            "5",
+            "6",
+            "7",
+            "11"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 3,
+      "pred_staves": 3,
+      "gt_measures": 36,
+      "pred_measures": 36,
+      "exact_measures": 35,
+      "gt_events": 134,
+      "event_edits": 2,
+      "gt_notes": 128,
+      "pred_notes": 128,
+      "matched_notes": 122,
+      "matched_onsets": 122,
+      "gt_lyrics": 56,
+      "lyric_edits": 7,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        0.9167,
+        1.0
+      ],
+      "measure_accuracy": 0.9722,
+      "edit_rate": 0.0149,
+      "note_precision": 0.9531,
+      "note_recall": 0.9531,
+      "note_f1": 0.9531,
+      "onset_f1": 0.9531,
+      "lyric_accuracy": 0.875,
+      "chord_accuracy": null
+    },
+    {
+      "id": "handel-lascia",
+      "category": "song",
+      "language": "ita",
+      "variant": "png",
+      "wall_s": 23.67,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 134,
+      "mappable_events": 134,
+      "repairs": [
+        {
+          "rule": "lyric-split",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: split syllables the engine read as one word",
+          "measures": [
+            "1",
+            "4",
+            "5",
+            "7",
+            "11"
+          ]
+        }
+      ],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 3,
+      "pred_staves": 3,
+      "gt_measures": 36,
+      "pred_measures": 36,
+      "exact_measures": 34,
+      "gt_events": 134,
+      "event_edits": 3,
+      "gt_notes": 128,
+      "pred_notes": 130,
+      "matched_notes": 121,
+      "matched_onsets": 121,
+      "gt_lyrics": 56,
+      "lyric_edits": 7,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        0.8333,
+        1.0
+      ],
+      "measure_accuracy": 0.9444,
+      "edit_rate": 0.0224,
+      "note_precision": 0.9308,
+      "note_recall": 0.9453,
+      "note_f1": 0.938,
+      "onset_f1": 0.938,
+      "lyric_accuracy": 0.875,
+      "chord_accuracy": null
+    },
+    {
+      "id": "handel-lascia",
+      "category": "song",
+      "language": "ita",
+      "variant": "scan",
+      "wall_s": 63.59,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": true,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 134,
+      "mappable_events": 134,
+      "repairs": [
+        {
+          "rule": "lyric-split",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: split syllables the engine read as one word",
+          "measures": [
+            "3",
+            "4",
+            "5",
+            "7",
+            "11"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.1209,
+        "curvature_after": 0.0483,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 106.05,
+          "uploaded": 107.07
+        },
+        "chosen": "uploaded"
+      },
+      "engine_ok": true,
+      "gt_staves": 3,
+      "pred_staves": 3,
+      "gt_measures": 36,
+      "pred_measures": 36,
+      "exact_measures": 34,
+      "gt_events": 134,
+      "event_edits": 3,
+      "gt_notes": 128,
+      "pred_notes": 129,
+      "matched_notes": 120,
+      "matched_onsets": 120,
+      "gt_lyrics": 56,
+      "lyric_edits": 5,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        1.0,
+        0.8333,
+        1.0
+      ],
+      "measure_accuracy": 0.9444,
+      "edit_rate": 0.0224,
+      "note_precision": 0.9302,
+      "note_recall": 0.9375,
+      "note_f1": 0.9339,
+      "onset_f1": 0.9339,
+      "lyric_accuracy": 0.9107,
+      "chord_accuracy": null
+    },
+    {
+      "id": "handel-lascia",
+      "category": "song",
+      "language": "ita",
+      "variant": "photo",
+      "wall_s": 28.46,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": true,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 129,
+      "mappable_events": 129,
+      "repairs": [
+        {
+          "rule": "rhythm",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: double, triplet to fill the measure",
+          "measures": [
+            "4"
+          ]
+        },
+        {
+          "rule": "rhythm",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: halve, triplet to fill the measure",
+          "measures": [
+            "5"
+          ]
+        },
+        {
+          "rule": "lyric-split",
+          "part": "P1",
+          "staff": 1,
+          "detail": "Voice: split syllables the engine read as one word",
+          "measures": [
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "9",
+            "11"
+          ]
+        }
+      ],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2498,
+          3521
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.5589,
+        "curvature_after": 0.0523,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 3,
+      "pred_staves": 3,
+      "gt_measures": 36,
+      "pred_measures": 36,
+      "exact_measures": 27,
+      "gt_events": 134,
+      "event_edits": 33,
+      "gt_notes": 128,
+      "pred_notes": 131,
+      "matched_notes": 99,
+      "matched_onsets": 101,
+      "gt_lyrics": 56,
+      "lyric_edits": 7,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.5,
+        0.8333,
+        0.9167
+      ],
+      "measure_accuracy": 0.75,
+      "edit_rate": 0.2463,
+      "note_precision": 0.7557,
+      "note_recall": 0.7734,
+      "note_f1": 0.7645,
+      "onset_f1": 0.7799,
+      "lyric_accuracy": 0.875,
+      "chord_accuracy": null
+    },
+    {
+      "id": "verdi-donna-mobile",
+      "category": "song",
+      "language": "ita",
+      "variant": "pdf",
+      "wall_s": 34.01,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": false,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 125,
+      "mappable_events": 125,
+      "repairs": [],
+      "prepare": {
+        "source": "score.pdf",
+        "pages": 1,
+        "kinds": [
+          "vector"
+        ],
+        "rendered_dpi": 400,
+        "born_digital": true,
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 2,
+      "pred_staves": 2,
+      "gt_measures": 32,
+      "pred_measures": 32,
+      "exact_measures": 24,
+      "gt_events": 125,
+      "event_edits": 32,
+      "gt_notes": 167,
+      "pred_notes": 167,
+      "matched_notes": 134,
+      "matched_onsets": 138,
+      "gt_lyrics": 42,
+      "lyric_edits": 42,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.75,
+        0.75
+      ],
+      "measure_accuracy": 0.75,
+      "edit_rate": 0.256,
+      "note_precision": 0.8024,
+      "note_recall": 0.8024,
+      "note_f1": 0.8024,
+      "onset_f1": 0.8263,
+      "lyric_accuracy": 0.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "verdi-donna-mobile",
+      "category": "song",
+      "language": "ita",
+      "variant": "png",
+      "wall_s": 21.38,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": false,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 125,
+      "mappable_events": 125,
+      "repairs": [],
+      "prepare": null,
+      "engine_ok": true,
+      "gt_staves": 2,
+      "pred_staves": 2,
+      "gt_measures": 32,
+      "pred_measures": 32,
+      "exact_measures": 24,
+      "gt_events": 125,
+      "event_edits": 32,
+      "gt_notes": 167,
+      "pred_notes": 167,
+      "matched_notes": 134,
+      "matched_onsets": 138,
+      "gt_lyrics": 42,
+      "lyric_edits": 42,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.75,
+        0.75
+      ],
+      "measure_accuracy": 0.75,
+      "edit_rate": 0.256,
+      "note_precision": 0.8024,
+      "note_recall": 0.8024,
+      "note_f1": 0.8024,
+      "onset_f1": 0.8263,
+      "lyric_accuracy": 0.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "verdi-donna-mobile",
+      "category": "song",
+      "language": "ita",
+      "variant": "scan",
+      "wall_s": 49.260000000000005,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": false,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 125,
+      "mappable_events": 125,
+      "repairs": [],
+      "prepare": {
+        "source": "scan.png",
+        "page_found": false,
+        "input_size": [
+          2480,
+          3508
+        ],
+        "output_size": [
+          2480,
+          3508
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.3071,
+        "curvature_after": 0.1769,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": null,
+        "warnings": [],
+        "passed": true,
+        "expected_right": {
+          "prepared": 110.67,
+          "uploaded": 110.13
+        },
+        "chosen": "prepared"
+      },
+      "engine_ok": true,
+      "gt_staves": 2,
+      "pred_staves": 2,
+      "gt_measures": 32,
+      "pred_measures": 32,
+      "exact_measures": 24,
+      "gt_events": 125,
+      "event_edits": 33,
+      "gt_notes": 167,
+      "pred_notes": 167,
+      "matched_notes": 131,
+      "matched_onsets": 135,
+      "gt_lyrics": 42,
+      "lyric_edits": 42,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.75,
+        0.75
+      ],
+      "measure_accuracy": 0.75,
+      "edit_rate": 0.264,
+      "note_precision": 0.7844,
+      "note_recall": 0.7844,
+      "note_f1": 0.7844,
+      "onset_f1": 0.8084,
+      "lyric_accuracy": 0.0,
+      "chord_accuracy": null
+    },
+    {
+      "id": "verdi-donna-mobile",
+      "category": "song",
+      "language": "ita",
+      "variant": "photo",
+      "wall_s": 24.53,
+      "engine_errors": [],
+      "qa": {
+        "Q1": true,
+        "Q2": false,
+        "Q3": false,
+        "Q4": true,
+        "Q5": true,
+        "Q9": true
+      },
+      "located_events": 122,
+      "mappable_events": 122,
+      "repairs": [],
+      "prepare": {
+        "source": "photo.png",
+        "page_found": true,
+        "input_size": [
+          2900,
+          3928
+        ],
+        "output_size": [
+          2494,
+          3540
+        ],
+        "interline": 21.0,
+        "rescaled": 1.0,
+        "curvature_before": 0.2371,
+        "curvature_after": 0.0887,
+        "dewarped": true,
+        "rotated": 0.0,
+        "cleaned": "sharpen",
+        "warnings": [],
+        "passed": true
+      },
+      "engine_ok": true,
+      "gt_staves": 2,
+      "pred_staves": 2,
+      "gt_measures": 32,
+      "pred_measures": 32,
+      "exact_measures": 24,
+      "gt_events": 125,
+      "event_edits": 32,
+      "gt_notes": 167,
+      "pred_notes": 160,
+      "matched_notes": 131,
+      "matched_onsets": 135,
+      "gt_lyrics": 42,
+      "lyric_edits": 42,
+      "gt_chords": 0,
+      "chord_edits": 0,
+      "per_staff_exact": [
+        0.75,
+        0.75
+      ],
+      "measure_accuracy": 0.75,
+      "edit_rate": 0.256,
+      "note_precision": 0.8187,
+      "note_recall": 0.7844,
+      "note_f1": 0.8012,
+      "onset_f1": 0.8257,
+      "lyric_accuracy": 0.0,
+      "chord_accuracy": null
+    }
+  ]
+}

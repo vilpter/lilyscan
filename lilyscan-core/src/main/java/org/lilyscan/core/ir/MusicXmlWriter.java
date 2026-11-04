@@ -197,7 +197,7 @@ public final class MusicXmlWriter {
     }
 
     private static void note(El parent, Event e, NoteHead head, boolean chord, int voice, Integer staff,
-            long divisions, String tupletMark) {
+            long divisions, String tupletMark, List<String> beams) {
         El el = parent.sub("note");
         if (e.grace) el.sub("grace");
         if (chord) el.sub("chord");
@@ -227,6 +227,9 @@ public final class MusicXmlWriter {
             tm.sub("normal-notes", e.tuplet.normal());
         }
         if (staff != null) el.sub("staff", staff);
+        if (beams != null && !chord) {
+            for (int b = 0; b < beams.size(); b++) el.sub("beam", beams.get(b), "number", Integer.toString(b + 1));
+        }
         El notations = new El("notations");
         if (head != null && head.tieStop) notations.sub("tied", null, "type", "stop");
         if (head != null && head.tieStart) notations.sub("tied", null, "type", "start");
@@ -266,7 +269,7 @@ public final class MusicXmlWriter {
 
     private record Stream(Staff staff, Measure measure, Voice voice) {}
 
-    private static void writeMeasure(El partEl, Part part, int i, long divisions, boolean first) {
+    private static void writeMeasure(El partEl, Part part, int i, long divisions, boolean first, Options options) {
         List<Staff> staves = part.staves;
         List<Measure> measures = new ArrayList<>();
         for (Staff st : staves) measures.add(i < st.measures.size() ? st.measures.get(i) : null);
@@ -310,7 +313,11 @@ public final class MusicXmlWriter {
         if (!attrs.children.isEmpty()) mEl.children.add(attrs);
 
         if (lead.leftBarline != null) barline(mEl, lead.leftBarline, "left");
-        for (ChordSymbol c : lead.chordSymbols) harmony(mEl, c, divisions);
+        List<ChordSymbol> harmonies = new ArrayList<>(lead.chordSymbols);
+        if (!options.inlineHarmony()) {
+            for (ChordSymbol c : harmonies) harmony(mEl, c, divisions);
+            harmonies.clear();
+        }
 
         List<Stream> streams = new ArrayList<>();
         for (int k = 0; k < staves.size(); k++) {
@@ -335,11 +342,17 @@ public final class MusicXmlWriter {
                 for (Clef c : s.measure().clefs) if (c.offset.signum() > 0) pending.add(c);
             }
             Map<Event, String> marks = tupletMarks(events);
+            Map<Event, List<String>> beams = options.beams() ? beams(events, lead.time != null ? lead.time : time(s.staff(), i)) : Map.of();
             Frac cursor = Frac.ZERO;
             for (Event e : events) {
                 if (e.offset.gt(cursor)) {
                     forward(mEl, e.offset.subtract(cursor), divisions, voiceNo, staffNo);
                     cursor = e.offset;
+                }
+                // Inline chord symbols go before the first note at or after them, in the first stream.
+                while (k == 0 && !harmonies.isEmpty() && !e.grace && harmonies.get(0).offset.le(e.offset)) {
+                    ChordSymbol c = harmonies.remove(0);
+                    harmony(mEl, new ChordSymbol(c.offset.subtract(e.offset), c.root, c.kind, c.bass, c.text), divisions);
                 }
                 while (!pending.isEmpty() && pending.get(0).offset.le(cursor)) {
                     clef(mEl.sub("attributes"), pending.remove(0), staffNo);
@@ -347,7 +360,7 @@ public final class MusicXmlWriter {
                 List<NoteHead> heads = new ArrayList<>(e.notes);
                 if (heads.isEmpty()) heads.add(null);
                 for (int n = 0; n < heads.size(); n++) {
-                    note(mEl, e, heads.get(n), n > 0, voiceNo, staffNo, divisions, marks.get(e));
+                    note(mEl, e, heads.get(n), n > 0, voiceNo, staffNo, divisions, marks.get(e), beams.get(e));
                 }
                 if (!e.grace) cursor = cursor.add(e.duration);
             }
@@ -358,14 +371,103 @@ public final class MusicXmlWriter {
                 }
                 clef(mEl.sub("attributes"), c, staffNo);
             }
+            if (k == 0) {
+                for (ChordSymbol c : harmonies) {
+                    harmony(mEl, new ChordSymbol(c.offset.subtract(cursor), c.root, c.kind, c.bass, c.text), divisions);
+                }
+                harmonies.clear();
+            }
             if (k < streams.size() - 1 && cursor.signum() > 0) {
                 mEl.sub("backup").sub("duration", ticks(cursor, divisions));
             }
         }
+        for (ChordSymbol c : harmonies) harmony(mEl, c, divisions); // a measure without notes
         if (lead.rightBarline != null) barline(mEl, lead.rightBarline, "right");
     }
 
+    /** The meter in force at measure {@code i} of a staff. */
+    private static TimeSignature time(Staff staff, int i) {
+        for (int j = Math.min(i, staff.measures.size() - 1); j >= 0; j--) {
+            if (staff.measures.get(j).time != null) return staff.measures.get(j).time;
+        }
+        return null;
+    }
+
+    private static int flags(String type) {
+        return switch (type == null ? "" : type) {
+            case "eighth" -> 1;
+            case "16th" -> 2;
+            case "32nd" -> 3;
+            case "64th" -> 4;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Beams by beat, as music21's {@code makeBeams} draws them: notes shorter than a quarter are
+     * beamed together within a beat (a dotted quarter in compound meters), not across rests; the
+     * second and further beams join the notes that have them, and a lone one gets a hook.
+     */
+    public static Map<Event, List<String>> beams(List<Event> events, TimeSignature time) {
+        Frac beat = time == null ? Frac.ONE : Frac.of(4, time.beatType);
+        if (time != null && time.beatType == 8 && time.beats % 3 == 0 && time.beats > 3) beat = Frac.of(3, 2);
+        Map<Event, List<String>> out = new java.util.HashMap<>();
+        List<Event> run = new ArrayList<>();
+        long runBeat = Long.MIN_VALUE;
+        List<Event> all = new ArrayList<>();
+        for (Event e : events) if (!e.grace) all.add(e);
+        for (int i = 0; i <= all.size(); i++) {
+            Event e = i < all.size() ? all.get(i) : null;
+            boolean beamable = e != null && !e.isRest() && flags(noteType(e).type()) > 0;
+            long b = e == null ? Long.MIN_VALUE : e.offset.divide(beat).floor();
+            boolean fits = e != null && e.offset.add(e.duration).le(Frac.of(b).multiply(beat).add(beat));
+            if (!beamable || !fits || b != runBeat) {
+                if (run.size() > 1) mark(run, out);
+                run.clear();
+            }
+            if (beamable && fits) {
+                run.add(e);
+                runBeat = b;
+            }
+        }
+        return out;
+    }
+
+    private static void mark(List<Event> run, Map<Event, List<String>> out) {
+        int max = 0;
+        for (Event e : run) max = Math.max(max, flags(noteType(e).type()));
+        for (Event e : run) out.put(e, new ArrayList<>());
+        for (int level = 1; level <= max; level++) {
+            for (int i = 0; i < run.size(); i++) {
+                int f = flags(noteType(run.get(i)).type());
+                if (f < level) continue;
+                boolean prev = i > 0 && flags(noteType(run.get(i - 1)).type()) >= level;
+                boolean next = i < run.size() - 1 && flags(noteType(run.get(i + 1)).type()) >= level;
+                String value = level == 1 ? (i == 0 ? "begin" : i == run.size() - 1 ? "end" : "continue")
+                        : prev && next ? "continue" : prev ? "end" : next ? "begin"
+                        : i == run.size() - 1 ? "backward hook" : "forward hook";
+                out.get(run.get(i)).add(value);
+            }
+        }
+    }
+
+    /**
+     * Writing choices beyond Python's {@code score.musicxml} export (which the defaults reproduce).
+     * {@code inlineHarmony}: chord symbols placed before the note they sound with, instead of at
+     * an {@code <offset>} (musicxml2ly ignores offsets). {@code beams}: {@code <beam>} elements by
+     * beat, as music21 writes them (musicxml2ly otherwise engraves flags). The corpus builder's
+     * ground truth uses both.
+     */
+    public record Options(boolean inlineHarmony, boolean beams) {
+        public static final Options DEFAULT = new Options(false, false);
+        public static final Options ENGRAVING = new Options(true, true);
+    }
+
     public static String toMusicXml(Score score) {
+        return toMusicXml(score, Options.DEFAULT);
+    }
+
+    public static String toMusicXml(Score score, Options options) {
         El root = new El("score-partwise").set("version", "4.0");
         if (truthy(score.title)) root.sub("work").sub("work-title", score.title);
         El ident = root.sub("identification");
@@ -383,16 +485,20 @@ public final class MusicXmlWriter {
             Part part = score.parts.get(k);
             El partEl = root.sub("part", null, "id", "P" + (k + 1));
             int count = part.staves.stream().mapToInt(st -> st.measures.size()).max().orElse(0);
-            for (int i = 0; i < count; i++) writeMeasure(partEl, part, i, divisions, i == 0);
+            for (int i = 0; i < count; i++) writeMeasure(partEl, part, i, divisions, i == 0, options);
         }
         EtWriter.indent(root, "  ");
         return HEADER + EtWriter.toString(root) + "\n";
     }
 
     public static Path write(Score score, Path path) {
+        return write(score, path, Options.DEFAULT);
+    }
+
+    public static Path write(Score score, Path path, Options options) {
         try {
             Files.createDirectories(path.getParent());
-            Files.writeString(path, toMusicXml(score), StandardCharsets.UTF_8);
+            Files.writeString(path, toMusicXml(score, options), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
