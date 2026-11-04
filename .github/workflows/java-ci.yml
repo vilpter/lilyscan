@@ -1,6 +1,6 @@
 # CI for Lilyscan: the server, the CLI and the desktop app. The parity tests compare against
-# references the Python implementation generated (tests/parity; the Python code is on the branch
-# python-reference).
+# references the Python implementation generated (tests/parity; the Python code is in the
+# history, last at commit 83e824c).
 name: java-ci
 
 on:

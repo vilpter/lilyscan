@@ -16,7 +16,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    image: ghcr.io/vilpter/lilyscan-desktop:${LILYSCAN_TAG:-latest}
+    image: ghcr.io/vilpter/lilyscan:${LILYSCAN_TAG:-latest}
     restart: unless-stopped
     ports:
       - "${LILYSCAN_PORT:-8000}:8000"
