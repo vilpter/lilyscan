@@ -46,6 +46,8 @@ final class MainWindow extends JFrame {
         center.add(new JLabel("Starting...", JLabel.CENTER), "start");
         getContentPane().add(center, BorderLayout.CENTER);
         getContentPane().add(status, BorderLayout.SOUTH);
+        java.net.URL icon = MainWindow.class.getResource("lilyscan.png");
+        if (icon != null) setIconImage(new javax.swing.ImageIcon(icon).getImage());
         setSize(1400, 900);
         setLocationByPlatform(true);
     }

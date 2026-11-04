@@ -48,6 +48,8 @@ public sealed interface Connection extends AutoCloseable {
 
     /** Starts the embedded server on {@code dataDir} ({@code null}: {@link #defaultDataDir()}). */
     static Local local(Path dataDir) {
+        Path tessdata = Bundle.tessdata();
+        if (tessdata != null) System.setProperty("lilyscan.tessdata", tessdata.toString());
         Settings s = localSettings(System.getenv(), dataDir == null ? defaultDataDir() : dataDir);
         LilyscanServer server = new LilyscanServer(s);
         int port = server.start("127.0.0.1", 0);
@@ -68,7 +70,8 @@ public sealed interface Connection extends AutoCloseable {
     /**
      * The server's settings from the environment, with the jobs in {@code dataDir}. A LilyPond
      * bundled with an installed app ({@code <app>/lilypond/bin/lilypond}, JM10) is used when
-     * {@code LILYPOND_BIN} is not set.
+     * {@code LILYPOND_BIN} is not set; its OCR models ({@code <app>/tessdata}) when
+     * {@code TESSDATA_PREFIX} is not ({@link #local}).
      */
     static Settings localSettings(Map<String, String> env, Path dataDir) {
         Settings s = Settings.fromEnv(env);
@@ -103,14 +106,20 @@ public sealed interface Connection extends AutoCloseable {
     final class Bundle {
         private Bundle() {}
 
-        /** The app folder of a jpackage install, or {@code null} when run from a jar. */
+        /**
+         * The folder holding the bundled tools of a jpackage install ({@code <root>/lib} on
+         * Linux, beside {@code lib/app}), or {@code null} when run from a jar.
+         */
         static Path appDir() {
             String app = System.getProperty("jpackage.app-path");
             if (app == null) return null;
-            // <root>/bin/Lilyscan (Linux) -> <root>/lib/app
+            // <root>/bin/Lilyscan -> <root>
             Path root = Path.of(app).toAbsolutePath().getParent().getParent();
-            for (Path candidate : new Path[] {root.resolve("lib/app"), root.resolve("app"), root.resolve("Contents/app")}) {
-                if (Files.isDirectory(candidate)) return candidate;
+            for (Path candidate : new Path[] {root.resolve("lib"), root.resolve("lib/app"), root.resolve("app"),
+                    root.resolve("Contents/app")}) {
+                if (Files.isDirectory(candidate.resolve("lilypond")) || Files.isDirectory(candidate.resolve("tessdata"))) {
+                    return candidate;
+                }
             }
             return null;
         }

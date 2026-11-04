@@ -1,0 +1,66 @@
+# Linux installers for the desktop app (JM10): a .deb and a .rpm built by packaging/linux/package.sh,
+# the .deb installed on the runner and started, and both kept as workflow artifacts (7 days).
+# Nothing is published.
+name: desktop-packages
+
+on:
+  push:
+    branches: [main, "jm*"]
+    paths:
+      - "packaging/**"
+      - "lilyscan-*/**"
+      - "docker/Dockerfile"
+      - "docker/tessdata.sha256"
+      - ".github/workflows/desktop-packages.yml"
+  pull_request:
+    paths:
+      - "packaging/**"
+      - "lilyscan-desktop/**"
+      - "docker/Dockerfile"
+      - "docker/tessdata.sha256"
+      - ".github/workflows/desktop-packages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Packaging tools
+        run: sudo apt-get update && sudo apt-get install -y fakeroot rpm xvfb
+      - name: Fat jar
+        run: ./gradlew :lilyscan-cli:shadowJar --no-daemon
+      - name: .deb
+        run: packaging/linux/package.sh deb dist
+      - name: .rpm
+        run: packaging/linux/package.sh rpm dist
+      - name: Install the .deb and start the app
+        run: |
+          sudo apt-get install -y ./dist/lilyscan_*_amd64.deb
+          # A clean environment: only what the package brings (no LilyPond or OCR models on the runner).
+          env -i HOME="$HOME" PATH=/usr/bin:/bin LANG=C.UTF-8 \
+            xvfb-run -a /opt/lilyscan/bin/Lilyscan > app.log 2>&1 &
+          for i in $(seq 60); do grep -q "Lilyscan server listening" app.log && break; sleep 2; done
+          cat app.log
+          grep -q "Lilyscan server listening" app.log
+          /opt/lilyscan/lib/lilypond/bin/lilypond --version | head -n 1
+          ls /opt/lilyscan/lib/tessdata
+          sudo apt-get remove -y lilyscan
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lilyscan-linux-packages
+          path: dist/*
+          retention-days: 7

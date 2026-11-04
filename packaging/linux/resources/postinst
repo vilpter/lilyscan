@@ -1,0 +1,21 @@
+#!/bin/sh
+# postinst for lilyscan (replaces jpackage's): the menu entry is added when the system has a
+# desktop menu; on a system without one (a server, a container) the install still succeeds.
+set -e
+
+case "$1" in
+    configure)
+        xdg-desktop-menu install /opt/lilyscan/lib/lilyscan-Lilyscan.desktop \
+          || echo "lilyscan: no desktop menu to add Lilyscan to; run /opt/lilyscan/bin/Lilyscan" >&2
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

@@ -62,6 +62,20 @@ public final class AudiverisRunner {
         return cmd;
     }
 
+    /**
+     * Where the engine finds its OCR models: {@code TESSDATA_PREFIX} when set, else the folder in
+     * the system property {@code lilyscan.tessdata} (an installed desktop app's bundled models,
+     * JM10). Audiveris reads only the environment variable, so it is passed to the worker.
+     */
+    static Map<String, String> environment() {
+        String env = System.getenv("TESSDATA_PREFIX");
+        String bundled = System.getProperty("lilyscan.tessdata");
+        if ((env == null || env.isBlank()) && bundled != null && !bundled.isBlank()) {
+            return Map.of("TESSDATA_PREFIX", bundled);
+        }
+        return Map.of();
+    }
+
     /** Batch transcription that saves the {@code .omr} book and exports MusicXML. */
     public static List<String> buildCommand(List<String> launcher, List<Path> inputs, Path outDir,
             Map<String, String> constants, String sheets) {
@@ -192,7 +206,7 @@ public final class AudiverisRunner {
     private record Proc(int returncode, double wallS, String stdout, String stderr, boolean timedOut) {}
 
     private static Proc exec(List<String> cmd, double timeoutS) {
-        ProcessRunner.Result r = ProcessRunner.runUnchecked(cmd, null, timeoutS);
+        ProcessRunner.Result r = ProcessRunner.runUnchecked(cmd, null, timeoutS, environment());
         return new Proc(r.returncode(), r.wallS(), r.stdout(), r.stderr(), r.timedOut());
     }
 
