@@ -262,8 +262,13 @@ def main() -> None:
         )
         # The same score after the repair rules and the calibrated confidence: provenance,
         # staff-level fix notes and low confidences for the generator (and Stage 5 later).
-        apply_repairs(score, book=book)
+        repairs = apply_repairs(score, book=book)
         calibrate_confidence(score)
+        (om / f"{name}.repairs.json").write_text(
+            json.dumps([r.to_dict() for r in repairs], indent=1) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
         (om / f"{name}.repaired.score.json").write_text(
             score.model_dump_json(indent=1), encoding="utf-8", newline="\n"
         )
