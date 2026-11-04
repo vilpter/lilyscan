@@ -91,7 +91,7 @@ final class EvalCmd implements Runnable {
         Path work = Path.of("eval/work");
 
         @Option(names = "--out")
-        Path out = Path.of("lilyscan/repair/confidence.json");
+        Path out = Path.of("lilyscan-core/src/main/resources/org/lilyscan/core/repair/confidence.json");
 
         @Override
         @SuppressWarnings("unchecked")

@@ -44,24 +44,24 @@ misreads is reported and fixed upstream where possible (see
 ## How it works
 
 A job goes through these stages (the design, and why each exists, is in
-[docs/design.md](docs/design.md)). The paths are the Python reference implementation; the
-Java port has the same stages under `lilyscan-core/src/main/java/org/lilyscan/core/`:
+[docs/design.md](docs/design.md) and [docs/design-java.md](docs/design-java.md)). Paths are
+packages under `lilyscan-core/src/main/java/org/lilyscan/core/` unless they say otherwise:
 
 | Stage | What happens | Code |
 |---|---|---|
-| 0. Ingest | Every page of every upload, in order, becomes one book for the engine | `lilyscan/ingest/` |
-| 1. Prepare | Photos and scans are found, straightened, turned upright and cleaned | `lilyscan/prepare/` |
-| 2. Engine | Audiveris 5.11.0 transcribes the book (batch mode; a failed page is left out and the rest read again) | `lilyscan/engine/audiveris/runner.py` |
-| 3. Import | The exported MusicXML becomes Lilyscan's score model, with page positions and grades from the Audiveris project | `lilyscan/ir/musicxml.py`, `lilyscan/engine/audiveris/omr.py` |
-| 4. Vector oracle | Born-digital PDFs: glyphs read from the PDF itself check tuplets | `lilyscan/vector/` |
-| 5. Repair | Rule-based repairs, then Lilyscan's calibrated confidence | `lilyscan/repair/` |
-| 6. Score model | Parts, staves, measures, voices, events, with provenance for every change | `lilyscan/ir/models.py` |
-| 7. LilyPond | The editable project, compiled to PDF, MIDI and SVG | `lilyscan/lilypond/` |
-| 8. Checks | Compiles (Q1), bar checks (Q2), measure durations (Q3), ranges (Q4), parts line up (Q5), no lyrics in instrumental parts (Q9) | `lilyscan/qa/` |
+| 0. Ingest | Every page of every upload, in order, becomes one book for the engine | `ingest/` |
+| 1. Prepare | Photos and scans are found, straightened, turned upright and cleaned | `prepare/` |
+| 2. Engine | Audiveris 5.11.0 transcribes the book (batch mode; a failed page is left out and the rest read again) | `lilyscan-engine` (`AudiverisRunner`, a separate worker JVM) |
+| 3. Import | The exported MusicXML becomes Lilyscan's score model, with page positions and grades from the Audiveris project | `ir/MusicXml`, `omr/` |
+| 4. Vector oracle | Born-digital PDFs: glyphs read from the PDF itself check tuplets | `vector/` |
+| 5. Repair | Rule-based repairs, then Lilyscan's calibrated confidence | `repair/` |
+| 6. Score model | Parts, staves, measures, voices, events, with provenance for every change | `ir/` |
+| 7. LilyPond | The editable project, compiled to PDF, MIDI and SVG | `lilypond/` |
+| 8. Checks | Compiles (Q1), bar checks (Q2), measure durations (Q3), ranges (Q4), parts line up (Q5), no lyrics in instrumental parts (Q9) | `qa/` |
 
-Combining parts (`lilyscan/combine.py`) aligns the parts measure by measure
-(`lilyscan/align.py`), lets parts that disagree on the key vote, optionally reduces some of
-them to a piano accompaniment (`lilyscan/arrange.py`), and produces a new job.
+Combining parts (`combine/Combine`) aligns the parts measure by measure (`combine/Align`), lets
+parts that disagree on the key vote, optionally reduces some of them to a piano accompaniment
+(`combine/Arrange`), and produces a new job.
 
 ## Project layout
 
@@ -74,10 +74,9 @@ lilyscan-cli/        the command line (`serve`, `convert`, `eval`, ...); builds 
 lilyscan-desktop/    the desktop app (Swing): the review in a window, on this computer or a server
 services/web/        the browser UI (plain HTML, CSS and JavaScript, no build step)
 third_party/         Audiveris 5.11.0 (git submodule)
-lilyscan/            the Python reference implementation: corpus generation and parity references
 eval/                corpus specs (seed.json, repertoire.json) and committed results
 docs/                design.md (design and status log), upstream/audiveris (bug reports and fixes)
-tests/               parity references for the Java port, and the Python test suite
+tests/               parity references (from the Python implementation) and test fixtures
 docker/              the image (Dockerfile, entrypoint, OCR model checksums)
 packaging/linux/     the desktop app's .deb and .rpm (package.sh)
 docker-compose.yml   the Docker deployment: one service
@@ -348,24 +347,18 @@ Settings come from the environment:
 LANG=C.UTF-8 ./gradlew build
 ```
 
-builds every module and runs the Java tests, including the parity tests against the Python
-references committed in `tests/parity/`. Larger local sweeps compare the two implementations
-on the whole corpus (`-PengineSweep`, `-PprepareSweep`, `-PcombineSweep`, `-PevalSweep`; see
-`scripts/java_*_sweep.py`).
+builds every module and runs the tests. The parity tests compare the Java code with references
+the original Python implementation of Lilyscan produced (`tests/parity/`). That implementation,
+and the scripts that made the references and the larger local sweeps (`-PengineSweep`,
+`-PprepareSweep`, `-PcombineSweep`, `-PevalSweep`), are kept on the branch
+`python-reference`; comments in the Java code that name a `lilyscan/*.py` file refer to it.
 
-The Python implementation stays as the reference the parity tests compare against:
-
-```bash
-uv sync --all-extras
-uv run pytest -m "not gpu and not engine"
-uv run ruff check . && uv run ruff format --check . && uv run mypy
-```
-
-Tests marked `lilypond` need LilyPond and `engine` tests need Audiveris (`AUDIVERIS_BIN` and
-`TESSDATA_PREFIX`). Missing tools cause a skip, not a failure. Each change goes on a branch and
-a pull request; CI builds the jar, runs both test suites, builds the image and transcribes a
-page in it. Changing a pinned tool version is a change of its own: update the pins, the
-Dockerfile and the Audiveris submodule, then re-run the evaluation.
+Tests that need LilyPond (`LILYPOND_BIN`) or the OCR models (`TESSDATA_PREFIX`) are skipped
+when the tool is missing, not failed; the window test needs a display (CI runs it under Xvfb).
+Each change goes on a branch and a pull request; CI builds the jar, runs the tests, builds the
+image and transcribes a page in it, builds the Linux packages, and runs the LilyPond tests
+against the next LilyPond release. Changing a pinned tool version is a change of its own:
+update the pins, the Dockerfile and the Audiveris submodule, then re-run the evaluation.
 
 ### Evaluation
 
@@ -389,11 +382,10 @@ java -jar lilyscan.jar corpus build --spec eval/corpus/repertoire.json
 java -jar lilyscan.jar corpus build --spec eval/corpus/openscore.json
 ```
 
-The Java builder writes the same seed pieces as the Python one (`uv run lilyscan corpus build`,
-which also still builds the seed and repertoire corpora): its random draws reproduce Python's
-exactly, and a test compares every piece note for note. The simulated scans and photos use
-Java's own random numbers, so they differ from Python's in detail; compare a Java-built corpus
-with the `java-*` baselines.
+The seed pieces are the same as the original Python builder's: the random draws reproduce
+Python's exactly, and a test compares every piece note for note with references it made. The
+simulated scans and photos use Java's own random numbers, so they differ from Python's in
+detail; compare a Java-built corpus with the `java-*` baselines.
 
 ```bash
 java -jar lilyscan.jar eval run --repair --prepare --label my-run
@@ -406,7 +398,8 @@ accuracy, edit rate, note F1, lyric and chord accuracy, how many engine events w
 on the page, and how well confidence is calibrated.
 
 The current baselines are `base-1031-seed` and `base-1031-rep`: fresh engine runs on Linux
-(Ubuntu, x86-64) with `--repair --prepare --lilypond`, on corpora built by the Python builder.
+(Ubuntu, x86-64) with `--repair --prepare --lilypond`, on corpora built by the original Python
+builder.
 `java-1103-seed`, `java-1103-repertoire` and `java-1103-openscore` are the same runs on the
 corpora the Java builder makes; compare a Java-built corpus with these. (`base-1014-seed` and
 `base-1014-rep` are results on Windows. Audiveris reads a few pages slightly differently there, so
@@ -419,7 +412,8 @@ compare with a baseline from the same platform, item by item in `results.json`.)
 - New engine runs need the OCR models (`TESSDATA_PREFIX`).
 
 After changing a repair rule or adding corpus pieces, refit the confidence model (it rewrites
-`lilyscan/repair/confidence.json` and prints the calibration error per corpus):
+`confidence.json` in `lilyscan-core/src/main/resources/org/lilyscan/core/repair/` and prints the
+calibration error per corpus):
 
 ```bash
 java -jar lilyscan.jar eval calibrate

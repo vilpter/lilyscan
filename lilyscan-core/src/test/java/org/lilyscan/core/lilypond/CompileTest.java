@@ -69,6 +69,8 @@ class CompileTest {
     @Test
     @Tag("lilypond")
     void installedVersionMatchesPin() {
+        org.junit.jupiter.api.Assumptions.assumeFalse(Boolean.getBoolean("lilyscan.lilypondNext"),
+                "running against the next LilyPond release");
         assertEquals(Config.LILYPOND_VERSION, Compile.lilypondVersion(lilypond()));
     }
 
