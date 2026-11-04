@@ -1,11 +1,14 @@
-# CI for the Java port (design-java.md JM0). Runs alongside the Python ci.yml during the port.
+# CI for the Lilyscan server (Java). The Python ci.yml checks the reference implementation that
+# the parity tests compare against.
 name: java-ci
 
 on:
   push:
-    branches: [main, "jm*", "java-*"]
+    branches: [main, "jm*", "java-*", "retire-*"]
     paths:
       - "lilyscan-*/**"
+      - "services/web/**"
+      - "docker-compose.yml"
       - "settings.gradle"
       - "build.gradle"
       - "gradle/**"
@@ -15,6 +18,10 @@ on:
   pull_request:
     paths:
       - "lilyscan-*/**"
+      - "services/web/**"
+      - "docker/**"
+      - "docker-compose.yml"
+      - ".github/workflows/java-ci.yml"
       - "settings.gradle"
       - "build.gradle"
       - "gradle/**"
@@ -99,3 +106,7 @@ jobs:
           docker run --rm --entrypoint lilypond lilyscan:ci --version
       - name: End to end (upload a page, transcribe, review, download)
         run: docker/smoke-test.sh lilyscan:ci
+      - name: Extra OCR languages are downloaded at startup
+        run: |
+          docker run --rm -e LILYSCAN_OCR_LANGUAGES=eng+ita --entrypoint /app/entrypoint.sh lilyscan:ci \
+            sh -c 'test -s "$TESSDATA_PREFIX/ita.traineddata" && echo "ita model ready"'

@@ -12,7 +12,6 @@ env:
   LILYPOND_VERSION: "2.26.0"
   # Non-blocking forward-compatibility check (D5).
   LILYPOND_NEXT: "2.27.3"
-  IMAGE_PREFIX: ghcr.io/vilpter
 
 jobs:
   test:
@@ -45,41 +44,3 @@ jobs:
       - run: uv sync --frozen --all-extras
       # The pin check is expected to differ here; everything else must still pass.
       - run: uv run pytest -m lilypond -k "not matches_pin"
-
-  images:
-    needs: test
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v7
-      - name: Build CPU worker
-        run: docker build -f services/worker/Dockerfile --build-arg VARIANT=cpu -t lilyscan-worker:cpu .
-      - name: Build API
-        run: docker build -f services/api/Dockerfile -t lilyscan-api .
-      - name: Build Audiveris worker
-        run: docker build -f services/audiveris-worker/Dockerfile -t lilyscan-audiveris .
-      - name: Engine smoke test
-        run: bash scripts/engine_smoke.sh lilyscan-worker:cpu lilyscan-audiveris
-      - name: Log in to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'vilpter/lilyscan'
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish images
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'vilpter/lilyscan'
-        run: |
-          set -eu
-          sha="sha-${GITHUB_SHA::12}"
-          publish() {
-            for tag in latest "$sha"; do
-              docker tag "$1" "$IMAGE_PREFIX/$2:$tag"
-              docker push "$IMAGE_PREFIX/$2:$tag"
-            done
-          }
-          publish lilyscan-api lilyscan-api
-          publish lilyscan-worker:cpu lilyscan-worker
-          publish lilyscan-audiveris lilyscan-audiveris

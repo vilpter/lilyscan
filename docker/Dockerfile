@@ -18,6 +18,10 @@ ARG LILYPOND_VERSION=2.26.0
 # verified against docker/tessdata.sha256.
 ARG TESSDATA_COMMIT=ced78752cc61322fb554c280d13360b35b8684e4
 ENV TESSDATA_PREFIX=/opt/tessdata
+# Models for other languages are downloaded at startup into this cache (docker/entrypoint.sh);
+# curl stays installed for that.
+ENV TESSDATA_CACHE=/var/cache/lilyscan/tessdata \
+    TESSDATA_BASE_URL=https://raw.githubusercontent.com/tesseract-ocr/tessdata/${TESSDATA_COMMIT}
 COPY docker/tessdata.sha256 /opt/tessdata/SHA256SUMS
 RUN set -eux; \
     apt-get update; \
@@ -34,13 +38,14 @@ RUN set -eux; \
     done; \
     sha256sum -c SHA256SUMS; \
     cd /; \
-    apt-get purge -y curl; apt-get autoremove -y; rm -rf /var/lib/apt/lists/*; \
+    rm -rf /var/lib/apt/lists/*; \
     lilypond --version
 
 COPY lilyscan-cli/build/libs/lilyscan.jar /app/lilyscan.jar
+COPY docker/entrypoint.sh /app/entrypoint.sh
 
 ENV LILYSCAN_DATA_DIR=/data
 VOLUME ["/data"]
 EXPOSE 8000
 
-ENTRYPOINT ["java", "-jar", "/app/lilyscan.jar", "serve", "--port", "8000", "--data", "/data"]
+ENTRYPOINT ["/app/entrypoint.sh", "java", "-jar", "/app/lilyscan.jar", "serve", "--port", "8000", "--data", "/data"]

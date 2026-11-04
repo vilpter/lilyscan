@@ -44,7 +44,8 @@ misreads is reported and fixed upstream where possible (see
 ## How it works
 
 A job goes through these stages (the design, and why each exists, is in
-[docs/design.md](docs/design.md)):
+[docs/design.md](docs/design.md)). The paths are the Python reference implementation; the
+Java port has the same stages under `lilyscan-core/src/main/java/org/lilyscan/core/`:
 
 | Stage | What happens | Code |
 |---|---|---|
@@ -65,68 +66,79 @@ them to a piano accompaniment (`lilyscan/arrange.py`), and produces a new job.
 ## Project layout
 
 ```
-lilyscan/            the library: pipeline stages (above), CLI (cli.py), evaluation
-  evaluation/        corpus scoring (harness.py, compare.py) and confidence fitting
-  synth/             the generated evaluation corpus (music, engraving, scan and photo simulation)
-  runtime/           pinned tool versions, settings from the environment, compute device
-services/
-  lilyscan_app/      FastAPI app (api.py), job store (SQLite), job steps (tasks.py), dispatch
-  web/               the browser UI (plain HTML, CSS and JavaScript, no build step)
-  api/, worker/, audiveris-worker/   Dockerfiles for the Docker deployment
+lilyscan-core/       the pipeline (stages above), score model, LilyPond writer, repairs, Stage 1
+lilyscan-engine/     Audiveris run in-process inside a separate worker JVM
+lilyscan-server/     the web server (Javalin), job store (SQLite) and job steps
+lilyscan-eval/       corpus scoring and confidence fitting
+lilyscan-cli/        the command line (`serve`, `convert`, `eval`, ...); builds lilyscan.jar
+lilyscan-desktop/    the desktop review app (in progress)
+services/web/        the browser UI (plain HTML, CSS and JavaScript, no build step)
+third_party/         Audiveris 5.11.0 (git submodule)
+lilyscan/            the Python reference implementation: corpus generation and parity references
 eval/                corpus specs (seed.json, repertoire.json) and committed results
 docs/                design.md (design and status log), upstream/audiveris (bug reports and fixes)
-tests/               pytest suite
-scripts/             maintenance scripts (engine smoke test, .omr fixtures)
-docker-compose.yml   the Docker deployment (one machine or the homelab)
+tests/               parity references for the Java port, and the Python test suite
+docker/              the image (Dockerfile, entrypoint, OCR model checksums)
+docker-compose.yml   the Docker deployment: one service
 ```
 
 ## Install
 
-There are two ways to install Lilyscan:
+Lilyscan is one Java program, `lilyscan.jar`, with Audiveris built in. It needs LilyPond and
+the Tesseract OCR models next to it. There are two ways to run it:
 
-- **With Docker** (the simplest): Docker is the only thing to install. Audiveris, its OCR
-  models, LilyPond and Python come inside the published images, at the pinned versions.
-  This gives the whole app: transcribing, reviewing and combining parts in the browser.
-- **Natively**: the tools installed on the machine itself. Needed to develop Lilyscan (tests,
-  the evaluation) and to use it from Python scripts.
+- **With Docker** (the simplest): Docker is the only thing to install. The image carries the
+  server, Audiveris, LilyPond and the OCR models at the pinned versions.
+- **Natively**: Java 25, LilyPond and the OCR models installed on the machine itself.
+
+Either way the jar is built from source for now (a published image is planned). Building it
+needs a JDK 25 and the Audiveris submodule:
+
+```bash
+git clone --recurse-submodules https://github.com/vilpter/lilyscan-desktop.git
+cd lilyscan-desktop
+LANG=C.UTF-8 ./gradlew :lilyscan-cli:shadowJar
+```
+
+The jar is `lilyscan-cli/build/libs/lilyscan.jar` (about 120 MB). Run the build again after
+`git pull`. If the clone was made without `--recurse-submodules`, run
+`git submodule update --init` first.
 
 ### With Docker
 
-You need Docker Engine with the Compose plugin, or Docker Desktop. The images are built for
-x86-64 Linux (`linux/amd64`) and are about 0.9 GB to download.
-[Install Docker](https://docs.docker.com/engine/install/), then:
+You need Docker Engine with the Compose plugin, or Docker Desktop. The image is built for
+x86-64 Linux (`linux/amd64`). [Install Docker](https://docs.docker.com/engine/install/), build
+the jar (above), then:
 
 ```bash
-git clone https://github.com/vilpter/lilyscan.git
-cd lilyscan
-docker compose pull
-docker compose up -d
+docker compose up -d --build
 ```
 
 Then open <http://localhost:8000/>. Jobs are kept in the Docker volume `lilyscan-data`.
 
-- **Check:** `docker compose ps` lists the four services. `docker compose logs -f` follows their
-  logs.
-- **Update:** `git pull && docker compose pull && docker compose up -d`.
+- **Check:** `docker compose ps` shows the service. `docker compose logs -f` follows its log.
+- **Update:** `git pull`, build the jar again, then `docker compose up -d --build`.
 - **Stop:** `docker compose down`. The jobs are kept; `docker compose down -v` deletes them
   too.
-
-Ports, versions, GPU and the services are described under [Start](#start).
+- **Port:** `LILYSCAN_PORT=8080 docker compose up -d`.
+- **OCR languages:** English, Latin, German and French are in the image. Other languages named
+  in `LILYSCAN_OCR_LANGUAGES` (say `eng+ita`) are downloaded once at startup and kept in the
+  volume `tessdata-cache`; a custom `*.traineddata` placed there is used too.
+- **Memory:** each Audiveris run gets a JVM heap of `AUDIVERIS_MAX_HEAP` (default `3G`).
 
 ### Natively
 
-Lilyscan runs on Windows and Linux (macOS should work, but is untested). You need:
+Lilyscan runs on Linux and Windows (macOS should work, but is untested). You need:
 
 | Tool | Version | Notes | Ubuntu |
 |---|---|---|---|
-| Python | 3.12 | managed by [uv](https://docs.astral.sh/uv/) | [steps](#uv-and-python) |
+| Java | 25 | a JDK to build the jar; a JRE is enough to run it | [steps](#java) |
 | [LilyPond](https://lilypond.org/download.html) | 2.26.0 | `lilypond` on the `PATH`, or `LILYPOND_BIN` | [steps](#lilypond) |
-| [Audiveris](https://github.com/Audiveris/audiveris/releases/tag/5.11.0) | 5.11.0 | the installer bundles its Java runtime; point `AUDIVERIS_BIN` at its executable (found automatically in `C:\Program Files\Audiveris` on Windows) | [steps](#audiveris) |
-| Tesseract language models | [tessdata](https://github.com/tesseract-ocr/tessdata) (not `tessdata_fast`) | `eng`, `lat`, `deu` and `fra` by default, in `%LOCALAPPDATA%\lilyscan\tessdata` on Windows (found automatically) or any folder named by `TESSDATA_PREFIX`. Without them Audiveris reads no lyrics or titles | [steps](#ocr-models) |
+| Tesseract language models | [tessdata](https://github.com/tesseract-ocr/tessdata) (not `tessdata_fast`) | `eng`, `lat`, `deu` and `fra` by default, in the folder named by `TESSDATA_PREFIX`. Without them Audiveris reads no lyrics or titles | [steps](#ocr-models) |
 
-Audiveris needs the full models with the legacy engine: `tessdata_fast` and distribution
-`tesseract-ocr-*` packages do not work. The versions are pinned: Lilyscan is tested against
-exactly these (`lilyscan/runtime/config.py`).
+Audiveris is inside the jar; it needs no install of its own. It needs the full OCR models with
+the legacy engine: `tessdata_fast` and distribution `tesseract-ocr-*` packages do not work.
+The versions are pinned: Lilyscan is tested against exactly these.
 
 #### On Ubuntu
 
@@ -137,14 +149,15 @@ is safe to run again. First:
 sudo apt install git curl
 ```
 
-##### uv and Python
+##### Java
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+sudo apt install openjdk-25-jdk
+java -version
 ```
 
-Open a new terminal afterwards. This installs uv for your user; `uv sync` (below) downloads
-Python 3.12 itself.
+If your Ubuntu has no `openjdk-25-jdk` package, install
+[Eclipse Temurin 25](https://adoptium.net/installation/linux/) instead.
 
 ##### LilyPond
 
@@ -162,18 +175,6 @@ lilypond --version
 
 The last line should print `GNU LilyPond 2.26.0`.
 
-##### Audiveris
-
-```bash
-cd /tmp
-curl -fLO https://github.com/Audiveris/audiveris/releases/download/5.11.0/Audiveris-5.11.0-ubuntu24.04-x86_64.deb
-sudo apt install ./Audiveris-5.11.0-ubuntu24.04-x86_64.deb
-sudo ln -sf /opt/audiveris/bin/Audiveris /usr/local/bin/audiveris
-```
-
-On Ubuntu 22.04, use the `ubuntu22.04` package instead. The package is meant for a desktop; on
-a server without one, use [Docker](#with-docker).
-
 ##### OCR models
 
 ```bash
@@ -187,47 +188,29 @@ grep -q TESSDATA_PREFIX ~/.profile || echo 'export TESSDATA_PREFIX=/usr/local/sh
 
 Log out and back in, so that `TESSDATA_PREFIX` is set.
 
-Then:
+Then build the jar (above) and check the tools:
 
 ```bash
-git clone https://github.com/vilpter/lilyscan.git
-cd lilyscan
-uv sync --all-extras
-uv run lilyscan versions
-uv run lilyscan selftest
+java -jar lilyscan-cli/build/libs/lilyscan.jar versions
+java -jar lilyscan-cli/build/libs/lilyscan.jar selftest
 ```
 
-`versions` compares the installed LilyPond and Audiveris with the pinned ones; `selftest`
-compiles a small score. With Docker you need none of this (above).
+`versions` compares the installed LilyPond and the bundled Audiveris with the pinned ones;
+`selftest` compiles a small score.
 
 ## Start
 
-Natively, with jobs run inside the server process (no Redis or Docker):
+Natively:
 
 ```bash
-uv run lilyscan serve
+java -jar lilyscan-cli/build/libs/lilyscan.jar serve
 ```
 
 Then open <http://localhost:8000/>. `--port` changes the port and `--data` the folder where
-jobs are kept (default `./data`).
+jobs are kept (default `./data`). Jobs run inside the server: Audiveris in a separate JVM per
+run, so a crash or a runaway page cannot take the server down.
 
-With Docker, on one machine or in the homelab, using the published images (the API on port
-8000, the Audiveris engine and the pipeline in their own workers, and a Redis-compatible queue):
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-Build locally with `docker compose up -d --build`, pin a build with `LILYSCAN_TAG=sha-<commit>`,
-and change the port with `LILYSCAN_PORT`. With an NVIDIA GPU and the NVIDIA Container Toolkit:
-`docker compose --profile gpu up -d --scale worker=0`. The services:
-
-- `api`: FastAPI, the web UI and the job API (`/api/jobs`).
-- `worker`: the pipeline (LilyPond, OpenCV, ONNX Runtime); `worker-cuda` under the `gpu` profile.
-- `audiveris`: Audiveris 5.11.0 behind a worker on the `engine` queue. Its JVM heap is capped by
-  `AUDIVERIS_MAX_HEAP` (default `3G`).
-- `redis`: the job queue, served by Valkey (BSD-3, Redis-protocol compatible).
+With Docker: `docker compose up -d --build` ([above](#with-docker)).
 
 ## Use
 
@@ -284,12 +267,12 @@ The combined score is a job like any other: review it, edit it, download it.
 ### Command line
 
 ```bash
-uv run lilyscan convert score.mxl --out out/score
+java -jar lilyscan.jar convert score.mxl --out out/score
 ```
 
 `convert` turns a MusicXML file (for example Audiveris output) into a LilyPond project with a
-QA report. The other commands: `serve` (above), `versions`, `selftest`, `device` (the compute
-device used), `corpus` and `eval` (below). `uv run lilyscan <command> --help` shows the options.
+QA report. The other commands: `serve` (above), `versions`, `selftest` and `eval` (below).
+`java -jar lilyscan.jar <command> --help` shows the options.
 
 ### What a job keeps
 
@@ -311,27 +294,39 @@ Settings come from the environment:
 | Variable | Default | Meaning |
 |---|---|---|
 | `LILYSCAN_DATA_DIR` | `data` | where jobs are kept (`serve --data` sets it) |
-| `LILYSCAN_OCR_LANGUAGES` | `eng+lat+deu+fra` | Tesseract codes for lyrics and text; the Docker engine downloads missing models at startup |
-| `LILYPOND_BIN`, `AUDIVERIS_BIN` | `lilypond`, `audiveris` | the tools' executables |
+| `LILYSCAN_OCR_LANGUAGES` | `eng+lat+deu+fra` | Tesseract codes for lyrics and text; the Docker image downloads missing models at startup |
+| `LILYPOND_BIN` | `lilypond` | the LilyPond executable |
+| `AUDIVERIS_BIN` | | an external Audiveris to run instead of the bundled one (for testing) |
+| `AUDIVERIS_MAX_HEAP` | `3G` | the JVM heap of each Audiveris run |
 | `TESSDATA_PREFIX` | | the folder with the Tesseract models |
 | `AUDIVERIS_TIMEOUT_S`, `AUDIVERIS_TIMEOUT_PER_PAGE_S` | 900, 240 | an engine run may take the larger of the two (the second per page) |
 | `AUDIVERIS_STEP_TIMEOUT_S` | 300 | one engine step on one page (Audiveris's own default is 120) |
 | `LILYPOND_TIMEOUT_S` | 120 | one LilyPond compile |
-| `LILYSCAN_DISPATCH` | `rq` | `rq` (Redis workers) or `inline` (in the server process; `serve` sets it) |
 
 ## Develop
 
 ```bash
-uv sync --all-extras
-uv run pytest -m "not gpu and not engine"
-uv run ruff check . && uv run ruff format --check . && uv run mypy lilyscan services
+LANG=C.UTF-8 ./gradlew build
 ```
 
-Tests marked `lilypond` need LilyPond, `engine` tests need Audiveris (`AUDIVERIS_BIN` and
-`TESSDATA_PREFIX`), and `gpu` tests need a CUDA device. Missing tools cause a skip, not a
-failure. Each change goes on a branch and a pull request; CI runs the tests, the images and a
-LilyPond-next check. Changing a pinned tool version is a change of its own: update
-`lilyscan/runtime/config.py` and the Dockerfiles, then re-run the evaluation.
+builds every module and runs the Java tests, including the parity tests against the Python
+references committed in `tests/parity/`. Larger local sweeps compare the two implementations
+on the whole corpus (`-PengineSweep`, `-PprepareSweep`, `-PcombineSweep`, `-PevalSweep`; see
+`scripts/java_*_sweep.py`).
+
+The Python implementation stays as the reference and builds the evaluation corpus:
+
+```bash
+uv sync --all-extras
+uv run pytest -m "not gpu and not engine"
+uv run ruff check . && uv run ruff format --check . && uv run mypy
+```
+
+Tests marked `lilypond` need LilyPond and `engine` tests need Audiveris (`AUDIVERIS_BIN` and
+`TESSDATA_PREFIX`). Missing tools cause a skip, not a failure. Each change goes on a branch and
+a pull request; CI builds the jar, runs both test suites, builds the image and transcribes a
+page in it. Changing a pinned tool version is a change of its own: update the pins, the
+Dockerfile and the Audiveris submodule, then re-run the evaluation.
 
 ### Evaluation
 
@@ -347,9 +342,12 @@ uv run lilyscan corpus build --spec eval/corpus/repertoire.json --out eval/corpu
 ```
 
 ```bash
-uv run lilyscan eval run --repair --prepare --label my-run
-uv run lilyscan eval run --corpus eval/corpus/repertoire --repair --prepare --label my-run-rep
+java -jar lilyscan.jar eval run --repair --prepare --label my-run
+java -jar lilyscan.jar eval run --corpus eval/corpus/repertoire --repair --prepare --label my-run-rep
 ```
+
+The corpora are built by the Python tools (`uv run lilyscan corpus build`, above); the
+evaluation itself runs in Java, and `uv run lilyscan eval run` gives the same results.
 
 Results go to `eval/results/<label>/` (`summary.md`, `results.json`), and Audiveris's output is
 cached in `eval/work/`, so later runs only re-score. The summary reports exact-measure
@@ -365,13 +363,13 @@ compare with the baseline from the same platform, item by item in `results.json`
 - `--prepare` sends scans and photos through Stage 1 first, as a job does.
 - `--lilypond` also generates LilyPond and reports how often it compiles (Q1) and passes bar
   checks (Q2).
-- New engine runs need Audiveris and its OCR models (`AUDIVERIS_BIN`, `TESSDATA_PREFIX`).
+- New engine runs need the OCR models (`TESSDATA_PREFIX`).
 
 After changing a repair rule or adding corpus pieces, refit the confidence model (it rewrites
 `lilyscan/repair/confidence.json` and prints the calibration error per corpus):
 
 ```bash
-uv run lilyscan eval calibrate
+java -jar lilyscan.jar eval calibrate
 ```
 
 ## License

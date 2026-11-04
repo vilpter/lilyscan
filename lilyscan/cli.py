@@ -11,7 +11,7 @@ from pathlib import Path
 
 from lilyscan.engine.audiveris.runner import audiveris_version
 from lilyscan.lilypond.compile import HELLO_WORLD, compile_ly, lilypond_version
-from lilyscan.runtime.config import AUDIVERIS_VERSION, LILYPOND_VERSION, Settings
+from lilyscan.runtime.config import AUDIVERIS_VERSION, LILYPOND_VERSION
 from lilyscan.runtime.device import get_device
 
 
@@ -52,42 +52,6 @@ def _cmd_selftest(args: argparse.Namespace) -> int:
             print(f"{d.severity}: {d.message}", file=sys.stderr)
         print("lilypond self-test:", "ok" if result.ok else "FAILED")
         return 0 if result.ok else 1
-
-
-def _serve_settings(data: str) -> Settings:
-    """Settings for ``serve``, also put in the environment: the job steps running in the
-    background read their settings from it, so they must see the same data folder."""
-    import os
-
-    os.environ["LILYSCAN_DATA_DIR"] = str(Path(data).resolve())
-    os.environ["LILYSCAN_DISPATCH"] = "inline"
-    return Settings.from_env()
-
-
-def _cmd_serve(args: argparse.Namespace) -> int:
-    """API + web UI in one process; jobs run in a background thread (no Redis needed)."""
-    import os
-
-    import uvicorn
-
-    from lilyscan_app.api import create_app
-
-    # Single-machine convenience: find a local Audiveris install and OCR models.
-    windows_audiveris = (
-        Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Audiveris" / "Audiveris.exe"
-    )
-    if "AUDIVERIS_BIN" not in os.environ and windows_audiveris.is_file():
-        os.environ["AUDIVERIS_BIN"] = str(windows_audiveris)
-    local_tessdata = (
-        Path(os.environ.get("LOCALAPPDATA", "~")).expanduser() / "lilyscan" / "tessdata"
-    )
-    if "TESSDATA_PREFIX" not in os.environ and local_tessdata.is_dir():
-        os.environ["TESSDATA_PREFIX"] = str(local_tessdata)
-
-    settings = _serve_settings(args.data)
-    print(f"Lilyscan at http://{args.host}:{args.port}/ (data in {settings.data_dir})")
-    uvicorn.run(create_app(settings), host=args.host, port=args.port, log_level="warning")
-    return 0
 
 
 def _cmd_convert(args: argparse.Namespace) -> int:
@@ -163,12 +127,6 @@ def build_parser() -> argparse.ArgumentParser:
     st = sub.add_parser("selftest", help="compile a hello-world score with LilyPond")
     st.add_argument("--out", help="keep the output PDF in this directory")
     st.set_defaults(fn=_cmd_selftest)
-
-    sv = sub.add_parser("serve", help="run the web UI and API on this machine (no Redis)")
-    sv.add_argument("--host", default="127.0.0.1")
-    sv.add_argument("--port", type=int, default=8000)
-    sv.add_argument("--data", default="data", help="job storage directory")
-    sv.set_defaults(fn=_cmd_serve)
 
     cv = sub.add_parser("convert", help="MusicXML -> LilyPond project + QA report")
     cv.add_argument("musicxml", help=".musicxml, .xml, or .mxl file")
