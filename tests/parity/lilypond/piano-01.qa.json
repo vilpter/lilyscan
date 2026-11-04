@@ -1,0 +1,51 @@
+{
+ "passed": true,
+ "checks": [
+  {
+   "id": "Q1",
+   "name": "compiles",
+   "passed": true,
+   "details": [],
+   "summary": "compiled"
+  },
+  {
+   "id": "Q2",
+   "name": "bar checks",
+   "passed": true,
+   "details": [],
+   "summary": "0 failing bar check(s)"
+  },
+  {
+   "id": "Q3",
+   "name": "rhythmic integrity",
+   "passed": true,
+   "details": [],
+   "summary": "0 voice-measure(s) not matching the time signature"
+  },
+  {
+   "id": "Q4",
+   "name": "pitch range",
+   "passed": true,
+   "details": [],
+   "summary": "0 note(s) outside the instrument's practical range"
+  },
+  {
+   "id": "Q5",
+   "name": "cross-part alignment",
+   "passed": true,
+   "details": [],
+   "summary": "0 alignment problem(s)"
+  },
+  {
+   "id": "Q9",
+   "name": "lyrics in instrumental parts",
+   "passed": true,
+   "details": [],
+   "summary": "0 instrumental part(s) with lyrics"
+  }
+ ],
+ "outputs": [
+  "main.pdf",
+  "main.midi"
+ ]
+}

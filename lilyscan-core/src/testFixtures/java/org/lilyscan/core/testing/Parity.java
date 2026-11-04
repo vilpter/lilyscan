@@ -36,6 +36,34 @@ public final class Parity {
     /** One reference case: a name, an input path and the reader's source label. */
     public record Case(String name, Path input, String source, Path reference) {}
 
+    /** A generator case: a reference score.json and the project Python generated from it. */
+    public record ProjectCase(String name, Path score, Path reference) {
+        /** The QA report Python produced for the same project (written when LilyPond was found). */
+        public Path qa() {
+            return reference.resolveSibling(reference.getFileName().toString().replace(".project.json", ".qa.json"));
+        }
+    }
+
+    /** The committed generator cases, plus the local sweep when -PparitySweep is set. */
+    public static List<ProjectCase> projectCases() {
+        List<ProjectCase> out = new ArrayList<>();
+        for (JsonNode e : Repo.readJson(Repo.parity("lilypond/manifest.json"))) {
+            String name = e.get("name").asText();
+            out.add(new ProjectCase(name, Repo.parity(e.get("score").asText()),
+                    Repo.parity("lilypond/" + name + ".project.json")));
+        }
+        String sweep = System.getProperty("lilyscan.paritySweep");
+        if (sweep != null && !sweep.isBlank()) {
+            Path dir = Path.of(sweep);
+            for (JsonNode e : Repo.readJson(dir.resolve("manifest.json"))) {
+                String name = e.get("name").asText();
+                out.add(new ProjectCase("sweep/" + name, dir.resolve(name + ".score.json"),
+                        dir.resolve(name + ".project.json")));
+            }
+        }
+        return out;
+    }
+
     /** The committed MusicXML cases, plus the local sweep when -PparitySweep is set. */
     public static List<Case> musicXmlCases() {
         List<Case> out = new ArrayList<>();

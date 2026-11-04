@@ -1,0 +1,114 @@
+{
+ "files": {
+  "chords.ly": "\\version \"2.26.0\"\n\nharmonies = \\chordmode {\n  s4 |  % m. 0\n  g2 d2:7 |  % m. 1\n  \\grace s16 s2. |  % m. 2\n  s2. |  % m. 3\n}\n",
+  "layout/part-piano.ly": "\\version \"2.26.0\"\n\n\\include \"../parts/piano.ly\"\n\\include \"../chords.ly\"\n\n\\score {\n  <<\n    \\new ChordNames \\harmonies\n    \\new PianoStaff \\with {\n      instrumentName = \"Piano\"\n      shortInstrumentName = \"Pno.\"\n    } <<\n      \\new Staff \\new Voice = \"pianoUpperVoice\" \\pianoUpperMusic\n      \\new Staff \\new Voice = \"pianoLowerVoice\" \\pianoLowerMusic\n    >>\n  >>\n  \\layout { }\n}\n",
+  "layout/part-voice.ly": "\\version \"2.26.0\"\n\n\\include \"../parts/voice.ly\"\n\\include \"../chords.ly\"\n\n\\score {\n  <<\n    \\new ChordNames \\harmonies\n    \\new Staff \\with { instrumentName = \"Voice\" shortInstrumentName = \"Vo.\" } \\new Voice = \"voiceVoice\" \\voiceMusic\n    \\new Lyrics \\lyricsto \"voiceVoice\" \\voiceVerseOne\n    \\new Lyrics \\lyricsto \"voiceVoice\" \\voiceVerseTwo\n  >>\n  \\layout { }\n}\n",
+  "layout/score.ly": "\\version \"2.26.0\"\n\n\\score {\n  <<\n    \\new ChordNames \\harmonies\n    \\new StaffGroup <<\n      \\new Staff \\with { instrumentName = \"Voice\" shortInstrumentName = \"Vo.\" } \\new Voice = \"voiceVoice\" \\voiceMusic\n      \\new Lyrics \\lyricsto \"voiceVoice\" \\voiceVerseOne\n      \\new Lyrics \\lyricsto \"voiceVoice\" \\voiceVerseTwo\n      \\new PianoStaff \\with {\n        instrumentName = \"Piano\"\n        shortInstrumentName = \"Pno.\"\n      } <<\n        \\new Staff \\new Voice = \"pianoUpperVoice\" \\pianoUpperMusic\n        \\new Staff \\new Voice = \"pianoLowerVoice\" \\pianoLowerMusic\n      >>\n    >>\n  >>\n  \\layout { }\n  \\midi { }\n}\n",
+  "main.ly": "\\version \"2.26.0\"\n\n\\header {\n  title = \"Feature Test\"\n  composer = \"Lilyscan tests\"\n  tagline = ##f\n}\n\n\\include \"parts/voice.ly\"\n\\include \"parts/piano.ly\"\n\\include \"chords.ly\"\n\\include \"layout/score.ly\"\n",
+  "parts/piano.ly": "\\version \"2.26.0\"\n\npianoUpperMusic = {\n  % m. 0\n  \\clef treble \\key g \\major \\numericTimeSignature \\time 4/4 \\partial 4 r4 |\n  % m. 1\n  \\bar \".|:\" << { \\voiceOne <g' b' d''>1 } \\new Voice { \\voiceTwo e'2 fis'2 } >> \\oneVoice |\n  % m. 2\n  \\time 3/4 \\grace s16 R2. | \\bar \":|.\"\n  % m. 3\n  \\key f \\major <f' a' c''>2. | \\bar \"|.\"\n}\n\npianoLowerMusic = {\n  % m. 0\n  \\clef bass \\key g \\major \\numericTimeSignature \\time 4/4 \\partial 4 g,4 |\n  % m. 1\n  \\bar \".|:\" g,2 \\clef treble b2 |\n  % m. 2\n  \\clef bass \\time 3/4 \\grace s16 d2. | \\bar \":|.\"\n  % m. 3\n  \\key f \\major f,2. | \\bar \"|.\"\n}\n",
+  "parts/voice.ly": "\\version \"2.26.0\"\n\nvoiceMusic = {\n  % m. 0\n  \\clef treble \\key g \\major \\numericTimeSignature \\time 4/4 \\partial 4 d''4 |\n  % m. 1\n  \\bar \".|:\" g'2 \\tuplet 3/2 4 { a'8 b'8 c''8 } d''4 |\n  % m. 2\n  \\time 3/4 \\grace e''16 d''4.~ d''8 b'4 | \\bar \":|.\"\n  % m. 3\n  \\key f \\major f'2.\\fermata | \\bar \"|.\"\n}\n\nvoiceVerseOne = \\lyricmode {\n  O\n  come ye faith -- ful joy --\n  ful and\n  tri\n}\n\nvoiceVerseTwo = \\lyricmode {\n  Sing\n  we\n}\n"
+ },
+ "measure_lines": [
+  [
+   "parts/voice.ly",
+   5,
+   "P1",
+   1,
+   "0"
+  ],
+  [
+   "parts/voice.ly",
+   7,
+   "P1",
+   1,
+   "1"
+  ],
+  [
+   "parts/voice.ly",
+   9,
+   "P1",
+   1,
+   "2"
+  ],
+  [
+   "parts/voice.ly",
+   11,
+   "P1",
+   1,
+   "3"
+  ],
+  [
+   "parts/piano.ly",
+   5,
+   "P2",
+   1,
+   "0"
+  ],
+  [
+   "parts/piano.ly",
+   7,
+   "P2",
+   1,
+   "1"
+  ],
+  [
+   "parts/piano.ly",
+   9,
+   "P2",
+   1,
+   "2"
+  ],
+  [
+   "parts/piano.ly",
+   11,
+   "P2",
+   1,
+   "3"
+  ],
+  [
+   "parts/piano.ly",
+   16,
+   "P2",
+   2,
+   "0"
+  ],
+  [
+   "parts/piano.ly",
+   18,
+   "P2",
+   2,
+   "1"
+  ],
+  [
+   "parts/piano.ly",
+   20,
+   "P2",
+   2,
+   "2"
+  ],
+  [
+   "parts/piano.ly",
+   22,
+   "P2",
+   2,
+   "3"
+  ]
+ ],
+ "staff_vars": [
+  [
+   "voiceMusic",
+   "P1",
+   1
+  ],
+  [
+   "pianoUpperMusic",
+   "P2",
+   1
+  ],
+  [
+   "pianoLowerMusic",
+   "P2",
+   2
+  ]
+ ]
+}

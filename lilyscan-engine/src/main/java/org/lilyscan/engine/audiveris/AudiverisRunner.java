@@ -11,7 +11,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -21,6 +20,7 @@ import org.lilyscan.core.omr.OmrBookJson;
 import org.lilyscan.core.omr.OmrException;
 import org.lilyscan.core.runtime.Config;
 import org.lilyscan.core.runtime.Settings;
+import org.lilyscan.core.util.ProcessRunner;
 
 /**
  * Stage 2: run the pinned Audiveris release in batch mode. Port of
@@ -192,40 +192,8 @@ public final class AudiverisRunner {
     private record Proc(int returncode, double wallS, String stdout, String stderr, boolean timedOut) {}
 
     private static Proc exec(List<String> cmd, double timeoutS) {
-        Path out = null;
-        Path err = null;
-        try {
-            out = Files.createTempFile("lilyscan-engine-", ".out");
-            err = Files.createTempFile("lilyscan-engine-", ".err");
-            long start = System.nanoTime();
-            Process p = new ProcessBuilder(cmd).redirectOutput(out.toFile()).redirectError(err.toFile()).start();
-            boolean finished = p.waitFor((long) (timeoutS * 1000), TimeUnit.MILLISECONDS);
-            if (!finished) {
-                p.descendants().forEach(ProcessHandle::destroyForcibly);
-                p.destroyForcibly();
-                p.waitFor(30, TimeUnit.SECONDS);
-            }
-            double wall = (System.nanoTime() - start) / 1e9;
-            // Decoded as UTF-8 with malformed bytes replaced, like Python's errors="replace".
-            String so = new String(Files.readAllBytes(out), StandardCharsets.UTF_8);
-            String se = new String(Files.readAllBytes(err), StandardCharsets.UTF_8);
-            return new Proc(finished ? p.exitValue() : -1, wall, so, se, !finished);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("interrupted while waiting for the engine", e);
-        } finally {
-            for (Path f : new Path[] {out, err}) {
-                if (f != null) {
-                    try {
-                        Files.deleteIfExists(f);
-                    } catch (IOException ignored) {
-                        // a temp file left behind is harmless
-                    }
-                }
-            }
-        }
+        ProcessRunner.Result r = ProcessRunner.runUnchecked(cmd, null, timeoutS);
+        return new Proc(r.returncode(), r.wallS(), r.stdout(), r.stderr(), r.timedOut());
     }
 
     /** {@code sorted(out_dir.rglob("*" + suffix))}, ordered like Python paths (by components). */

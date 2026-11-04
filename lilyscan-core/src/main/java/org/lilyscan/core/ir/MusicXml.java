@@ -156,7 +156,7 @@ public final class MusicXml {
             return dflt;
         }
         String t = Xml.text(found);
-        return t == null ? dflt : t.strip();
+        return t == null ? dflt : Py.strip(t);
     }
 
     private static String text(Element el, String path) {
@@ -215,7 +215,7 @@ public final class MusicXml {
         for (Element c : Xml.findAll(root, "identification/creator")) {
             String raw = Xml.text(c);
             if ("composer".equals(Xml.attr(c, "type")) && raw != null && !raw.isEmpty()) {
-                score.composer = raw.strip();
+                score.composer = Py.strip(raw);
                 break;
             }
         }
@@ -531,7 +531,7 @@ public final class MusicXml {
                 String s = Xml.text(t);
                 sb.append(s == null ? "" : s);
             }
-            String txt = sb.toString().strip();
+            String txt = Py.strip(sb.toString());
             if (txt.isEmpty()) {
                 continue;
             }
@@ -586,7 +586,7 @@ public final class MusicXml {
         String kind;
         if (kindEl != null) {
             String raw = Xml.text(kindEl);
-            kind = (raw == null ? "" : raw).strip();
+            kind = Py.strip(raw == null ? "" : raw);
         } else {
             kind = "major";
         }
