@@ -1,0 +1,14 @@
+<!-- Console logging for the lilyscan CLI and server. The engine worker's Audiveris run
+     configures its own logging (the runner reads its output). -->
+<configuration>
+  <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{20} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <logger name="org.eclipse.jetty" level="WARN"/>
+  <logger name="io.javalin" level="INFO"/>
+  <root level="INFO">
+    <appender-ref ref="console"/>
+  </root>
+</configuration>

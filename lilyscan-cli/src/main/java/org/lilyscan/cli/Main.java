@@ -53,12 +53,16 @@ public final class Main implements Runnable {
         @Option(names = "--port", description = "Port to listen on (default 8000).")
         int port = 8000;
 
-        @Option(names = "--data", description = "Folder where jobs are kept (default ./data).")
-        Path data = Path.of("data");
+        @Option(names = "--data", description = "Folder where jobs are kept (default: LILYSCAN_DATA_DIR, else ./data).")
+        Path data = Settings.fromEnv().dataDir();
 
         @Override
         public Integer call() throws InterruptedException {
-            new LilyscanServer(port, data).start();
+            Settings s = Settings.fromEnv();
+            s = new Settings(data.toAbsolutePath().normalize(), s.lilypondBin(), s.audiverisBin(),
+                    s.lilypondTimeoutS(), s.audiverisTimeoutS(), s.audiverisTimeoutPerPageS(),
+                    s.audiverisStepTimeoutS(), s.ocrLanguages(), s.dispatch(), s.webDir(), s.audiverisMaxHeap());
+            new LilyscanServer(s).start(port);
             // Javalin/Jetty run on their own threads; block so Main.main's System.exit
             // does not tear the server down.
             new java.util.concurrent.CountDownLatch(1).await();

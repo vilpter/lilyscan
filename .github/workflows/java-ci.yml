@@ -97,3 +97,5 @@ jobs:
         run: |
           docker run --rm --entrypoint java lilyscan:ci -jar /app/lilyscan.jar versions
           docker run --rm --entrypoint lilypond lilyscan:ci --version
+      - name: End to end (upload a page, transcribe, review, download)
+        run: docker/smoke-test.sh lilyscan:ci

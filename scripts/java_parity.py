@@ -30,11 +30,14 @@ sys.path.insert(0, str(ROOT))
 from lilyscan.engine.audiveris.omr import OmrBook, attach_movements, read_omr  # noqa: E402
 from lilyscan.ir.models import Score  # noqa: E402
 from lilyscan.ir.musicxml import load_musicxml  # noqa: E402
+from lilyscan.ir.to_musicxml import to_musicxml  # noqa: E402
 from lilyscan.lilypond.compile import lilypond_version  # noqa: E402
 from lilyscan.lilypond.generate import LyProject, generate_project  # noqa: E402
+from lilyscan.lilypond.single import single_file  # noqa: E402
 from lilyscan.qa.checks import run_checks  # noqa: E402
 from lilyscan.repair import apply_repairs  # noqa: E402
 from lilyscan.repair.confidence import calibrate_confidence  # noqa: E402
+from lilyscan.review import build_review  # noqa: E402
 from lilyscan.synth.corpus import load_spec  # noqa: E402
 from lilyscan.synth.generate import write_ground_truth  # noqa: E402
 
@@ -155,12 +158,19 @@ def project_dump(project: LyProject) -> dict[str, object]:
 
 
 def _write_project(out_dir: Path, name: str, score_json: Path) -> None:
-    """The generator's output for a reference score.json (so the generator is tested alone)."""
+    """The generator's output for a reference score.json (so the generator is tested alone),
+    and the other files written from the same score: the MusicXML export and the project as
+    one file."""
     score = Score.model_validate_json(score_json.read_text(encoding="utf-8"))
+    project = generate_project(score)
     (out_dir / f"{name}.project.json").write_text(
-        json.dumps(project_dump(generate_project(score)), indent=1) + "\n",
+        json.dumps(project_dump(project), indent=1) + "\n",
         encoding="utf-8",
         newline="\n",
+    )
+    (out_dir / f"{name}.musicxml").write_bytes(to_musicxml(score))
+    (out_dir / f"{name}.single.ly").write_text(
+        single_file(project.files), encoding="utf-8", newline="\n"
     )
 
 
@@ -175,6 +185,10 @@ def _write_qa(out_dir: Path, name: str, score_json: Path) -> None:
         report = run_checks(score, root, project)
     (out_dir / f"{name}.qa.json").write_text(
         json.dumps(report.to_dict(), indent=1) + "\n", encoding="utf-8", newline="\n"
+    )
+    # The review model, as the web UI reads it (review.json).
+    (out_dir / f"{name}.review.json").write_text(
+        json.dumps(build_review(score, project, report)), encoding="utf-8", newline="\n"
     )
 
 

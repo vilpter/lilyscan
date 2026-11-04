@@ -13,11 +13,13 @@ import org.lilyscan.core.json.PyJson;
 import org.lilyscan.core.lilypond.Compile;
 import org.lilyscan.core.lilypond.Generate;
 import org.lilyscan.core.lilypond.LyProject;
+import org.lilyscan.core.review.Review;
 import org.lilyscan.core.runtime.Settings;
 import org.lilyscan.core.testing.Parity;
 import org.lilyscan.core.testing.Repo;
 
-/** The QA report (Q1-Q5, Q9, with a real LilyPond compile) must be the Python one, byte for byte. */
+/** The QA report (Q1-Q5, Q9, with a real LilyPond compile) and the review model built from it
+ *  must be the Python ones, byte for byte. */
 @Tag("lilypond")
 class QaParityTest {
 
@@ -33,6 +35,12 @@ class QaParityTest {
                     Checks.QaReport report = Checks.runChecks(score, root, project, s);
                     String json = PyJson.write(IrJson.mapper().valueToTree(report.toMap()), PyJson.Style.jsonDumps(1)) + "\n";
                     Parity.assertSameText(Repo.read(c.qa()), json, c.name() + " qa");
+                    Path review = c.sibling(".review.json");
+                    if (Files.isRegularFile(review)) {
+                        String r = PyJson.write(IrJson.mapper().valueToTree(Review.build(score, project, report)),
+                                PyJson.Style.JSON_DUMPS_COMPACT);
+                        Parity.assertSameText(Repo.read(review), r, c.name() + " review");
+                    }
                 }));
     }
 }

@@ -40,7 +40,12 @@ public final class Parity {
     public record ProjectCase(String name, Path score, Path reference) {
         /** The QA report Python produced for the same project (written when LilyPond was found). */
         public Path qa() {
-            return reference.resolveSibling(reference.getFileName().toString().replace(".project.json", ".qa.json"));
+            return sibling(".qa.json");
+        }
+
+        /** Another reference written for the same score, e.g. {@code .musicxml} or {@code .review.json}. */
+        public Path sibling(String suffix) {
+            return reference.resolveSibling(reference.getFileName().toString().replace(".project.json", suffix));
         }
     }
 
