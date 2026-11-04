@@ -17,24 +17,23 @@ for _ in $(seq 1 60); do curl -sf "$base/api/health" >/dev/null && break; sleep 
 curl -sf "$base/api/health"; echo
 curl -sf "$base/" | grep -q "app.js"
 
-job=$(curl -sf -F "files=@${pdf}" "$base/api/jobs" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+job=$(curl -sf -F "files=@${pdf}" "$base/api/jobs" | jq -r .id)
 echo "job $job"
 status=""
 for _ in $(seq 1 120); do
-  status=$(curl -sf "$base/api/jobs/$job" | python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')
+  status=$(curl -sf "$base/api/jobs/$job" | jq -r .status)
   [ "$status" = done ] || [ "$status" = failed ] && break
   sleep 5
 done
-curl -sf "$base/api/jobs/$job" | python3 -c '
-import json, sys
-job = json.load(sys.stdin)
-assert job["status"] == "done", job.get("error")
-r = job["report"]
-g = r["geometry"]
-print("located", g["located_events"], "of", g["events"], "events; QA", [(c["id"], c["passed"]) for c in r["qa"]["checks"]])
-assert g["located_events"] > 0 and r["qa"]["checks"][0]["passed"], "nothing located, or LilyPond failed"
-'
-curl -sf "$base/api/jobs/$job/review" | python3 -c 'import json,sys; assert json.load(sys.stdin)["measures"]'
+report=$(curl -sf "$base/api/jobs/$job")
+if [ "$(echo "$report" | jq -r .status)" != done ]; then
+  echo "job failed: $(echo "$report" | jq -r .error)" >&2
+  exit 1
+fi
+echo "$report" | jq -r '.report | "located \(.geometry.located_events) of \(.geometry.events) events; QA \([.qa.checks[] | "\(.id)=\(.passed)"] | join(" "))"'
+echo "$report" | jq -e '.report.geometry.located_events > 0 and .report.qa.checks[0].passed' >/dev/null \
+  || { echo "nothing located, or LilyPond failed" >&2; exit 1; }
+curl -sf "$base/api/jobs/$job/review" | jq -e '.measures | length > 0' >/dev/null
 for kind in ly ly-project pdf midi musicxml omr; do
   curl -sf -o /dev/null "$base/api/jobs/$job/download/$kind"
 done

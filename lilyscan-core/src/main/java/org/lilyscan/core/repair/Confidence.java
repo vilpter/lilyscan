@@ -26,7 +26,7 @@ import org.lilyscan.core.util.Py;
 /**
  * Lilyscan's own confidence (port of {@code lilyscan/repair/confidence.py}): the engine grade
  * combined with the pipeline's evidence in a logistic model fitted on the evaluation corpus,
- * then a monotone recalibration map. The model is the Python package's {@code confidence.json}.
+ * then a monotone recalibration map. The model is {@code confidence.json} beside this class, fitted by {@code lilyscan eval calibrate}.
  */
 public final class Confidence {
     private Confidence() {}
@@ -179,7 +179,7 @@ public final class Confidence {
     /** The packaged model, or null when it is missing or fitted on another feature set. */
     public static synchronized Model loadModel() {
         if (cached != null) return cached;
-        try (InputStream in = Confidence.class.getResourceAsStream("/lilyscan/repair/confidence.json")) {
+        try (InputStream in = Confidence.class.getResourceAsStream("confidence.json")) {
             if (in == null) return null;
             cached = parse(new ObjectMapper().readTree(in));
             return cached;

@@ -1,5 +1,6 @@
-# CI for Lilyscan in Java: the server, the CLI and the desktop app. The Python ci.yml checks the reference implementation that
-# the parity tests compare against.
+# CI for Lilyscan: the server, the CLI and the desktop app. The parity tests compare against
+# references the Python implementation generated (tests/parity; the Python code is at the tag
+# python-reference).
 name: java-ci
 
 on:
@@ -67,6 +68,31 @@ jobs:
           ./gradlew :lilyscan-cli:shadowJar --no-daemon
           java -jar lilyscan-cli/build/libs/lilyscan.jar versions
           java -jar lilyscan-cli/build/libs/lilyscan.jar selftest
+
+  # Non-blocking forward-compatibility check (D5): the LilyPond tests against the next release.
+  lilypond-next:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      LILYPOND_NEXT: "2.27.3"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive   # the build includes Audiveris
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Next LilyPond
+        run: |
+          curl -fsSL -o /tmp/ly.tgz "https://gitlab.com/lilypond/lilypond/-/releases/v${LILYPOND_NEXT}/downloads/lilypond-${LILYPOND_NEXT}-linux-x86_64.tar.gz"
+          sudo tar -xzf /tmp/ly.tgz -C /opt
+          echo "LILYPOND_BIN=/opt/lilypond-${LILYPOND_NEXT}/bin/lilypond" >> "$GITHUB_ENV"
+      - name: LilyPond tests (the pin check is expected to differ)
+        run: >
+          ./gradlew :lilyscan-core:test --no-daemon -PlilypondNext
+          --tests 'org.lilyscan.core.lilypond.*' --tests 'org.lilyscan.core.qa.*'
+          --tests 'org.lilyscan.core.PipelineTest'
 
   engine:
     # The real Audiveris, in-process in forked workers: transcription, OCR, the .omr reader.

@@ -4,12 +4,6 @@
 **/build
 # ...except the fat jar the server image copies in (built by CI first, docker/Dockerfile)
 !lilyscan-cli/build/libs/lilyscan.jar
-# Python (the reference implementation)
-.venv
-**/__pycache__
-.mypy_cache
-.pytest_cache
-.ruff_cache
 # Data and large regenerable trees (neither image needs them)
 data
 eval/corpus
