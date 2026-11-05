@@ -19,7 +19,7 @@ import org.lilyscan.core.testing.Parity;
 import org.lilyscan.core.testing.Repo;
 
 /** The QA report (Q1-Q5, Q9, with a real LilyPond compile) and the review model built from it
- *  must be the Python ones, byte for byte. */
+ *  must be the Python ones, byte for byte. Checks added since (Q10) are left out of the comparison. */
 @Tag("lilypond")
 class QaParityTest {
 
@@ -33,7 +33,8 @@ class QaParityTest {
                     Path root = Files.createTempDirectory("lilyscan-qa-");
                     LyProject project = Generate.writeProject(score, root);
                     Checks.QaReport report = Checks.runChecks(score, root, project, s);
-                    String json = PyJson.write(IrJson.mapper().valueToTree(report.toMap()), PyJson.Style.jsonDumps(1)) + "\n";
+                    String json = PyJson.write(Parity.withoutJavaOnlyChecks(IrJson.mapper().valueToTree(report.toMap())),
+                            PyJson.Style.jsonDumps(1)) + "\n";
                     Parity.assertSameText(Repo.read(c.qa()), json, c.name() + " qa");
                     Path review = c.sibling(".review.json");
                     if (Files.isRegularFile(review)) {

@@ -28,7 +28,7 @@ import org.lilyscan.core.util.Difflib;
 import org.lilyscan.core.util.Py;
 
 /**
- * Quality checks Q1-Q5 and Q9 (design doc, Stage 8). Port of {@code lilyscan/qa/checks.py}.
+ * Quality checks Q1-Q5, Q9 and Q10 (design doc, Stage 8). Port of {@code lilyscan/qa/checks.py}.
  *
  * <pre>
  * Q1 compiles       the generated project compiles without errors
@@ -37,6 +37,7 @@ import org.lilyscan.core.util.Py;
  * Q4 pitch range    notes inside the practical range of the part's instrument
  * Q5 alignment      all staves have the same measures and barline structure
  * Q9 lyrics         no lyrics in a part named for an instrument that does not sing
+ * Q10 fits the page nothing engraved runs off the page (a system LilyPond could not break)
  * </pre>
  *
  * <p>Details are insertion-ordered maps of plain JSON values, so the report serializes exactly as
@@ -454,7 +455,41 @@ public final class Checks {
                 outputs.add(name);
             }
         }
-        return new QaReport(List.of(c.q1(), c.q2(), rhythmCheck(score), rangeCheck(score), alignmentCheck(score),
-                lyricsCheck(score, project)), outputs);
+        List<CheckResult> checks = new ArrayList<>(List.of(c.q1(), c.q2(), rhythmCheck(score), rangeCheck(score),
+                alignmentCheck(score), lyricsCheck(score, project)));
+        Path pdf = root.resolve("main.pdf");
+        if (Files.isRegularFile(pdf)) checks.add(pageFitCheck(pdf));
+        return new QaReport(List.copyOf(checks), outputs);
+    }
+
+    // ---- Q10 ----
+
+    /** Drawing more than this past a page edge (in points, about 1 mm) counts as running off it. */
+    static final double PAGE_FIT_TOLERANCE_PT = 3.0;
+
+    /**
+     * Q10: nothing engraved runs off the page. LilyPond keeps a system on one line when it finds
+     * no place to break it (for example, when the parts' bar lines do not coincide), and the
+     * system then runs past the right edge; Q1 still passes.
+     */
+    public static CheckResult pageFitCheck(Path pdf) {
+        List<Map<String, Object>> pages = new ArrayList<>();
+        try {
+            for (PageFit.Extent e : PageFit.extents(pdf)) {
+                if (e.overflow() > PAGE_FIT_TOLERANCE_PT) {
+                    double mm = e.overflow() * 25.4 / 72.0;
+                    pages.add(map(kv("page", e.page()), kv("overflow_mm", Math.round(mm * 10) / 10.0),
+                            kv("message", String.format(java.util.Locale.ROOT,
+                                    "page %d: the music runs %.0f mm past the page edge (a system that could not be broken)",
+                                    e.page(), mm))));
+                }
+            }
+        } catch (IOException ex) {
+            return new CheckResult("Q10", "fits the page", false,
+                    List.of(map(kv("message", "cannot read " + pdf.getFileName() + ": " + ex.getMessage()))),
+                    "could not be checked");
+        }
+        return new CheckResult("Q10", "fits the page", pages.isEmpty(), pages,
+                pages.isEmpty() ? "fits the page" : pages.size() + " page(s) with music past the edge");
     }
 }
