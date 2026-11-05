@@ -11,6 +11,31 @@ import java.util.List;
 public final class Parity {
     private Parity() {}
 
+    /** QA checks added after the Python reference was retired: not in its reports. */
+    public static final java.util.Set<String> JAVA_ONLY_CHECKS = java.util.Set.of("Q10");
+
+    /**
+     * {@code node} without the {@link #JAVA_ONLY_CHECKS} in any {@code checks} array, so a report
+     * can still be compared with the Python reference for the checks both have.
+     */
+    public static JsonNode withoutJavaOnlyChecks(JsonNode node) {
+        if (node instanceof com.fasterxml.jackson.databind.node.ObjectNode o) {
+            var it = o.properties().iterator();
+            while (it.hasNext()) {
+                var e = it.next();
+                if (e.getKey().equals("checks") && e.getValue() instanceof com.fasterxml.jackson.databind.node.ArrayNode a) {
+                    for (int i = a.size() - 1; i >= 0; i--) {
+                        if (JAVA_ONLY_CHECKS.contains(a.get(i).path("id").asText())) a.remove(i);
+                    }
+                }
+                withoutJavaOnlyChecks(e.getValue());
+            }
+        } else if (node instanceof com.fasterxml.jackson.databind.node.ArrayNode a) {
+            for (JsonNode n : a) withoutJavaOnlyChecks(n);
+        }
+        return node;
+    }
+
     /** Fails with the first differing line (and a little context) when the texts differ. */
     public static void assertSameText(String expected, String actual, String label) {
         if (expected.equals(actual)) {

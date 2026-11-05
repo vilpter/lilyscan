@@ -92,7 +92,14 @@ class CombineParityTest {
             TreeSet<String> want = textFiles(expected), got = textFiles(out);
             assertEquals(want, got, "files");
             for (String rel : want) {
-                Parity.assertSameText(Repo.read(expected.resolve(rel)), Repo.read(out.resolve(rel)), name + " " + rel);
+                String text = Repo.read(out.resolve(rel));
+                if (rel.equals("report.json")) {
+                    // Checks added since the Python reference (Q10) are left out of the comparison.
+                    text = org.lilyscan.core.json.PyJson.write(Parity.withoutJavaOnlyChecks(
+                            org.lilyscan.core.ir.IrJson.mapper().readTree(text)),
+                            org.lilyscan.core.json.PyJson.Style.jsonDumps(2));
+                }
+                Parity.assertSameText(Repo.read(expected.resolve(rel)), text, name + " " + rel);
             }
             assertTrue(!want.isEmpty());
         });
