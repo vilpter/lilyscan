@@ -5,12 +5,18 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.util.Matrix;
@@ -129,6 +135,42 @@ public final class PdfPages {
         return (int) Math.ceil(points * dpi / 72.0 - 0.001);
     }
 
+    /** ImageIO formats PDFBox needs for these stream filters (the others it decodes itself). */
+    private static final java.util.Map<COSName, String> IMAGEIO_FILTERS =
+            java.util.Map.of(COSName.JBIG2_DECODE, "JBIG2", COSName.JPX_DECODE, "JPEG2000");
+
+    /**
+     * Fails clearly when a scanned page's images need an ImageIO decoder that is not installed.
+     * PDFBox would log the error and draw nothing, and the blank page would fail later on.
+     */
+    static void requireDecoders(PDPage page, java.nio.file.Path path, int index) throws IOException {
+        PDResources res = page.getResources();
+        if (res == null) return;
+        for (COSName name : res.getXObjectNames()) {
+            if (!(res.getXObject(name) instanceof PDImageXObject image)) continue;
+            List<COSStream> streams = new ArrayList<>(List.of(image.getCOSObject()));
+            if (image.getSoftMask() != null) streams.add(image.getSoftMask().getCOSObject());
+            for (COSStream stream : streams) {
+                for (COSName filter : filters(stream)) {
+                    String format = IMAGEIO_FILTERS.get(filter);
+                    if (format != null && !javax.imageio.ImageIO.getImageReadersByFormatName(format).hasNext()) {
+                        throw new IOException(String.format(Locale.ROOT,
+                                "%s, page %d: its image is %s-compressed, and no %s decoder is installed",
+                                path.getFileName(), index + 1, format, format));
+                    }
+                }
+            }
+        }
+    }
+
+    private static List<COSName> filters(COSStream stream) {
+        COSBase f = stream.getDictionaryObject(COSName.FILTER);
+        if (f instanceof COSName n) return List.of(n);
+        List<COSName> out = new ArrayList<>();
+        if (f instanceof COSArray a) for (COSBase b : a) if (b instanceof COSName n) out.add(n);
+        return out;
+    }
+
     /** Every non-empty page, grayscale: born-digital pages at 400 DPI, scans at their own. */
     public static List<Page> pages(java.nio.file.Path path) throws IOException {
         List<Page> out = new ArrayList<>();
@@ -137,6 +179,7 @@ public final class PdfPages {
             for (int i = 0; i < doc.getNumberOfPages(); i++) {
                 String kind = pageKind(doc, i);
                 if (kind.equals("empty")) continue;
+                if (kind.equals("raster")) requireDecoders(doc.getPage(i), path, i);
                 int dpi = kind.equals("raster") ? nativeDpi(doc.getPage(i)) : Config.PDF_RENDER_DPI;
                 out.add(new Page(kind, render(renderer, doc.getPage(i), i, dpi)));
             }
