@@ -25,8 +25,9 @@ import org.lilyscan.core.ir.MusicXml;
  * excerpt (D11, D21). Files are fetched once into a cache folder.
  *
  * <ul>
- *   <li>{@code music21}: music21's bundled corpus (the Python builder's source), at the tag of the
- *       music21 the Python side uses. Each work keeps the rights statement its encoding carries.
+ *   <li>{@code music21}: music21's bundled corpus (the Python builder's source), from the
+ *       release the Python side used: its wheel on PyPI, checked against its SHA-256 and read
+ *       from the zip. Each work keeps the rights statement its encoding carries.
  *   <li>{@code openscore-lieder}: OpenScore Lieder, 19th-century songs for voice and piano
  *       (German, French, English), CC0.
  *   <li>{@code openscore-quartets}: OpenScore String Quartets, CC0.
@@ -40,12 +41,23 @@ public final class Sources {
     public static final String QUARTETS = "openscore-quartets";
     public static final Set<String> KNOWN = Set.of(MUSIC21, LIEDER, QUARTETS);
 
-    /** A source: its files' base URL at a pinned revision, and what its scores may be used under. */
-    public record Source(String name, String baseUrl, String revision, String license) {}
+    /**
+     * A source: its files' base URL at a pinned revision, and what its scores may be used under.
+     * When {@code archiveSha256} is set, {@code baseUrl} is one zip archive (checked against that
+     * digest) and the files are read from inside it, under {@code archivePrefix}.
+     */
+    public record Source(String name, String baseUrl, String revision, String license,
+            String archiveSha256, String archivePrefix) {
+        Source(String name, String baseUrl, String revision, String license) {
+            this(name, baseUrl, revision, license, null, null);
+        }
+    }
 
     static final Map<String, Source> SOURCES = Map.of(
-            MUSIC21, new Source(MUSIC21, "https://raw.githubusercontent.com/cuthbertLab/music21/v10.5.0/music21/corpus/",
-                    "v10.5.0", null),
+            MUSIC21, new Source(MUSIC21, "https://files.pythonhosted.org/packages/81/4c/"
+                    + "4f307e5ab6fbf59233813e58e07128a599c810dd974673449e132ce1432d/music21-10.5.0-py3-none-any.whl",
+                    "v10.5.0", null, "9924eff5fbf58490e67cbf3b78a58ba53040e77c281930d354af32a747e94606",
+                    "music21/corpus/"),
             LIEDER, new Source(LIEDER, "https://raw.githubusercontent.com/OpenScore/Lieder/"
                     + "38c5db510224d9facdc4b08d741fc788cfb58ea8/scores/", "38c5db510224d9facdc4b08d741fc788cfb58ea8",
                     "CC0 1.0 (OpenScore Lieder)"),
@@ -71,30 +83,77 @@ public final class Sources {
         // which the file system can only take under a UTF-8 locale.
         Path target = cache.resolve(s.name()).resolve(s.revision()).resolve(hash(path) + suffix(path));
         if (Files.isRegularFile(target)) return target;
-        StringBuilder url = new StringBuilder(s.baseUrl());
-        String[] parts = path.split("/");
-        for (int i = 0; i < parts.length; i++) {
-            if (i > 0) url.append('/');
-            url.append(URLEncoder.encode(parts[i], StandardCharsets.UTF_8).replace("+", "%20"));
-        }
         try {
             Files.createDirectories(target.getParent());
-            HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20))
-                    .followRedirects(HttpClient.Redirect.NORMAL).build();
-            HttpResponse<byte[]> r = http.send(HttpRequest.newBuilder(URI.create(url.toString()))
-                    .timeout(Duration.ofMinutes(2)).build(), HttpResponse.BodyHandlers.ofByteArray());
-            if (r.statusCode() != 200) {
-                throw new IOException("HTTP " + r.statusCode() + " for " + url);
+            if (s.archiveSha256() != null) {
+                extract(archive(s, cache), s.archivePrefix() + path, target);
+                return target;
             }
-            Path part = Files.createTempFile(target.getParent(), "fetch-", ".part");
-            Files.write(part, r.body());
-            Files.move(part, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            StringBuilder url = new StringBuilder(s.baseUrl());
+            String[] parts = path.split("/");
+            for (int i = 0; i < parts.length; i++) {
+                if (i > 0) url.append('/');
+                url.append(URLEncoder.encode(parts[i], StandardCharsets.UTF_8).replace("+", "%20"));
+            }
+            download(url.toString(), target);
             return target;
         } catch (IOException e) {
             throw new UncheckedIOException("could not fetch " + sourceName + " " + path + ": " + e.getMessage(), e);
+        }
+    }
+
+    /** The source's archive in the cache, downloaded and checked against its digest if missing. */
+    private static Path archive(Source s, Path cache) throws IOException {
+        Path archive = cache.resolve(s.name()).resolve(s.revision())
+                .resolve(s.baseUrl().substring(s.baseUrl().lastIndexOf('/') + 1));
+        if (Files.isRegularFile(archive) && sha256(archive).equals(s.archiveSha256())) return archive;
+        Path part = archive.resolveSibling(archive.getFileName() + ".part");
+        download(s.baseUrl(), part);
+        String got = sha256(part);
+        if (!got.equals(s.archiveSha256())) {
+            Files.deleteIfExists(part);
+            throw new IOException("SHA-256 of " + s.baseUrl() + " is " + got + ", expected " + s.archiveSha256());
+        }
+        Files.move(part, archive, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        return archive;
+    }
+
+    private static void extract(Path zip, String entryName, Path target) throws IOException {
+        try (java.util.zip.ZipFile z = new java.util.zip.ZipFile(zip.toFile())) {
+            java.util.zip.ZipEntry entry = z.getEntry(entryName);
+            if (entry == null) throw new IOException(entryName + " is not in " + zip.getFileName());
+            Path part = Files.createTempFile(target.getParent(), "fetch-", ".part");
+            try (var in = z.getInputStream(entry)) {
+                Files.copy(in, part, StandardCopyOption.REPLACE_EXISTING);
+            }
+            Files.move(part, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        }
+    }
+
+    private static void download(String url, Path target) throws IOException {
+        HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20))
+                .followRedirects(HttpClient.Redirect.NORMAL).build();
+        try {
+            HttpResponse<byte[]> r = http.send(HttpRequest.newBuilder(URI.create(url))
+                    .timeout(Duration.ofMinutes(5)).build(), HttpResponse.BodyHandlers.ofByteArray());
+            if (r.statusCode() != 200) throw new IOException("HTTP " + r.statusCode() + " for " + url);
+            Path part = Files.createTempFile(target.getParent(), "fetch-", ".part");
+            Files.write(part, r.body());
+            Files.move(part, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("interrupted", e);
+            throw new IOException("interrupted", e);
+        }
+    }
+
+    private static String sha256(Path file) throws IOException {
+        try (var in = Files.newInputStream(file)) {
+            var md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] buf = new byte[1 << 16];
+            for (int n; (n = in.read(buf)) > 0; ) md.update(buf, 0, n);
+            return java.util.HexFormat.of().formatHex(md.digest());
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
         }
     }
 
