@@ -49,7 +49,7 @@ class GeometryParityTest {
             }
             Geometry.Attached attached = Geometry.attachMovements(movements, book);
             Parity.assertSameText(Repo.read(Repo.parity("omr/" + name + ".score.json")),
-                    IrJson.toJson(attached.score()), name + " score.json");
+                    Parity.pythonIrJson(attached.score()), name + " score.json");
             Parity.assertSameText(Repo.read(Repo.parity("omr/" + name + ".stats.json")),
                     PyJson.write(IrJson.mapper().valueToTree(stats(attached.stats())), PyJson.Style.jsonDumps(1))
                             + "\n", name + " stats");

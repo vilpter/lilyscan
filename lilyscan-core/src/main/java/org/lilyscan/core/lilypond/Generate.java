@@ -249,21 +249,30 @@ public final class Generate {
     }
 
     /** MusicXML articulation / notation names -> LilyPond post-events. */
-    private static final Map<String, String> ARTICULATIONS = Map.of(
-            "staccato", "-.", "staccatissimo", "-!", "accent", "->", "strong-accent", "-^", "tenuto", "--",
-            "detached-legato", "-_", "spiccato", "\\staccatissimo", "fermata", "\\fermata",
-            "up-bow", "\\upbow", "down-bow", "\\downbow");
+    private static final Map<String, String> ARTICULATIONS = Map.ofEntries(
+            Map.entry("staccato", "-."),
+            Map.entry("staccatissimo", "-!"),
+            Map.entry("accent", "->"),
+            Map.entry("strong-accent", "-^"),
+            Map.entry("tenuto", "--"),
+            Map.entry("detached-legato", "-_"),
+            Map.entry("spiccato", "\\staccatissimo"),
+            Map.entry("fermata", "\\fermata"),
+            Map.entry("up-bow", "\\upbow"),
+            Map.entry("down-bow", "\\downbow"),
+            Map.entry("trill-mark", "\\trill"));
 
-    private static String eventBody(Event e) {
+    private static String eventBody(Event e, Post post) {
         String duration = Notation.writtenDuration(e.noteType, e.dots, e.duration, e.tuplet);
         StringBuilder marks = new StringBuilder();
         for (String a : e.articulations) {
             marks.append(ARTICULATIONS.getOrDefault(a, ""));
         }
+        marks.append(post.of(e));
         // \breathe is a command that follows the note, not a post-event.
         String breathe = e.articulations.contains("breath-mark") ? " \\breathe" : "";
         if (Event.REST.equals(e.kind) || e.notes.isEmpty()) {
-            return "r" + duration + (e.articulations.contains("fermata") ? "\\fermata" : "") + breathe;
+            return "r" + duration + (e.articulations.contains("fermata") ? "\\fermata" : "") + post.of(e) + breathe;
         }
         if (e.notes.size() == 1) {
             String tie = e.notes.get(0).tieStart ? "~" : "";
@@ -361,7 +370,7 @@ public final class Generate {
      * not start on the downbeat or be contiguous; gaps become invisible spacer rests so every
      * event keeps its onset.
      */
-    private static List<String> voiceTokens(List<Event> events, Frac length, List<Cue> cues) {
+    private static List<String> voiceTokens(List<Event> events, Frac length, List<Cue> cues, Post post) {
         List<String> tokens = new ArrayList<>();
         List<Cue> pending = new ArrayList<>(cues);
         pending.sort(Comparator.comparing(Cue::offset));
@@ -385,7 +394,7 @@ public final class Generate {
             if (e.grace) {
                 List<String> group = new ArrayList<>();
                 while (i < events.size() && events.get(i).grace) {
-                    group.add(eventBody(events.get(i)));
+                    group.add(eventBody(events.get(i), post));
                     i++;
                 }
                 tokens.add("\\grace " + (group.size() == 1 ? group.get(0) : "{ " + String.join(" ", group) + " }"));
@@ -400,7 +409,7 @@ public final class Generate {
                 }
                 List<String> inner = new ArrayList<>();
                 for (Event x : groupEvents) {
-                    StringBuilder sb = new StringBuilder(eventBody(x));
+                    StringBuilder sb = new StringBuilder(eventBody(x, post));
                     for (String m : markers(x)) {
                         sb.append(' ').append(m);
                     }
@@ -415,7 +424,7 @@ public final class Generate {
                 }
                 continue;
             }
-            tokens.add(eventBody(e));
+            tokens.add(eventBody(e, post));
             tokens.addAll(markers(e));
             position = position.add(e.duration);
             i++;
@@ -432,16 +441,47 @@ public final class Generate {
         return Notation.singleDuration(written.multiply(ratio.normal()));
     }
 
-    /** A staff command placed in the music before the first event at or after {@code offset}. */
-    private record Cue(Frac offset, String token) {}
-
-    private static String measureMusic(Measure m, Frac length) {
+    /** The voices engraved for a measure: those with events, at most four. */
+    static List<Voice> engravedVoices(Measure m) {
         List<Voice> voices = new ArrayList<>();
         for (Voice v : m.voices) {
-            if (!v.events.isEmpty()) {
+            if (!v.events.isEmpty() && voices.size() < VOICE_COMMANDS.length) {
                 voices.add(v);
             }
         }
+        return voices;
+    }
+
+    /** The words printed with a metronome mark (at its offset), which become the tempo's text. */
+    static Direction tempoWords(Measure m, Direction metronome) {
+        for (Direction d : m.directions) {
+            if (Direction.WORDS.equals(d.kind) && d.offset.equals(metronome.offset)) return d;
+        }
+        return null;
+    }
+
+    private static final Map<String, String> BEAT_UNITS = Map.of(
+            "whole", "1", "half", "2", "quarter", "4", "eighth", "8", "16th", "16", "32nd", "32");
+    private static final Pattern PER_MINUTE = Pattern.compile("^(\\d+(?:-\\d+)?)\\.?$");
+
+    /** {@code \tempo "Allegro." 4 = 72}; just the text when the number can't be read. */
+    static String tempoCommand(Direction metronome, Direction words) {
+        String type = metronome.type == null ? "" : metronome.type;
+        int dots = type.length() - type.replace(".", "").length();
+        String unit = BEAT_UNITS.get(type.replace(".", ""));
+        Matcher bpm = PER_MINUTE.matcher(metronome.text == null ? "" : metronome.text.strip());
+        String text = words == null ? null : Notation.lilyString(words.text.strip());
+        if (unit != null && bpm.matches()) {
+            return "\\tempo " + (text == null ? "" : text + " ") + unit + ".".repeat(dots) + " = " + bpm.group(1);
+        }
+        return text == null ? null : "\\tempo " + text;
+    }
+
+    /** A staff command placed in the music before the first event at or after {@code offset}. */
+    private record Cue(Frac offset, String token) {}
+
+    private static String measureMusic(Measure m, Frac length, Post post) {
+        List<Voice> voices = engravedVoices(m);
         List<Cue> cues = new ArrayList<>();
         for (Clef c : m.clefs) {
             if (c.offset.signum() > 0) {
@@ -451,10 +491,13 @@ public final class Generate {
         for (Direction d : m.directions) {
             if (d.isOctaveStart() || d.isOctaveStop()) {
                 cues.add(new Cue(d.offset, "\\ottava #" + d.octaves()));
+            } else if (Direction.METRONOME.equals(d.kind)) {
+                String tempo = tempoCommand(d, tempoWords(m, d));
+                if (tempo != null) cues.add(new Cue(d.offset, tempo));
             }
         }
         if (voices.isEmpty()) {
-            String rest = nonZero(length) ? fullRest(length) : "s1";
+            String rest = (nonZero(length) ? fullRest(length) : "s1") + post.of(m);
             if (cues.isEmpty()) {
                 return rest;
             }
@@ -466,11 +509,11 @@ public final class Generate {
             return String.join(" ", tokens);
         }
         if (voices.size() == 1) {
-            return String.join(" ", voiceTokens(voices.get(0).events, length, cues));
+            return String.join(" ", voiceTokens(voices.get(0).events, length, cues, post));
         }
         List<String> parts = new ArrayList<>();
-        for (int k = 0; k < Math.min(4, voices.size()); k++) {
-            String body = String.join(" ", voiceTokens(voices.get(k).events, length, k == 0 ? cues : List.of()));
+        for (int k = 0; k < voices.size(); k++) {
+            String body = String.join(" ", voiceTokens(voices.get(k).events, length, k == 0 ? cues : List.of(), post));
             String command = VOICE_COMMANDS[k];
             parts.add(k == 0 ? "{ " + command + " " + body + " }" : "\\new Voice { " + command + " " + body + " }");
         }
@@ -607,6 +650,7 @@ public final class Generate {
         Frac pickup = Frac.ZERO;
         boolean inEnding = false;
         boolean closing = false; // in a first or second ending; it ended with the last measure
+        Post post = Post.of(measures);
         for (Measure m : measures) {
             List<String> prefix = new ArrayList<>();
             List<String> volta = new ArrayList<>();
@@ -681,7 +725,7 @@ public final class Generate {
             String label = m.number != null && !m.number.isEmpty() ? m.number : Integer.toString(m.index + 1);
             lines.add("  % m. " + label);
             numbers.add(label);
-            String body = measureMusic(m, target);
+            String body = measureMusic(m, target, post);
             if (target != null && own.signum() > 0 && own.lt(target) && !isPickup) {
                 body += " " + String.join(" ", Notation.skips(target.subtract(own)));
             }

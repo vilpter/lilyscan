@@ -362,6 +362,7 @@ public final class MusicXml {
                     if (isChord && head != null && prev != null && !Event.REST.equals(prev.kind)) {
                         prev.notes.add(head);
                         prev.kind = Event.CHORD;
+                        for (Slur sl : slurs(el)) if (!prev.slurs.contains(sl)) prev.slurs.add(sl);
                         continue;
                     }
                     Event event = event(el, Frac.of(onset, st.divisions), Frac.of(divs, st.divisions),
@@ -555,6 +556,11 @@ public final class MusicXml {
                 articulations.add(Xml.tag(t));
             }
         }
+        for (Element o : Xml.findAll(el, "notations/ornaments/*")) {
+            if (Event.ORNAMENTS.contains(Xml.tag(o))) {
+                articulations.add(Xml.tag(o));
+            }
+        }
         if (Xml.find(el, "notations/fermata") != null) {
             articulations.add("fermata");
         }
@@ -569,6 +575,7 @@ public final class MusicXml {
         e.measureRest = restEl != null && "yes".equals(Xml.attr(restEl, "measure"));
         e.lyrics = lyrics;
         e.articulations = articulations;
+        e.slurs = slurs(el);
         return e;
     }
 
@@ -581,6 +588,29 @@ public final class MusicXml {
         String t = text(el, path, "0");
         return t == null || t.isEmpty() ? 0 : Py.round(Py.parseFloat(t));
     }
+
+    /** The slur ends on a note ({@code continue} carries no new information). */
+    private static List<Slur> slurs(Element el) {
+        List<Slur> out = new ArrayList<>();
+        for (Element sl : Xml.findAll(el, "notations/slur")) {
+            String type = Xml.attr(sl, "type");
+            if ("start".equals(type) || "stop".equals(type)) {
+                Slur slur = new Slur(type, intAttr(sl, "number", 1));
+                if (!out.contains(slur)) out.add(slur);
+            }
+        }
+        return out;
+    }
+
+    /** Three or more dots or dashes in a row (spaces between allowed), not starting right after a
+     *  letter, so an abbreviation keeps its dot ("cresc. - - -" becomes "cresc."). */
+    private static final java.util.regex.Pattern CONTINUATION =
+            java.util.regex.Pattern.compile("(?<!\\p{L})(?:\\s*[._\\-\u2013\u2014\u00b7\u2026]){3,}\\s*");
+
+    /** MusicXML dynamics this importer knows by name (the rest are kept as their text). */
+    private static final java.util.Set<String> DYNAMICS = java.util.Set.of("p", "pp", "ppp", "pppp", "ppppp",
+            "pppppp", "f", "ff", "fff", "ffff", "fffff", "ffffff", "mp", "mf", "sf", "sfp", "sfpp", "fp", "rf",
+            "rfz", "sfz", "sffz", "fz", "n", "pf", "sfzp");
 
     /** The marks in one {@code <direction>} that the IR keeps. */
     private static List<Direction> directions(Element el, Frac offset) {
@@ -595,6 +625,44 @@ public final class MusicXml {
             d.type = type;
             d.number = intAttr(shift, "number", 1);
             d.size = "stop".equals(type) ? null : intAttr(shift, "size", 8);
+            d.placement = placement;
+            out.add(d);
+        }
+        for (Element dyn : Xml.findAll(el, "direction-type/dynamics/*")) {
+            String name = Xml.tag(dyn);
+            String text = DYNAMICS.contains(name) ? name : "other-dynamics".equals(name) ? Xml.text(dyn) : null;
+            if (text == null || text.isBlank()) continue;
+            Direction d = new Direction(Direction.DYNAMICS, offset);
+            d.text = text;
+            d.placement = placement;
+            out.add(d);
+        }
+        for (Element wedge : Xml.findAll(el, "direction-type/wedge")) {
+            String type = Xml.attr(wedge, "type");
+            if (!"crescendo".equals(type) && !"diminuendo".equals(type) && !"stop".equals(type)) continue;
+            Direction d = new Direction(Direction.WEDGE, offset);
+            d.type = type;
+            d.number = intAttr(wedge, "number", 1);
+            d.placement = placement;
+            out.add(d);
+        }
+        for (Element words : Xml.findAll(el, "direction-type/words")) {
+            String t = Xml.text(words);
+            // A continuation line (an 8va's, a "cresc. - - -") read as dots or dashes is dropped.
+            t = t == null ? "" : CONTINUATION.matcher(t).replaceAll(" ").strip().replaceAll("\\s+", " ");
+            if (t.codePoints().noneMatch(Character::isLetterOrDigit)) continue;
+            Direction d = new Direction(Direction.WORDS, offset);
+            d.text = t;
+            d.placement = placement;
+            out.add(d);
+        }
+        for (Element metronome : Xml.findAll(el, "direction-type/metronome")) {
+            String unit = text(metronome, "beat-unit");
+            String perMinute = text(metronome, "per-minute");
+            if (unit == null || perMinute == null) continue;
+            Direction d = new Direction(Direction.METRONOME, offset);
+            d.type = unit + ".".repeat(Xml.findAll(metronome, "beat-unit-dot").size());
+            d.text = perMinute;
             d.placement = placement;
             out.add(d);
         }

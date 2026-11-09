@@ -1,5 +1,6 @@
 package org.lilyscan.core.ir;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.Set;
  * duration (tuplets already applied). Grace notes have duration 0.
  */
 @JsonPropertyOrder({"kind", "offset", "duration", "notes", "noteType", "dots", "tuplet", "grace",
-    "measureRest", "lyrics", "articulations", "confidence", "bbox", "provenance"})
+    "measureRest", "lyrics", "articulations", "confidence", "bbox", "provenance", "slurs"})
 public final class Event {
     public static final String NOTE = "note";
     public static final String CHORD = "chord";
@@ -21,6 +22,9 @@ public final class Event {
 
     /** Bowings: MusicXML {@code <technical>} marks kept with the articulations. */
     public static final Set<String> BOWINGS = Set.of("up-bow", "down-bow");
+
+    /** Ornaments: MusicXML {@code <ornaments>} marks kept with the articulations. */
+    public static final Set<String> ORNAMENTS = Set.of("trill-mark");
 
     /** {@code note}, {@code chord} or {@code rest}. */
     public String kind;
@@ -38,6 +42,10 @@ public final class Event {
     public Double confidence;
     public BBox bbox;
     public List<Provenance> provenance = new ArrayList<>();
+    /** Slur ends on this note. Left out of the JSON when empty, so IR written before slurs were
+     *  kept reads and writes back unchanged. */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public List<Slur> slurs = new ArrayList<>();
 
     public Event() {}
 
@@ -61,6 +69,7 @@ public final class Event {
         e.confidence = confidence;
         e.bbox = bbox;
         e.provenance = provenance;
+        e.slurs = slurs;
         return e;
     }
 
@@ -84,13 +93,13 @@ public final class Event {
                 && Objects.equals(e.tuplet, tuplet) && e.grace == grace && e.measureRest == measureRest
                 && Objects.equals(e.lyrics, lyrics) && Objects.equals(e.articulations, articulations)
                 && Objects.equals(e.confidence, confidence) && Objects.equals(e.bbox, bbox)
-                && Objects.equals(e.provenance, provenance);
+                && Objects.equals(e.provenance, provenance) && Objects.equals(e.slurs, slurs);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(kind, offset, duration, notes, noteType, dots, tuplet, grace, measureRest,
-                lyrics, articulations, confidence, bbox, provenance);
+                lyrics, articulations, confidence, bbox, provenance, slurs);
     }
 
     @Override

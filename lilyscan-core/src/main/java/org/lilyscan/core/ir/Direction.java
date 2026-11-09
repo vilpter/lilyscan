@@ -14,13 +14,18 @@ import java.util.Objects;
 @JsonPropertyOrder({"kind", "offset", "type", "number", "size", "placement", "text"})
 public final class Direction {
     public static final String OCTAVE_SHIFT = "octave-shift";
+    public static final String DYNAMICS = "dynamics";
+    public static final String WEDGE = "wedge";
+    public static final String WORDS = "words";
+    public static final String METRONOME = "metronome";
 
     /** {@code octave-shift}, {@code dynamics}, {@code wedge}, {@code words} or {@code metronome}. */
     public String kind;
     public Frac offset;
     /**
      * Octave shift: {@code down} (8va: printed lower than it sounds), {@code up} (8vb) or
-     * {@code stop}.
+     * {@code stop}. Wedge: {@code crescendo}, {@code diminuendo} or {@code stop}. Metronome: the
+     * beat unit ({@code quarter}, with a {@code .} per dot).
      */
     public String type;
     /** Pairs a start with its stop when spans overlap (MusicXML {@code number}). */
@@ -29,6 +34,8 @@ public final class Direction {
     public Integer size;
     /** {@code above} or {@code below} the staff, when stated. */
     public String placement;
+    /** Dynamics: the mark ({@code p}, {@code mf}, {@code sfz}, ...). Words: the text. Metronome:
+     *  the beats per minute as printed. */
     public String text;
 
     public Direction() {}

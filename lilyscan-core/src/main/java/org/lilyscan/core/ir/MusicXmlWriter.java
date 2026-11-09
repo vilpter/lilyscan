@@ -235,8 +235,11 @@ public final class MusicXmlWriter {
         if (head != null && head.tieStop) notations.sub("tied", null, "type", "stop");
         if (head != null && head.tieStart) notations.sub("tied", null, "type", "start");
         if (tupletMark != null && !chord) notations.sub("tuplet", null, "type", tupletMark);
+        if (!chord) {
+            for (Slur sl : e.slurs) notations.sub("slur", null, "type", sl.type, "number", Integer.toString(sl.number));
+        }
         List<String> marks = e.articulations.stream()
-                .filter(a -> !a.equals("fermata") && SAFE_TAG.matcher(a).find()).toList();
+                .filter(a -> !a.equals("fermata") && !Event.ORNAMENTS.contains(a) && SAFE_TAG.matcher(a).find()).toList();
         if (!marks.isEmpty() && !chord) {
             List<String> arts = marks.stream().filter(a -> !Event.BOWINGS.contains(a)).toList();
             if (!arts.isEmpty()) {
@@ -248,6 +251,11 @@ public final class MusicXmlWriter {
                 El t = notations.sub("technical");
                 bowings.forEach(t::sub);
             }
+        }
+        List<String> ornaments = e.articulations.stream().filter(Event.ORNAMENTS::contains).toList();
+        if (!ornaments.isEmpty() && !chord) {
+            El o = notations.sub("ornaments");
+            ornaments.forEach(o::sub);
         }
         if (e.articulations.contains("fermata") && !chord) notations.sub("fermata");
         if (!notations.children.isEmpty()) el.children.add(notations);
@@ -397,12 +405,33 @@ public final class MusicXmlWriter {
      * importer reads it back the same way).
      */
     private static void direction(El mEl, Direction d, long divisions, Integer staffNo) {
-        if (!d.isOctaveStart() && !d.isOctaveStop()) return;
+        El type = new El("direction-type");
+        switch (d.kind) {
+            case Direction.OCTAVE_SHIFT, Direction.WEDGE -> {
+                List<String> attrs = new ArrayList<>(List.of("type", d.type));
+                if (d.number != null) attrs.addAll(List.of("number", Integer.toString(d.number)));
+                if (d.size != null) attrs.addAll(List.of("size", Integer.toString(d.size)));
+                type.sub(d.kind, null, attrs.toArray(String[]::new));
+            }
+            case Direction.DYNAMICS -> {
+                El dyn = type.sub("dynamics");
+                if (SAFE_TAG.matcher(d.text).find() && !d.text.contains(" ")) dyn.sub(d.text);
+                else dyn.sub("other-dynamics", d.text);
+            }
+            case Direction.WORDS -> type.sub("words", d.text);
+            case Direction.METRONOME -> {
+                El met = type.sub("metronome");
+                String unit = d.type == null ? "quarter" : d.type;
+                met.sub("beat-unit", unit.replace(".", ""));
+                for (int k = 0; k < unit.length() - unit.replace(".", "").length(); k++) met.sub("beat-unit-dot");
+                met.sub("per-minute", d.text);
+            }
+            default -> {
+                return;
+            }
+        }
         El dEl = d.placement != null ? mEl.sub("direction", null, "placement", d.placement) : mEl.sub("direction");
-        List<String> attrs = new ArrayList<>(List.of("type", d.type));
-        if (d.number != null) attrs.addAll(List.of("number", Integer.toString(d.number)));
-        if (d.size != null) attrs.addAll(List.of("size", Integer.toString(d.size)));
-        dEl.sub("direction-type").sub("octave-shift", null, attrs.toArray(String[]::new));
+        dEl.children.add(type);
         if (d.offset.signum() > 0) dEl.sub("offset", ticks(d.offset, divisions));
         if (staffNo != null) dEl.sub("staff", staffNo);
     }

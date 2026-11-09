@@ -36,6 +36,27 @@ public final class Parity {
         return node;
     }
 
+    /**
+     * The score's IR JSON as the Python reference implementation writes it: without the marks only
+     * Java imports (directions, slurs and ornaments), so the IR can still be compared with the
+     * Python reference for everything both have.
+     */
+    public static String pythonIrJson(org.lilyscan.core.ir.Score score) {
+        org.lilyscan.core.ir.Score copy = org.lilyscan.core.ir.IrJson.deepCopy(score, org.lilyscan.core.ir.Score.class);
+        for (org.lilyscan.core.ir.Score.PartStaff ps : copy.staves()) {
+            for (org.lilyscan.core.ir.Measure m : ps.staff().measures) {
+                m.directions.clear();
+                for (org.lilyscan.core.ir.Voice v : m.voices) {
+                    for (org.lilyscan.core.ir.Event e : v.events) {
+                        e.slurs.clear();
+                        e.articulations.removeIf(org.lilyscan.core.ir.Event.ORNAMENTS::contains);
+                    }
+                }
+            }
+        }
+        return org.lilyscan.core.ir.IrJson.toJson(copy);
+    }
+
     /** Fails with the first differing line (and a little context) when the texts differ. */
     public static void assertSameText(String expected, String actual, String label) {
         if (expected.equals(actual)) {
