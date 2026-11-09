@@ -180,6 +180,7 @@ public final class IrJson {
             }
             m.voices.forEach(IrJson::validate);
             m.chordSymbols.forEach(IrJson::validate);
+            m.directions.forEach(IrJson::validate);
             if (m.leftBarline != null) {
                 validate(m.leftBarline);
             }
@@ -222,6 +223,9 @@ public final class IrJson {
             require(c.offset, "ChordSymbol.offset");
             require(c.root, "ChordSymbol.root");
             require(c.kind, "ChordSymbol.kind");
+        } else if (value instanceof Direction d) {
+            require(d.kind, "Direction.kind");
+            require(d.offset, "Direction.offset");
         } else if (value instanceof Barline b) {
             require(b.style, "Barline.style");
             if (b.repeat != null) {

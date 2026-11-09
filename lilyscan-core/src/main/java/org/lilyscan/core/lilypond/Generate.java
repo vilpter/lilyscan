@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import org.lilyscan.core.ir.Barline;
 import org.lilyscan.core.ir.ChordSymbol;
 import org.lilyscan.core.ir.Clef;
+import org.lilyscan.core.ir.Direction;
 import org.lilyscan.core.ir.Event;
 import org.lilyscan.core.ir.Frac;
 import org.lilyscan.core.ir.Lyric;
@@ -355,14 +356,15 @@ public final class Generate {
     }
 
     /**
-     * Tokens for one voice; {@code clefs} are mid-measure clef changes to interleave. A voice need
+     * Tokens for one voice; {@code cues} are staff commands (mid-measure clef changes, octave
+     * shifts) to interleave. A voice need
      * not start on the downbeat or be contiguous; gaps become invisible spacer rests so every
      * event keeps its onset.
      */
-    private static List<String> voiceTokens(List<Event> events, Frac length, List<Clef> clefs) {
+    private static List<String> voiceTokens(List<Event> events, Frac length, List<Cue> cues) {
         List<String> tokens = new ArrayList<>();
-        List<Clef> pending = new ArrayList<>(clefs);
-        pending.sort(Comparator.comparing(c -> c.offset));
+        List<Cue> pending = new ArrayList<>(cues);
+        pending.sort(Comparator.comparing(Cue::offset));
         Frac position = Frac.ZERO;
         int i = 0;
         while (i < events.size()) {
@@ -372,7 +374,7 @@ public final class Generate {
                 position = e.offset;
             }
             while (!pending.isEmpty() && pending.get(0).offset.le(e.offset)) {
-                tokens.add(Notation.clefCommand(pending.remove(0)));
+                tokens.add(pending.remove(0).token());
             }
             if (e.measureRest && events.size() == 1) {
                 tokens.add(measureRest(e, length));
@@ -418,8 +420,8 @@ public final class Generate {
             position = position.add(e.duration);
             i++;
         }
-        for (Clef c : pending) {
-            tokens.add(Notation.clefCommand(c)); // a clef change right before the barline
+        for (Cue c : pending) {
+            tokens.add(c.token()); // a clef change (or an octave shift's end) right before the barline
         }
         return tokens;
     }
@@ -430,6 +432,9 @@ public final class Generate {
         return Notation.singleDuration(written.multiply(ratio.normal()));
     }
 
+    /** A staff command placed in the music before the first event at or after {@code offset}. */
+    private record Cue(Frac offset, String token) {}
+
     private static String measureMusic(Measure m, Frac length) {
         List<Voice> voices = new ArrayList<>();
         for (Voice v : m.voices) {
@@ -437,21 +442,35 @@ public final class Generate {
                 voices.add(v);
             }
         }
-        List<Clef> midClefs = new ArrayList<>();
+        List<Cue> cues = new ArrayList<>();
         for (Clef c : m.clefs) {
             if (c.offset.signum() > 0) {
-                midClefs.add(c);
+                cues.add(new Cue(c.offset, Notation.clefCommand(c)));
+            }
+        }
+        for (Direction d : m.directions) {
+            if (d.isOctaveStart() || d.isOctaveStop()) {
+                cues.add(new Cue(d.offset, "\\ottava #" + d.octaves()));
             }
         }
         if (voices.isEmpty()) {
-            return nonZero(length) ? fullRest(length) : "s1";
+            String rest = nonZero(length) ? fullRest(length) : "s1";
+            if (cues.isEmpty()) {
+                return rest;
+            }
+            cues.sort(Comparator.comparing(Cue::offset));
+            List<String> tokens = new ArrayList<>();
+            for (Cue c : cues) if (c.offset().signum() <= 0) tokens.add(c.token());
+            tokens.add(rest);
+            for (Cue c : cues) if (c.offset().signum() > 0) tokens.add(c.token());
+            return String.join(" ", tokens);
         }
         if (voices.size() == 1) {
-            return String.join(" ", voiceTokens(voices.get(0).events, length, midClefs));
+            return String.join(" ", voiceTokens(voices.get(0).events, length, cues));
         }
         List<String> parts = new ArrayList<>();
         for (int k = 0; k < Math.min(4, voices.size()); k++) {
-            String body = String.join(" ", voiceTokens(voices.get(k).events, length, k == 0 ? midClefs : List.of()));
+            String body = String.join(" ", voiceTokens(voices.get(k).events, length, k == 0 ? cues : List.of()));
             String command = VOICE_COMMANDS[k];
             parts.add(k == 0 ? "{ " + command + " " + body + " }" : "\\new Voice { " + command + " " + body + " }");
         }
