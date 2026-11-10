@@ -19,7 +19,7 @@ class MusicXmlParityTest {
     Stream<DynamicTest> matchesPythonReader() {
         return Parity.musicXmlCases().stream().map(c -> DynamicTest.dynamicTest(c.name(), () -> {
             Score score = MusicXml.load(c.input(), c.source());
-            Parity.assertSameText(Repo.read(c.reference()), IrJson.toJson(score), c.name());
+            Parity.assertSameText(Repo.read(c.reference()), Parity.pythonIrJson(score), c.name());
         }));
     }
 

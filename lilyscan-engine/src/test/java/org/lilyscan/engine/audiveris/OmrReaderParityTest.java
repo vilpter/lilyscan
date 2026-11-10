@@ -56,7 +56,7 @@ class OmrReaderParityTest {
                 movements.add(MusicXml.load(Repo.path(c.get("dir").asText()).resolve(mv.asText()), "audiveris"));
             }
             Parity.assertSameText(Repo.read(Repo.parity("omr/" + name + ".score.json")),
-                    IrJson.toJson(Geometry.attachMovements(movements, book).score()), name + " score.json");
+                    Parity.pythonIrJson(Geometry.attachMovements(movements, book).score()), name + " score.json");
         }));
     }
 
