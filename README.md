@@ -51,7 +51,7 @@ packages under `lilyscan-core/src/main/java/org/lilyscan/core/` unless they say 
 |---|---|---|
 | 0. Ingest | Every page of every upload, in order, becomes one book for the engine | `ingest/` |
 | 1. Prepare | Photos and scans are found, straightened, turned upright and cleaned | `prepare/` |
-| 2. Engine | Audiveris 5.11.0 transcribes the book (batch mode; a failed page is left out and the rest read again) | `lilyscan-engine` (`AudiverisRunner`, a separate worker JVM) |
+| 2. Engine | Audiveris 5.11.0, with Lilyscan's fixes (fork `vilpter/audiveris` `master`), transcribes the book (batch mode; a failed page is left out and the rest read again) | `lilyscan-engine` (`AudiverisRunner`, a separate worker JVM) |
 | 3. Import | The exported MusicXML becomes Lilyscan's score model, with page positions and grades from the Audiveris project | `ir/MusicXml`, `omr/` |
 | 4. Vector oracle | Born-digital PDFs: glyphs read from the PDF itself check tuplets | `vector/` |
 | 5. Repair | Rule-based repairs, then Lilyscan's calibrated confidence | `repair/` |
@@ -73,7 +73,7 @@ lilyscan-eval/       corpus scoring and confidence fitting
 lilyscan-cli/        the command line (`serve`, `convert`, `eval`, ...); builds lilyscan.jar
 lilyscan-desktop/    the desktop app (Swing): the review in a window, on this computer or a server
 services/web/        the browser UI (plain HTML, CSS and JavaScript, no build step)
-third_party/         Audiveris 5.11.0 (git submodule)
+third_party/         Audiveris 5.11.0 + Lilyscan's fixes: fork vilpter/audiveris master (git submodule)
 eval/                corpus specs (seed.json, repertoire.json) and committed results
 docs/                design.md (design and status log), upstream/audiveris (bug reports and fixes)
 tests/               parity references (from the Python implementation) and test fixtures

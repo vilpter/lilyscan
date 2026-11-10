@@ -29,8 +29,10 @@ include 'lilyscan-cli'
 include 'lilyscan-eval'
 include 'lilyscan-desktop'   // optional, secondary front end (D14)
 
-// Audiveris is linked in-process (D15) as a composite build against the pinned
-// submodule third_party/audiveris (tag 5.11.0, unmodified). The explicit
+// Audiveris is linked in-process (D15) as a composite build against the submodule
+// third_party/audiveris, pinned to a commit of the owner's fork, vilpter/audiveris
+// branch master: the 5.11.0 release plus the fixes offered upstream (D6;
+// docs/upstream/audiveris/README.md). The explicit
 // dependency substitution maps the coordinate lilyscan-engine depends on to
 // Audiveris's :app project, so we need not track Audiveris's own group/version.
 //

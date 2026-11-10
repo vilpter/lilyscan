@@ -1,5 +1,7 @@
 # Audiveris contributions: status
 
+**In the fork Lilyscan builds on** (`vilpter/audiveris` `master` at 30e656fa6, 2026-11-10): the 5.11.0 release with fixes 8, 9, 10 and 11 cherry-picked. Fix 7 is not needed on 5.11.0 (the change it repairs, #998, is newer), and fix 12 is a `development`-only regression.
+
 Keep one row per bug (see `README.md`). "Reproduced" means on an upstream `development` build, not only on 5.11.0.
 
 | # | Bug | Reproduced on `development` | Root cause | Upstream issue | Branch (`vilpter/audiveris`) | Pull request | State |
@@ -15,6 +17,7 @@ Keep one row per bug (see `README.md`). "Reproduced" means on an upstream `devel
 | 9 | Slurs and ties along staff lines (`repro/repeated-notes-scan.png`); problem set 4 of #1089 | yes (214648084) | residue of thick lines between heads becomes slur candidates; only their ends were checked | none: the report is in the pull request (`drafts/9-slurs-along-lines-pr.md`) | [`fix/staff-line-arcs`](https://github.com/vilpter/audiveris/tree/fix/staff-line-arcs) | [#1112](https://github.com/Audiveris/audiveris/pull/1112) | open, awaiting review |
 | 10 | The last measure of a system lost when nothing is recognised in it (`repro/last-measure-scan.png`) | yes (214648084) | `MeasureFixer` takes any empty last stack of a system for a cautionary stack, and the export skips cautionary stacks | none: the report is in the pull request (`drafts/10-last-measure-pr.md`) | [`fix/last-measure`](https://github.com/vilpter/audiveris/tree/fix/last-measure) | [#1113](https://github.com/Audiveris/audiveris/pull/1113) | open, awaiting review |
 | 11 | A part's systems split into new parts when its name is abbreviated or misread (`repro/part-names.pdf`) | yes (10d3c184b) | `PartCollation.dispatch` maps a system's part to a logical part only when the names are equal; the abbreviation is learned only after such a match | none: the report is in the pull request (`drafts/11-part-names-pr.md`) | [`fix/part-names`](https://github.com/vilpter/audiveris/tree/fix/part-names) | [#1132](https://github.com/Audiveris/audiveris/pull/1132) | open, awaiting review |
+| 12 | `-constant org.audiveris.omr.Main.*` ignored on `development`: Main's constants are registered in its static initialization (since 1bd9a633a, i18n), before the CLI is parsed. Not in 5.11.0 | yes (c91b1c456) | regression from 1bd9a633a (2026-10-31) | none | [`fix/cli-constants`](https://github.com/vilpter/audiveris/tree/fix/cli-constants) | draft `drafts/12-cli-constants-pr.md`, not posted | not needed by Lilyscan (5.11.0 base); draft awaiting the owner's OK |
 
 ## Log
 
@@ -40,3 +43,20 @@ Keep one row per bug (see `README.md`). "Reproduced" means on an upstream `devel
 - 2026-10-14: part-name fix drafted (`drafts/11-part-names-pr.md`, test page `repro/part-names.ly`), compared with `development` at 10d3c184b using `omr-regress`. Exports with more parts than the page: 85 of 149 → 11 (piano braces not found, and one test page that printed "Pno" on every staff). On the 79 changed exports, exact measures 39% → 67%. Two exports score lower, both explained in the draft. A first version took the first matching part: it joined a lone violin system to the cello part ("vln" abbreviates "violoncello" too), so the fix now takes the best-fitting part. #1110-#1113: no review yet.
 - 2026-10-14: the regression-testing tool published as [vilpter/omr-regress](https://github.com/vilpter/omr-regress) (AGPL-3.0-or-later), and introduced on #1109 in answer to the maintainer's question (owner's OK): https://github.com/Audiveris/audiveris/pull/1109#issuecomment-6182811063.
 - 2026-10-14: pull request #1132 opened for part names across systems (owner's OK), from `drafts/11-part-names-pr.md`. The branch is one commit (2a112248a, the tested code squashed) on `development` at 10d3c184b; it merges cleanly into the current `development`.
+- 2026-11-09: the owner chose a light fork. First tried as `development` plus the open fixes (fork `development`, 0b400e736: c91b1c456 + #1110-#1113, #1132 and `fix/cli-constants`).
+  - Upstream's export-regression test (#1150) changed on 2 of its 9 pages because of fix 9. Each changed measure was checked against the page and read better: an unprinted slur gone, one slur instead of two, a printed G#3 that was read as G3. The references were refreshed in the fork (493611e4c). **Upstream, #1112 will need the same refresh once #1150 is merged (not posted).**
+  - Bug 12 (`-constant` ignored) was found by Lilyscan's engine tests and fixed on `fix/cli-constants`.
+  - The gate on the 156 seed and repertoire inputs found more `development` regressions from its unfinished translation work. A scan of the code finds 9 message keys used but defined nowhere, and 2 placeholders written `{}`; each throws `MissingResourceException` or `IllegalArgumentException` and stops the step that logs it. Examples: `searching.clusters.with.smallInterline` in `LinesRetriever` (pages with two staff sizes), `no.reliable.beam.height.found` in `ScaleBuilder`, `Exit forced.` in `Main`. Also a crash in `MeasuresBuilder.buildStaffBarlines` (IndexOutOfBounds) on one photo, present on `development` before #1109 was merged.
+- 2026-11-09: the owner asked whether this had become over-fitting. It had: the 156 inputs had tuned Lilyscan's repairs, checked these fixes, and served as the gate.
+  - Lilyscan's repairs add +33 points of exact measures on the seed corpus with 5.11.0, but +11 with `development` and +0.3 on held-out inputs. They are fitted to 5.11.0's errors on that corpus.
+  - A held-out comparison replaced it: OpenScore (64 items, never used for tuning; songs and quartets, no piano, choir or lead sheets) and the 9 real pages of the Mutopia pilot (public-domain scans, no reference).
+
+  | Build | OpenScore exported | Exact | Lyrics | Items better / worse vs 5.11.0 | Real pages without export |
+  |---|---|---|---|---|---|
+  | 5.11.0 | 52/64 | 71.5% | 65.5% | - | 0/9 |
+  | 5.11.0 + fixes 8-11 | 52/64 | 71.8% | 65.6% | 4 / 0 | 0/9 |
+  | `development` + fixes | 49/64 | 67.8% | 63.4% | 10 / 4 | 3/9 |
+
+  The owner chose 5.11.0 + fixes on the fork's `master` (30e656fa6). The fork's `development` stays as pushed (0b400e736), unused.
+  - On the real pages, the fixes change 8 measures, mostly slurs and same-pitch heads. Those changes were not checked against the images.
+  - 3 of the 16 OpenScore pieces (quilter-come-away-death, schumann-r-saengers-trost, viardot-a-la-fontaine) fail in every variant on every build ("Error in reaching step PAGE"). That is the largest held-out problem, and a candidate for the next engine work.

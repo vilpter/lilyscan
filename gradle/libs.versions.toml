@@ -3,7 +3,7 @@
 # declared here so later milestones (JM4+ CV/ML, JM9 desktop) can wire them in.
 [versions]
 # External engines (pinned, D5/D7)
-audiveris = "5.11.0"
+audiveris = "5.11.0"   # plus Lilyscan's fixes: vilpter/audiveris master (the submodule pin), D6/D7
 lilypond = "2.26.0"
 # Core libraries
 proxymusic = "4.0.3"

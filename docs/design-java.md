@@ -87,13 +87,13 @@ corpora and `eval/results/` layout; the public web SPA in `services/web/` (reuse
 
 | # | Was | Now |
 |---|---|---|
-| **D6** | *Wrap Audiveris; do not fork; talk to it only through the batch CLI, `-constant`, exported MusicXML and `.omr`.* | **Amended.** Audiveris is now linked **in-process** (its jars on our classpath), built from the pinned 5.11.0 source. We still do not *fork or modify* Audiveris source: we depend on it as an unmodified upstream pin via a Gradle composite build, and read its model through its public classes. Per-`-constant` reproducibility is kept. The "no fork" principle stands; "CLI-only" is dropped. See D13, D15. |
+| **D6** | *Wrap Audiveris; do not fork; talk to it only through the batch CLI, `-constant`, exported MusicXML and `.omr`.* | **Amended.** Audiveris is now linked **in-process** (its jars on our classpath), built from the pinned 5.11.0 source. We still do not *fork or modify* Audiveris source: we depend on it as an unmodified upstream pin via a Gradle composite build, and read its model through its public classes. Per-`-constant` reproducibility is kept. The "no fork" principle stands; "CLI-only" is dropped. See D13, D15. **Amended again (2026-11-10): light fork.** The submodule follows the owner's fork, `vilpter/audiveris` `master`: the pinned release with the fixes Lilyscan offers upstream (`docs/upstream/audiveris`) cherry-picked onto it, until upstream releases them. An engine bug is fixed in the engine, where the image evidence is, and is still offered upstream. Upstream's unreleased `development` was tried as the base and rejected: on held-out inputs it failed pages 5.11.0 reads (see `docs/upstream/audiveris/STATUS.md`). A new release is taken as a deliberate, gated upgrade (D7). |
 | **D9** | *Implementation stack: Python around the Audiveris CLI (option A), with option D in reserve.* | **Overturned.** The stack is **JVM throughout** (option C): Java 25 for the core, the API/server, the IR and the generator, with Audiveris jars on the classpath. This is the decision the owner made when choosing Java over Python, and it is why D6 is amended. See D13. |
 | D1 | GPU optional; CPU baseline; single device module. | **Kept.** The device abstraction moves to `Device.java`; our models run through ONNX Runtime (Java) on CPU or CUDA; Audiveris stays CPU-only. |
 | D2, D12 | AGPL; everything AGPL-compatible. | **Kept and re-verified** for every Java dependency (D23). |
 | D3, D4 | Transposing instruments; absolute `\fixed` pitch. | **Kept** (generator behaviour, unchanged). |
 | D5 | LilyPond 2.26.0, pinned, invoked as a subprocess. | **Kept.** LilyPond stays an external program invoked as a subprocess, installed into the Docker image (and bundled by the optional jpackage installer). |
-| D7 | Audiveris 5.11.0 pinned; the reader is versioned to it. | **Kept and strengthened:** the pin is now a build-time source dependency, so a version mismatch fails at compile time, not at parse time. |
+| D7 | Audiveris 5.11.0 pinned; the reader is versioned to it. | **Kept and strengthened:** the pin is now a build-time source dependency, so a version mismatch fails at compile time, not at parse time. **Since 2026-11-10** the pin is a commit of the fork's `master` (5.11.0 plus fixes, D6). A move is gated on a **held-out** set as `docs/upstream/audiveris/README.md` describes: the seed and repertoire corpora tuned the repairs and the fixes, so they cannot judge them. |
 | D8 | Name, public repo, conventional commits, GitHub milestones. | **Kept**, in `vilpter/lilyscan` (developed in `vilpter/lilyscan-desktop`). GHCR publishing is reduced to the one server image (D22). |
 | D10 | OCR languages `eng+lat+deu+fra`, overridable. | **Kept.** tessdata is baked into the Docker image (and the optional desktop installer); languages resolve the same way. |
 | D11 | Real repertoire in the eval corpus, reported separately. | **Kept**, but the repertoire fetch (music21's bundled corpus) is re-sourced — see D20. |
@@ -126,7 +126,7 @@ corpora and `eval/results/` layout; the public web SPA in `services/web/` (reuse
    optional Swing desktop app ──────────────▲          │
    (lilyscan-desktop, secondary)                        │
                                         per-job fork ────▼──── lilyscan --engine-worker (child JVM)
-                                   Audiveris :app on classpath (in-process, pinned 5.11.0),
+                                   Audiveris :app on classpath (in-process, 5.11.0 + fixes, pinned),
                                    in the SAME container: transcribe → read .omr via
                                    Audiveris classes → write IR JSON
 
@@ -168,7 +168,7 @@ The reason Java was chosen. `design.md` §5.2 lays out why the JVM wins exactly 
 Audiveris's model — and D15/D16 claim that benefit without the fragility that killed the Python
 `.omr` reader.
 
-- **Linkage (D15).** A git submodule `third_party/audiveris` pinned at tag `5.11.0`; our
+- **Linkage (D15).** A git submodule `third_party/audiveris` pinned at tag `5.11.0` (since 2026-11-10, at a commit of `vilpter/audiveris` `master`: 5.11.0 plus Lilyscan's fixes, D6); our
   `settings.gradle` does `includeBuild("third_party/audiveris")` with an explicit dependency
   substitution (`org.audiveris:audiveris-app` → Audiveris's `:app` project), so we need not track
   Audiveris's own coordinates. A breaking change in Audiveris's model now fails our compile, which
@@ -318,7 +318,7 @@ The desktop app calls `lilyscan-core` directly (no HTTP); the web UI reaches the
 
 | Purpose | Library | Licence |
 |---|---|---|
-| Recognition engine | Audiveris `:app` (pinned 5.11.0, composite build) | AGPL-3.0 |
+| Recognition engine | Audiveris `:app` (5.11.0 plus Lilyscan's fixes, fork `vilpter/audiveris` `master`, composite build) | AGPL-3.0 |
 | MusicXML binding | `org.audiveris:proxymusic:4.0.3` | AGPL-3.0 |
 | CV (Stage 1, degradation) | `org.bytedeco:opencv-platform` (JavaCPP) | Apache-2.0 |
 | Native OCR (via Audiveris) | `org.bytedeco:tesseract`, `:leptonica` | Apache-2.0 |
@@ -411,7 +411,7 @@ lilyscan/
   settings.gradle              # includeBuild third_party/audiveris; the subprojects below
   build.gradle                 # Java 25 toolchain, shared config
   gradle/libs.versions.toml    # pinned dependency versions
-  third_party/audiveris/       # git submodule, pinned tag 5.11.0 (unmodified)
+  third_party/audiveris/       # git submodule: vilpter/audiveris master (5.11.0 + fixes), pinned commit (D6)
   lilyscan-core/               # pipeline, IR, generator, repair, confidence, combine, config, device
   lilyscan-engine/             # Audiveris adapter, forked worker, .omr→IR reader
   lilyscan-server/             # Javalin app serving services/web/ + API (primary front end)
