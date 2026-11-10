@@ -395,8 +395,14 @@ public final class MusicXml {
                         }
                     }
                 }
+                case "direction" -> {
+                    List<Direction> found = directions(el, Frac.of(cursor + intOf(el, "offset", 0), st.divisions));
+                    if (!found.isEmpty()) {
+                        measureFor(st, intOf(el, "staff", 1), index, number, implicit).directions.addAll(found);
+                    }
+                }
                 default -> {
-                    // other elements (direction, print, sound, ...) are not part of the IR
+                    // other elements (print, sound, ...) are not part of the IR
                 }
             }
         }
@@ -574,6 +580,37 @@ public final class MusicXml {
     private static int alterOf(Element el, String path) {
         String t = text(el, path, "0");
         return t == null || t.isEmpty() ? 0 : Py.round(Py.parseFloat(t));
+    }
+
+    /** The marks in one {@code <direction>} that the IR keeps. */
+    private static List<Direction> directions(Element el, Frac offset) {
+        List<Direction> out = new ArrayList<>();
+        String placement = Xml.attr(el, "placement");
+        for (Element shift : Xml.findAll(el, "direction-type/octave-shift")) {
+            String type = Xml.attr(shift, "type");
+            if (!"up".equals(type) && !"down".equals(type) && !"stop".equals(type)) {
+                continue; // "continue" carries no new information
+            }
+            Direction d = new Direction(Direction.OCTAVE_SHIFT, offset);
+            d.type = type;
+            d.number = intAttr(shift, "number", 1);
+            d.size = "stop".equals(type) ? null : intAttr(shift, "size", 8);
+            d.placement = placement;
+            out.add(d);
+        }
+        return out;
+    }
+
+    private static int intAttr(Element el, String name, int dflt) {
+        String t = Xml.attr(el, name);
+        if (t == null || t.isBlank()) {
+            return dflt;
+        }
+        try {
+            return Py.truncate(Py.parseFloat(t));
+        } catch (NumberFormatException e) {
+            return dflt;
+        }
     }
 
     private static ChordSymbol chordSymbol(Element el, Frac offset) {

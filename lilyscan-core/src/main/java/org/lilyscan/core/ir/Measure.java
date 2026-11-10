@@ -1,5 +1,6 @@
 package org.lilyscan.core.ir;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +8,7 @@ import java.util.Objects;
 
 /** One measure of one staff. {@code index} is 0-based and aligned across staves. */
 @JsonPropertyOrder({"index", "number", "clefs", "key", "time", "voices", "chordSymbols",
-    "leftBarline", "rightBarline", "implicit", "bbox", "confidence"})
+    "leftBarline", "rightBarline", "implicit", "bbox", "confidence", "directions"})
 public final class Measure {
     public int index;
     /** As printed, e.g. {@code 12}, {@code 12a}, {@code ""} for pickups. */
@@ -26,6 +27,10 @@ public final class Measure {
     public boolean implicit;
     public BBox bbox;
     public Double confidence;
+    /** Direction marks (octave shifts, ...) on this staff, by offset. Left out of the JSON when
+     *  empty, so IR written before they existed reads and writes back unchanged. */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public List<Direction> directions = new ArrayList<>();
 
     public Measure() {}
 
@@ -60,12 +65,13 @@ public final class Measure {
                 && Objects.equals(m.chordSymbols, chordSymbols)
                 && Objects.equals(m.leftBarline, leftBarline)
                 && Objects.equals(m.rightBarline, rightBarline) && m.implicit == implicit
-                && Objects.equals(m.bbox, bbox) && Objects.equals(m.confidence, confidence);
+                && Objects.equals(m.bbox, bbox) && Objects.equals(m.confidence, confidence)
+                && Objects.equals(m.directions, directions);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(index, number, clefs, key, time, voices, chordSymbols, leftBarline,
-                rightBarline, implicit, bbox, confidence);
+                rightBarline, implicit, bbox, confidence, directions);
     }
 }

@@ -74,6 +74,7 @@ public final class MusicXmlWriter {
                 }
                 m.clefs.forEach(c -> dens.add(c.offset.denominator()));
                 m.chordSymbols.forEach(c -> dens.add(c.offset.denominator()));
+                m.directions.forEach(d -> dens.add(d.offset.denominator()));
             }
         }
         long out = 1;
@@ -319,6 +320,12 @@ public final class MusicXmlWriter {
             harmonies.clear();
         }
 
+        for (int k = 0; k < staves.size(); k++) {
+            Measure m = measures.get(k);
+            if (m == null) continue;
+            for (Direction d : m.directions) direction(mEl, d, divisions, multi ? staves.get(k).number : null);
+        }
+
         List<Stream> streams = new ArrayList<>();
         for (int k = 0; k < staves.size(); k++) {
             Measure m = measures.get(k);
@@ -383,6 +390,21 @@ public final class MusicXmlWriter {
         }
         for (ChordSymbol c : harmonies) harmony(mEl, c, divisions); // a measure without notes
         if (lead.rightBarline != null) barline(mEl, lead.rightBarline, "right");
+    }
+
+    /**
+     * A direction, written before the measure's notes and placed by {@code <offset>} (the
+     * importer reads it back the same way).
+     */
+    private static void direction(El mEl, Direction d, long divisions, Integer staffNo) {
+        if (!d.isOctaveStart() && !d.isOctaveStop()) return;
+        El dEl = d.placement != null ? mEl.sub("direction", null, "placement", d.placement) : mEl.sub("direction");
+        List<String> attrs = new ArrayList<>(List.of("type", d.type));
+        if (d.number != null) attrs.addAll(List.of("number", Integer.toString(d.number)));
+        if (d.size != null) attrs.addAll(List.of("size", Integer.toString(d.size)));
+        dEl.sub("direction-type").sub("octave-shift", null, attrs.toArray(String[]::new));
+        if (d.offset.signum() > 0) dEl.sub("offset", ticks(d.offset, divisions));
+        if (staffNo != null) dEl.sub("staff", staffNo);
     }
 
     /** The meter in force at measure {@code i} of a staff. */

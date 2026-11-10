@@ -13,9 +13,10 @@ import org.lilyscan.core.omr.OmrBook;
 public final class Repairs {
     private Repairs() {}
 
-    /** Parts are merged first, so later rules see each part's whole line; lyrics are cleaned last. */
+    /** Parts are merged first, so later rules see each part's whole line (an octave shift's ends
+     *  are then on one staff); lyrics are cleaned last. */
     public static final List<Function<Score, List<Repair>>> DEFAULT = List.of(
-            Parts::mergeSplitParts, Clefs::octaveClefs, Rhythm::repairRhythm, Lyrics::cleanLyrics);
+            Parts::mergeSplitParts, Ottava::missingEnds, Clefs::octaveClefs, Rhythm::repairRhythm, Lyrics::cleanLyrics);
 
     /** The default rules, then (with the engine's {@code .omr}) the rules that need page geometry. */
     public static List<Repair> apply(Score score, OmrBook book) {
