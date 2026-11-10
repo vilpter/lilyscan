@@ -1,3 +1,4 @@
 [submodule "third_party/audiveris"]
 	path = third_party/audiveris
-	url = https://github.com/Audiveris/audiveris.git
+	url = https://github.com/vilpter/audiveris.git
+	branch = master

@@ -9,7 +9,11 @@ package org.lilyscan.core;
  */
 public final class Versions {
 
-    /** Pinned Audiveris release, linked in-process via the composite build (D15). */
+    /**
+     * The Audiveris release the engine is built from, linked in-process via the composite build
+     * (D15). The submodule follows the owner's fork, vilpter/audiveris {@code master}: this release
+     * with the fixes Lilyscan has offered upstream applied (D6), so the build still reports it.
+     */
     public static final String AUDIVERIS = "5.11.0";
 
     /** Pinned LilyPond release, invoked as a subprocess (D5). */

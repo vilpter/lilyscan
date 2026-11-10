@@ -2,7 +2,20 @@
 
 A work plan for fixing real Audiveris bugs and sending the fixes upstream as pull requests. It is written to be picked up cold, for example by a separate (cloud) session: everything needed is in this folder or linked from it.
 
-Lilyscan runs Audiveris 5.11.0 as its engine and hit each bug below while being built and evaluated. Lilyscan itself never patches Audiveris (design doc D6) and pins a released version (D7). This work is separate: fix the bugs upstream, then pick the fixes up through a later release.
+Lilyscan runs Audiveris 5.11.0 as its engine and hit each bug below while being built and evaluated. Since 2026-11-10 it builds that release with these fixes applied, from the owner's fork (design doc D6, D7), so a fix reaches Lilyscan as soon as it is made. Each fix is still offered upstream, and a later release brings them back in. See [The fork Lilyscan builds on](#the-fork-lilyscan-builds-on).
+
+## The fork Lilyscan builds on
+
+- **Branch:** `vilpter/audiveris` `master`. It is upstream's release branch (5.11.0 plus one README commit) with each fix cherry-picked onto it (`git cherry-pick -x`, so each commit names its fix branch). `STATUS.md` lists what is applied.
+- **Lilyscan's submodule** `third_party/audiveris` follows that branch, pinned to a commit. The build still reports 5.11.0 (`Versions.AUDIVERIS`).
+- **Fix branches still start from upstream `development`,** one bug each, so they can be offered upstream unchanged. Apply one to the fork when it also applies to the release, and is needed there. For example, #1110 (header clefs) is not applied: the change it repairs, #998, came after 5.11.0.
+- **Don't base the fork on `development`.** It was tried on 2026-11-09 and rejected: it is unreleased and mid-way through translation work, and on held-out inputs it failed pages that 5.11.0 reads (`STATUS.md`). A new upstream release is taken as a deliberate upgrade: rebuild `master` from the release tag, re-apply the fixes it doesn't include, and run the gate.
+- **The gate before Lilyscan's pin moves:**
+  - **Held-out inputs:** the OpenScore corpus (`lilyscan corpus build --spec eval/corpus/openscore.json`), scored end to end by `eval run --corpus eval/corpus/openscore --work=eval/work-<build> --repair --prepare --lilypond`, with its own engine cache per build.
+  - **Real public scans** through `omr-regress` (no reference: look for failures and changed measures).
+  - Lilyscan's tests, including the engine integration tests.
+
+  **Don't judge an engine change by the seed and repertoire corpora.** They were used to tune Lilyscan's repairs and to check these fixes, so they favour whatever they were tuned on. Use them while developing a fix, not to accept it.
 
 ## Ground rules
 
