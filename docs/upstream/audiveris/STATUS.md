@@ -1,6 +1,6 @@
 # Audiveris contributions: status
 
-**In the fork Lilyscan builds on** (`vilpter/audiveris` `master` at 30e656fa6, 2026-11-10): the 5.11.0 release with fixes 8, 9, 10 and 11 cherry-picked. Fix 7 is not needed on 5.11.0 (the change it repairs, #998, is newer), and fix 12 is a `development`-only regression.
+**In the fork Lilyscan builds on** (`vilpter/audiveris` `master` at 01b84fa2b, 2026-11-16): the 5.11.0 release with fixes 8, 9, 10, 11 and 13 cherry-picked. Fix 7 is not needed on 5.11.0 (the change it repairs, #998, is newer), and fix 12 is a `development`-only regression.
 
 Keep one row per bug (see `README.md`). "Reproduced" means on an upstream `development` build, not only on 5.11.0.
 
@@ -18,6 +18,7 @@ Keep one row per bug (see `README.md`). "Reproduced" means on an upstream `devel
 | 10 | The last measure of a system lost when nothing is recognised in it (`repro/last-measure-scan.png`) | yes (214648084) | `MeasureFixer` takes any empty last stack of a system for a cautionary stack, and the export skips cautionary stacks | none: the report is in the pull request (`drafts/10-last-measure-pr.md`) | [`fix/last-measure`](https://github.com/vilpter/audiveris/tree/fix/last-measure) | [#1113](https://github.com/Audiveris/audiveris/pull/1113) | open, awaiting review |
 | 11 | A part's systems split into new parts when its name is abbreviated or misread (`repro/part-names.pdf`) | yes (10d3c184b) | `PartCollation.dispatch` maps a system's part to a logical part only when the names are equal; the abbreviation is learned only after such a match | none: the report is in the pull request (`drafts/11-part-names-pr.md`) | [`fix/part-names`](https://github.com/vilpter/audiveris/tree/fix/part-names) | [#1132](https://github.com/Audiveris/audiveris/pull/1132) | open, awaiting review |
 | 12 | `-constant org.audiveris.omr.Main.*` ignored on `development`: Main's constants are registered in its static initialization (since 1bd9a633a, i18n), before the CLI is parsed. Not in 5.11.0 | yes (c91b1c456) | regression from 1bd9a633a (2026-10-31) | none | [`fix/cli-constants`](https://github.com/vilpter/audiveris/tree/fix/cli-constants) | draft `drafts/12-cli-constants-pr.md`, not posted | not needed by Lilyscan (5.11.0 base); draft awaiting the owner's OK |
+| 13 | A staff that runs on past the system's last barline makes a partial ending stack, and RHYTHMS (NPE in `Voices.refineSystem`) or LINKS (IndexOutOfBounds in `MeasureStack.removeInter`) fails the sheet; 3 of 16 held-out OpenScore pieces, every variant | yes (e262ee72a) | `MeasuresBuilder` adds an ending measure only to the parts whose staves run on; `emptyCourtesyMeasure` removed such a partial stack only below the courtesy width (4 interlines) | none (owner, 2026-11-10: no upstream posts) | [`fix/partial-ending-stack`](https://github.com/vilpter/audiveris/tree/fix/partial-ending-stack) | none | in the fork's `master` |
 
 ## Log
 
@@ -60,3 +61,4 @@ Keep one row per bug (see `README.md`). "Reproduced" means on an upstream `devel
   The owner chose 5.11.0 + fixes on the fork's `master` (30e656fa6). The fork's `development` stays as pushed (0b400e736), unused.
   - On the real pages, the fixes change 8 measures, mostly slurs and same-pitch heads. Those changes were not checked against the images.
   - 3 of the 16 OpenScore pieces (quilter-come-away-death, schumann-r-saengers-trost, viardot-a-la-fontaine) fail in every variant on every build ("Error in reaching step PAGE"). That is the largest held-out problem, and a candidate for the next engine work.
+- 2026-11-16: fix 13 on `fix/partial-ending-stack` (from upstream `development` at e262ee72a), cherry-picked onto the fork's `master` (01b84fa2b). The partial ending stack is removed whatever its width, with the heads inside it. Held-out OpenScore: Engine OK 52 → 64 of 64; the 52 items that already exported score identically with and without repairs. Audiveris `./gradlew test` passes. The three pages were malformed by Lilyscan's corpus builder (one staff engraved past the final barline: a voice-gap bug in `Generate`, fixed separately, and voices that overlap in the ground truth), so their scores are not yet meaningful.
