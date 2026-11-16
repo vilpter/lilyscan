@@ -601,10 +601,11 @@ public final class Generate {
         return false;
     }
 
+    /** How far the music of a measure reaches: the latest end of its voices, gaps included. */
     private static Frac longestVoice(Measure m) {
         Frac best = Frac.ZERO;
         for (Voice v : m.voices) {
-            Frac d = v.duration();
+            Frac d = v.end();
             if (d.gt(best)) {
                 best = d;
             }

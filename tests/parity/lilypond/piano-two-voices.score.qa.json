@@ -11,18 +11,9 @@
   {
    "id": "Q2",
    "name": "bar checks",
-   "passed": false,
-   "details": [
-    {
-     "file": "parts/piano.ly",
-     "line": 5,
-     "message": "bar check failed at: 1/4",
-     "part": "P1",
-     "staff": 1,
-     "measure": "1"
-    }
-   ],
-   "summary": "1 failing bar check(s)"
+   "passed": true,
+   "details": [],
+   "summary": "0 failing bar check(s)"
   },
   {
    "id": "Q3",
