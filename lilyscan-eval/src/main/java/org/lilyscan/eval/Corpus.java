@@ -31,8 +31,16 @@ public final class Corpus {
         }
     }
 
-    /** The items listed in an already-built corpus's manifest. */
+    /**
+     * The items listed in an already-built corpus's manifest, without those its admission checks
+     * rejected (they are never scored).
+     */
     public static List<Item> load(Path dir) {
+        return load(dir, false);
+    }
+
+    /** As {@link #load(Path)}; {@code withRejected} keeps the rejected items too. */
+    public static List<Item> load(Path dir, boolean withRejected) {
         JsonNode data;
         try {
             data = IrJson.mapper().readTree(dir.resolve("manifest.json").toFile());
@@ -41,6 +49,8 @@ public final class Corpus {
         }
         List<Item> out = new ArrayList<>();
         for (JsonNode i : data.get("items")) {
+            JsonNode admission = i.get("admission");
+            if (!withRejected && admission != null && "rejected".equals(admission.path("status").asText())) continue;
             JsonNode lang = i.get("language");
             out.add(new Item(i.get("id").asText(), i.get("category").asText(),
                     lang == null || lang.isNull() ? null : lang.asText(), dir.resolve(i.get("id").asText())));

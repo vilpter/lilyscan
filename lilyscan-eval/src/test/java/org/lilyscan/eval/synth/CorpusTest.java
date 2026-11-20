@@ -157,6 +157,7 @@ class CorpusTest {
         assertEquals("lat", satb.get("language").asText());
         assertEquals("generated", satb.get("source").asText());
         assertEquals("satb-01/scan.png", satb.get("inputs").get("scan").asText());
+        assertEquals("pass", satb.get("admission").get("status").asText(), satb.get("admission").toString());
         // The harness reads it as a corpus.
         assertEquals(2, org.lilyscan.eval.Corpus.load(out).size());
         // Complete pieces are kept, not rebuilt.

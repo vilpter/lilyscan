@@ -41,7 +41,11 @@ public final class CorpusBuilder {
     private static final String ONE_PAGE = "\n\\paper { page-count = #1 }\n";
 
     /** A built piece. */
-    public record Item(CorpusSpec.Piece spec, Path root, String source, String rights) {
+    public record Item(CorpusSpec.Piece spec, Path root, String source, String rights, Admission.Result[] admission) {
+        Item(CorpusSpec.Piece spec, Path root, String source, String rights) {
+            this(spec, root, source, rights, new Admission.Result[1]);
+        }
+
         Path groundTruth() {
             return root.resolve("ground_truth.musicxml");
         }
@@ -65,12 +69,18 @@ public final class CorpusBuilder {
             String[] origin = origin(spec, cache);
             Item item = new Item(spec, root, origin[0], origin[1]);
             if (only != null && !only.contains(spec.id())) {
-                // Not rebuilt now, but kept in the manifest when it was built before.
-                if (item.complete()) items.add(item);
+                // Not rebuilt now, but kept in the manifest (and checked again) when it was built before.
+                if (item.complete()) {
+                    items.add(item);
+                    admit(item, s, log);
+                }
                 continue;
             }
             items.add(item);
-            if (item.complete() && !force) continue;
+            if (item.complete() && !force) {
+                admit(item, s, log);
+                continue;
+            }
             log.accept("building " + spec.id() + " (" + spec.category() + ")");
             Files.createDirectories(root);
             Score score = spec.generated() ? Generator.build(spec)
@@ -82,9 +92,26 @@ public final class CorpusBuilder {
             Degrade.Image clean = Degrade.load(png);
             Degrade.savePng(Degrade.scan(clean, degradeSeed(spec, 1)), root.resolve("scan.png"));
             Degrade.savePng(Degrade.photo(clean, degradeSeed(spec, 2)), root.resolve("photo.png"));
+            admit(item, s, log);
         }
         writeManifest(outDir, specPath, items);
         return items;
+    }
+
+    /** Runs the admission checks on a built item and logs a rejection. */
+    static void admit(Item item, Settings s, Consumer<String> log) throws IOException {
+        Path ly = item.spec().engraver().equals("musicxml2ly") ? item.root().resolve("score.ly")
+                : item.root().resolve("ly").resolve("main.ly");
+        Admission.Result r = Admission.check(MusicXml.load(item.groundTruth(), "ground-truth"), ly,
+                item.root().resolve("score.pdf"), s);
+        item.admission()[0] = r;
+        if (!r.passed()) {
+            log.accept("REJECTED " + item.spec().id() + ": " + r.findings().size() + " finding(s)");
+            for (Map<String, Object> f : r.findings()) {
+                log.accept("  " + f.get("check") + (f.containsKey("staff") ? " " + f.get("staff") : "")
+                        + (f.containsKey("measure") ? " m. " + f.get("measure") : "") + ": " + f.get("message"));
+            }
+        }
     }
 
     /**
@@ -148,6 +175,23 @@ public final class CorpusBuilder {
         return s.length() <= 2000 ? s : s.substring(s.length() - 2000);
     }
 
+    /** The {@code review} entries of an existing manifest, by item id. */
+    @SuppressWarnings("unchecked")
+    static Map<String, Object> previousReviews(Path manifest) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (!Files.isRegularFile(manifest)) return out;
+        try {
+            Map<String, Object> old = new ObjectMapper().readValue(manifest.toFile(), Map.class);
+            for (Object o : (List<Object>) old.getOrDefault("items", List.of())) {
+                Map<String, Object> i = (Map<String, Object>) o;
+                if (i.get("review") != null) out.put(String.valueOf(i.get("id")), i.get("review"));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return out;
+    }
+
     static Path writeManifest(Path outDir, Path specPath, List<Item> items) {
         Map<String, Object> manifest = new LinkedHashMap<>();
         manifest.put("generator", "lilyscan " + Versions.APP);
@@ -155,6 +199,7 @@ public final class CorpusBuilder {
         manifest.put("spec", specPath.getFileName().toString());
         manifest.put("license", "Generated pieces: project content (AGPL-3.0-or-later); lyric texts are "
                 + "public domain. Corpus works: see each item's source and rights.");
+        Map<String, Object> reviews = previousReviews(outDir.resolve("manifest.json"));
         List<Map<String, Object>> list = new ArrayList<>();
         for (Item item : items) {
             Map<String, Object> m = new LinkedHashMap<>(item.spec().toMap());
@@ -164,6 +209,9 @@ public final class CorpusBuilder {
             Map<String, String> inputs = new LinkedHashMap<>();
             for (String v : VARIANTS) inputs.put(v, outDir.relativize(item.root().resolve(FILES.get(v))).toString().replace('\\', '/'));
             m.put("inputs", inputs);
+            if (item.admission()[0] != null) m.put("admission", item.admission()[0].toMap());
+            // The by-eye review is recorded by hand; a rebuild keeps it.
+            if (reviews.containsKey(item.spec().id())) m.put("review", reviews.get(item.spec().id()));
             list.add(m);
         }
         manifest.put("items", list);
