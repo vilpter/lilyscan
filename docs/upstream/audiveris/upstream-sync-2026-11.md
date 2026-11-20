@@ -39,6 +39,23 @@ Overall, fork `master` (01b84fa2b) against `master-sync` (fcb0174d8) on the same
 - **Fix 14** (`fix/column-cell-occupied`, 6298c1533): two bar groups of one staff fell within one column's tolerance; the second was left out of the column but stayed in its staff's list, and `MeasuresBuilder.buildStaffBarlines` failed. `Column.canJoin` now refuses an occupied staff cell.
 - **Fix 15** (`fix/staff-extension-all-lines`, a681a2e5f): 5e889e3b1 follows staff lines that bend near a page border, but also followed the strokes of a part name ("B.") printed on a bass staff, 2 interlines into the margin, and the parts split (a 4-part SATB page exported as 8). A staff extension must now reach 4 interlines; real bends reach 10 to 50.
 
+## Second round (2026-11-19)
+
+Upstream commits after the first round, `e262ee72a..bb4130db4`: 17 non-merge commits, tested the same way on top of `fcb0174d8`.
+
+| Group | Commits | Result vs the previous group | Decision |
+|---|---|---|---|
+| G19 text-metronome | `de6055cbb`, `3dd47c8ea` | no score change | taken |
+| G20 beam-peak | `9e83f71a7` | held-out unchanged; public -0.44 exact (seed/solo-03 photo 93.8% -> 25.0%) | held back |
+| G21 rescue-staff | `848bc2434` | held-out -2.06 exact (schubert-mignon photo 58.3% -> 0%, one held-out and six public photos stop exporting) | held back |
+| G22 markers-export | `4504774db`, `9c833ec42` | coda/segno exported; no score change | taken |
+| G23 print | `97473b1be` | no score change | taken |
+| G24 classifier | `d05f00c82` | 158 of 200 inputs change; held-out -0.44 exact (mozart-k387 pdf 84.4% -> 59.4%), public -0.57 | held back |
+
+Skipped: four i18n commits (`072066291`, `22eb5dd04`, `9462b5012`, `33e1a7722`), `ec6a2c7cf` (needs i18n resources the fork lacks), `a7403ad5c` (debug prints and test files the fork lacks), `810618e2c` (regression references), `da6443aaa` (FreeBSD build).
+
+Fork `master` fcb0174d8 -> 5aec223d5. Held-out results are identical to the first round's. The next sync starts after `bb4130db4`.
+
 ## Every reviewed commit
 
 | # | Commit | Author | Subject | Decision | Group | Reason |
