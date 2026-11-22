@@ -128,7 +128,15 @@ final class Post {
         return last != null ? new Target(last, null) : new Target(voices.get(0).events.get(0), null);
     }
 
+    /** Whether any note of the staff carries a lyric: a voice staff, whose marks go above. */
+    private static boolean sung(List<Measure> measures) {
+        for (Measure m : measures) for (Voice v : m.voices) for (Event e : v.events) if (!e.lyrics.isEmpty()) return true;
+        return false;
+    }
+
     private void directions(List<Measure> measures) {
+        // On a voice staff the lyrics are below, so marks the source leaves unplaced go above.
+        String unplaced = sung(measures) ? "above" : null;
         boolean hairpin = false;
         Target lastStart = null;
         for (Measure m : measures) {
@@ -144,7 +152,7 @@ final class Post {
             for (Direction d : ds) {
                 switch (d.kind) {
                     case Direction.DYNAMICS -> {
-                        add(target(m, d), dynamic(d.text));
+                        add(target(m, d), dynamic(d.text, d.placement != null ? d.placement : unplaced));
                         hairpin = false;
                     }
                     case Direction.WEDGE -> {
@@ -153,14 +161,14 @@ final class Post {
                             if (hairpin && !t.equals(lastStart)) add(t, "\\!");
                             hairpin = false;
                         } else {
-                            add(t, "crescendo".equals(d.type) ? "\\<" : "\\>");
+                            add(t, up(d.placement != null ? d.placement : unplaced) + ("crescendo".equals(d.type) ? "\\<" : "\\>"));
                             hairpin = true;
                             lastStart = t;
                         }
                     }
                     case Direction.WORDS -> {
                         if (tempoWords.stream().noneMatch(w -> w == d)) {
-                            add(target(m, d), side(d.placement) + Notation.lilyString(d.text));
+                            add(target(m, d), side(d.placement != null ? d.placement : unplaced) + Notation.lilyString(d.text));
                         }
                     }
                     default -> {
@@ -186,7 +194,17 @@ final class Post {
         return "above".equals(placement) ? "^" : "below".equals(placement) ? "_" : "-";
     }
 
-    private static String dynamic(String text) {
-        return LILY_DYNAMICS.contains(text) ? "\\" + text : "-#(make-dynamic-script " + Notation.lilyString(text) + ")";
+    /**
+     * {@code ^} for a dynamic or hairpin placed above (as on a voice staff, where below is the
+     * lyrics' place); otherwise nothing, and LilyPond puts it below as usual.
+     */
+    private static String up(String placement) {
+        return "above".equals(placement) ? "^" : "";
+    }
+
+    private static String dynamic(String text, String placement) {
+        String up = up(placement);
+        return LILY_DYNAMICS.contains(text) ? up + "\\" + text
+                : (up.isEmpty() ? "-" : up) + "#(make-dynamic-script " + Notation.lilyString(text) + ")";
     }
 }

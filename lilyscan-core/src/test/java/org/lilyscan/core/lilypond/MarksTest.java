@@ -153,6 +153,34 @@ class MarksTest {
     }
 
     @Test
+    void dynamicsAndHairpinsPlacedAboveStayAbove() {
+        // A voice staff: the marks go above, where the lyrics below leave them room.
+        Score s = score(measure(1,
+                direction("above", "<direction-type><dynamics><mf/></dynamics></direction-type>"),
+                note("C"),
+                direction("above", "<direction-type><wedge type=\"crescendo\" number=\"1\"/></direction-type>"),
+                note("D"), note("E"),
+                direction("above", "<direction-type><wedge type=\"stop\" number=\"1\"/></direction-type>"),
+                direction("above", "<direction-type><dynamics><sfp/></dynamics></direction-type>"),
+                note("F")));
+        String ly = music(s);
+        assertTrue(ly.contains("c''4^\\mf d''4^\\< e''4 f''4\\!^#(make-dynamic-script \"sfp\")")
+                || ly.contains("c''4^\\mf d''4^\\< e''4 f''4^#(make-dynamic-script \"sfp\")\\!"), ly);
+    }
+
+    @Test
+    void unplacedMarksGoAboveOnAVoiceStaff() {
+        String sung = "<lyric><syllabic>single</syllabic><text>la</text></lyric>";
+        String unplaced = "<direction><direction-type><words>dolce</words></direction-type></direction>"
+                + "<direction><direction-type><dynamics><p/></dynamics></direction-type></direction>";
+        Score voice = score(measure(1, unplaced, note("C", sung), note("D"), note("E"), note("F")));
+        assertTrue(music(voice).contains("c''4^\"dolce\"^\\p") || music(voice).contains("c''4^\\p^\"dolce\""), music(voice));
+        // Without lyrics LilyPond's own defaults stay.
+        Score piano = score(measure(1, unplaced, note("C"), note("D"), note("E"), note("F")));
+        assertTrue(music(piano).contains("c''4-\"dolce\"\\p") || music(piano).contains("c''4\\p-\"dolce\""), music(piano));
+    }
+
+    @Test
     void otherDynamicsUseADynamicScript() {
         Score s = score(measure(1,
                 direction("below", "<direction-type><dynamics><sfp/></dynamics></direction-type>"),
