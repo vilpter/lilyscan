@@ -46,4 +46,27 @@ class ExcerptTest {
         for (ChordSymbol c : m.chordSymbols) left.add(c.root + " " + c.kind);
         assertEquals(List.of("F major"), left);
     }
+
+    private static String lyric(int verse, String text) {
+        return "<lyric number=\"" + verse + "\"><syllabic>single</syllabic><text>" + text + "</text></lyric>";
+    }
+
+    @Test
+    void verseLabelsTypedIntoTheLyricsAreDropped() throws Exception {
+        // As in OpenScore's Hensel "Sehnsucht": "1.\n  Fern" (no-break spaces) and "2.  Horch!".
+        String src = SOURCE.replace("<type>quarter</type></note>\n      <harmony><root><root-step>F",
+                "<type>quarter</type>" + lyric(1, "1.\n  Fern") + lyric(2, "2.  Horch!")
+                        + "</note>\n      <harmony><root><root-step>F")
+                .replace("<type>quarter</type></note>\n    </measure>",
+                        "<type>quarter</type>" + lyric(1, "3. Mal") + "</note>\n    </measure>");
+        Path f = dir.resolve("verses.musicxml");
+        Files.writeString(f, src);
+        Score s = Excerpt.of(MusicXml.load(f, "src"), 1, 1);
+        assertEquals(2, Excerpt.dropVerseLabels(s));
+        List<String> texts = new ArrayList<>();
+        for (var v : s.parts.get(0).staves.get(0).measures.get(0).voices)
+            for (var e : v.events) for (var ly : e.lyrics) texts.add(ly.verse + ":" + ly.text);
+        // "3. Mal" in verse 1 is not verse 1's label, so it stays.
+        assertEquals(List.of("1:Fern", "2:Horch!", "1:3. Mal"), texts);
+    }
 }
