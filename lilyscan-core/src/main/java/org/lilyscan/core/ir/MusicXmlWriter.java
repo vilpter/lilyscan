@@ -102,8 +102,12 @@ public final class MusicXmlWriter {
 
     private record StaffVoice(int staff, int voice) {}
 
+    /**
+     * The voice number written for each staff's voice in a part: its own number, raised by 4
+     * until no other voice of the part has it (MusicXML voices are numbered per part).
+     */
     private static Map<StaffVoice, Integer> voices(List<Measure> measures, List<Integer> staffNumbers) {
-        Map<Integer, Integer> taken = new HashMap<>();
+        Map<Integer, StaffVoice> taken = new HashMap<>();
         Map<StaffVoice, Integer> out = new HashMap<>();
         for (int k = 0; k < measures.size(); k++) {
             int staff = staffNumbers.get(k);
@@ -113,10 +117,13 @@ public final class MusicXmlWriter {
                 for (Voice v : m.voices) if (!v.events.isEmpty()) numbers.add(v.number);
             }
             for (int n : numbers) {
+                StaffVoice sv = new StaffVoice(staff, n);
+                if (out.containsKey(sv)) continue;
                 int written = n;
-                while (taken.containsKey(written) && taken.get(written) != staff) written += 4;
-                taken.put(written, staff);
-                out.put(new StaffVoice(staff, n), written);
+                // A voice moved up must not land on another voice of the same staff either.
+                while (taken.containsKey(written) && !taken.get(written).equals(sv)) written += 4;
+                taken.put(written, sv);
+                out.put(sv, written);
             }
         }
         return out;
