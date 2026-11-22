@@ -207,6 +207,29 @@ public final class Harness {
         return engineOutput(item, variant, work, settings, true, false).score();
     }
 
+    /** The cached engine output of an earlier {@code eval run}, or null when there is none. */
+    public record Cached(Score score, List<String> errors, Path dir) {}
+
+    /**
+     * The engine's raw score (no repairs) for an item and variant, read from the cache only: the
+     * engine is never started. Null when that variant was not run with these settings.
+     */
+    public static Cached cachedEngineOutput(Corpus.Item item, String variant, Path work, Settings settings, boolean prepare)
+            throws IOException {
+        Path dir = engineDir(work, item, variant, prepare);
+        boolean prepared = prepare && PREPARED_VARIANTS.contains(variant);
+        if (!Files.isRegularFile(dir.resolve("run.json"))) return null;
+        if (prepared && !Files.isRegularFile(dir.resolve("prepare.json"))) return null;
+        Engine e = engineOutput(item, variant, work, settings, true, prepare);
+        return new Cached(e.score(), e.errors(), dir);
+    }
+
+    /** The image the engine read for a variant, or null when it read a PDF itself. */
+    public static Path engineImage(Corpus.Item item, String variant, Path dir, boolean prepare) {
+        if (prepare && PREPARED_VARIANTS.contains(variant)) return preparedSource(dir, variant);
+        return variant.equals("pdf") ? null : item.input(variant);
+    }
+
     static Path firstOmrIn(Path dir) throws IOException {
         return firstOmr(dir);
     }
