@@ -39,6 +39,19 @@ public final class Corpus {
         return load(dir, false);
     }
 
+    /** The ids of the items whose manifest entry has {@code "split": name} (dev or test). */
+    public static java.util.Set<String> split(Path dir, String name) {
+        JsonNode data;
+        try {
+            data = IrJson.mapper().readTree(dir.resolve("manifest.json").toFile());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        java.util.Set<String> out = new java.util.LinkedHashSet<>();
+        for (JsonNode i : data.get("items")) if (name.equals(i.path("split").asText(null))) out.add(i.get("id").asText());
+        return out;
+    }
+
     /** As {@link #load(Path)}; {@code withRejected} keeps the rejected items too. */
     public static List<Item> load(Path dir, boolean withRejected) {
         JsonNode data;

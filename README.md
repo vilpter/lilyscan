@@ -438,6 +438,20 @@ calibration error per corpus):
 java -jar lilyscan.jar eval calibrate
 ```
 
+To see what kind of mistakes the engine makes, `eval taxonomy` sorts every difference between the
+raw engine output (before repairs) and the ground truth into categories, per staff-measure:
+wrong pitch or accidental, a whole measure shifted the same way (as under a misread clef), wrong
+duration or tuplet, notes at the wrong onset, chords of the wrong size, missing or extra notes,
+rests, measures, staves and voices. Categories are ranked by how many pieces they affect, not by
+raw count, so one odd piece cannot top the list. It reads the engine cache of an earlier
+`eval run` and never starts the engine; for each category it also writes crops of the source
+image around a few of the measures (`--crops`, from the engine's measure boxes). `--split dev`
+limits it to the pieces whose manifest entry has `"split": "dev"`.
+
+```bash
+java -jar lilyscan.jar eval taxonomy --corpus eval/corpus/openscore --work eval/work --prepare --out eval/results/taxonomy
+```
+
 ## License
 
 AGPL-3.0-or-later, like Audiveris. See [LICENSE](LICENSE). Every model, dataset and library

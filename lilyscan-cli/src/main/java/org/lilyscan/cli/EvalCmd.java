@@ -12,11 +12,12 @@ import org.lilyscan.core.runtime.Settings;
 import org.lilyscan.eval.Calibrate;
 import org.lilyscan.eval.Corpus;
 import org.lilyscan.eval.Harness;
+import org.lilyscan.eval.Taxonomy;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-/** {@code lilyscan eval run | calibrate}: the evaluation harness (Python {@code lilyscan eval}). */
-@Command(name = "eval", description = "Evaluation harness.", subcommands = {EvalCmd.Run.class, EvalCmd.CalibrateCmd.class})
+/** {@code lilyscan eval run | calibrate | taxonomy}: the evaluation harness (Python {@code lilyscan eval}). */
+@Command(name = "eval", description = "Evaluation harness.", subcommands = {EvalCmd.Run.class, EvalCmd.CalibrateCmd.class, EvalCmd.TaxonomyCmd.class})
 final class EvalCmd implements Runnable {
     @Override
     public void run() {
@@ -106,6 +107,53 @@ final class EvalCmd implements Runnable {
                         + " (in sample " + row.get("ece_in_sample") + ", engine grades " + row.get("ece_engine_grade") + ")");
             }
             System.out.println("model: " + out);
+            return 0;
+        }
+    }
+
+    @Command(name = "taxonomy", description = "Sort the raw engine output's errors into categories, ranked by pieces affected (reads the engine cache of an earlier `eval run`).")
+    static final class TaxonomyCmd implements Callable<Integer> {
+        @Option(names = "--corpus", description = "A corpus built by `lilyscan corpus build`.")
+        Path corpus = Path.of("eval/corpus/openscore");
+
+        @Option(names = "--work", description = "Cache of engine output, filled by `eval run`.")
+        Path work = Path.of("eval/work");
+
+        @Option(names = "--variants", arity = "1..*", description = "pdf, png, scan, photo.")
+        List<String> variants = new ArrayList<>(Corpus.VARIANTS);
+
+        @Option(names = "--only", arity = "0..*", description = "Piece ids.")
+        List<String> only = new ArrayList<>();
+
+        @Option(names = "--split", description = "Only the pieces whose manifest `split` is this (e.g. dev).")
+        String split;
+
+        @Option(names = "--prepare", description = "The engine cache was filled with --prepare.")
+        boolean prepare;
+
+        @Option(names = "--crops", description = "Source crops per category (0 for none).")
+        int crops = 6;
+
+        @Option(names = "--out", description = "Output directory.")
+        Path out = Path.of("eval/results/taxonomy");
+
+        @Option(names = "--notes", description = "Free text recorded with the report.")
+        String notes = "";
+
+        @Override
+        public Integer call() throws Exception {
+            List<Corpus.Item> items = new ArrayList<>(Corpus.load(corpus));
+            if (!only.isEmpty()) items.removeIf(i -> !Set.copyOf(only).contains(i.id()));
+            if (split != null) {
+                Set<String> in = Corpus.split(corpus, split);
+                if (in.isEmpty()) throw new IllegalArgumentException("no piece in " + corpus + " has split " + split);
+                items.removeIf(i -> !in.contains(i.id()));
+            }
+            Settings s = Settings.fromEnv();
+            Taxonomy.Options o = new Taxonomy.Options(variants, prepare, crops);
+            Taxonomy.Report r = Taxonomy.run(items, work, s, o);
+            Path path = Taxonomy.write(r, items, work, o, out, notes);
+            System.out.println(Files.readString(path).split("\n## Examples")[0]);
             return 0;
         }
     }
