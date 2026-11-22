@@ -46,6 +46,38 @@ public final class Excerpt {
         return dropped;
     }
 
+    /** A verse label in front of a syllable: "1." then spaces (a line break, no-break spaces). */
+    private static final java.util.regex.Pattern VERSE_LABEL =
+            java.util.regex.Pattern.compile("(?s)\\s*(\\d+)\\.[\\s\\u00a0]+(\\S.*)");
+
+    /**
+     * Removes verse labels typed into the first syllable of a verse ({@code "1.\n  Fern"} becomes
+     * {@code "Fern"}), as some OpenScore Lieder do. A label is the verse's own number; other text
+     * that starts with a number is kept. Returns how many syllables were changed.
+     */
+    public static int dropVerseLabels(Score score) {
+        int changed = 0;
+        for (Part p : score.parts) {
+            for (Staff s : p.staves) {
+                for (Measure m : s.measures) {
+                    for (org.lilyscan.core.ir.Voice v : m.voices) {
+                        for (org.lilyscan.core.ir.Event e : v.events) {
+                            for (org.lilyscan.core.ir.Lyric ly : e.lyrics) {
+                                if (ly.text == null) continue;
+                                java.util.regex.Matcher x = VERSE_LABEL.matcher(ly.text);
+                                if (x.matches() && Integer.parseInt(x.group(1)) == ly.verse) {
+                                    ly.text = x.group(2).strip();
+                                    changed++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return changed;
+    }
+
     public static Score of(Score full, int first, int count) {
         int last = first + count - 1;
         Score out = new Score();

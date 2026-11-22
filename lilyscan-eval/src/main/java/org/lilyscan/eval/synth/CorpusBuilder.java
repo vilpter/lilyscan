@@ -89,6 +89,8 @@ public final class CorpusBuilder {
             if (!spec.generated()) {
                 int fingerings = Excerpt.dropFingeringChords(score);
                 if (fingerings > 0) log.accept("  dropped " + fingerings + " fingerings entered as chord symbols");
+                int labels = Excerpt.dropVerseLabels(score);
+                if (labels > 0) log.accept("  dropped " + labels + " verse labels typed into the lyrics");
             }
             if (!spec.generated() && (score.title == null || score.title.isBlank())) score.title = spec.work();
             MusicXmlWriter.write(score, item.groundTruth(), MusicXmlWriter.Options.ENGRAVING);
