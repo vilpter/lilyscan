@@ -392,6 +392,15 @@ java -jar lilyscan.jar corpus build --spec eval/corpus/repertoire.json
 java -jar lilyscan.jar corpus build --spec eval/corpus/openscore.json
 ```
 
+Every built piece goes through **admission checks**, which look only at the ground truth and
+its engraving, never at engine output. A piece is rejected when one voice has overlapping
+events or runs past its measure, when the staves have different numbers of measures, when
+engraving gives an error or a failing bar check, when it runs off the page, or when the notes
+and rests LilyPond engraved (read back with an event listener) differ from the ground truth's.
+The result is recorded in the manifest as `admission`, the build lists each rejection, and
+`eval run` skips rejected pieces. A by-eye `review` entry added to the manifest by hand is kept
+when the corpus is rebuilt.
+
 The seed pieces are the same as the original Python builder's: the random draws reproduce
 Python's exactly, and a test compares every piece note for note with references it made. The
 simulated scans and photos use Java's own random numbers, so they differ from Python's in
