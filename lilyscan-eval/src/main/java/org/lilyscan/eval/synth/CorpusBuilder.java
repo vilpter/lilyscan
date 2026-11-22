@@ -86,6 +86,10 @@ public final class CorpusBuilder {
             Score score = spec.generated() ? Generator.build(spec)
                     : Excerpt.of(MusicXml.load(Sources.fetch(spec.source(), spec.path(), cache), "ground-truth"),
                             spec.first(), spec.measures());
+            if (!spec.generated()) {
+                int fingerings = Excerpt.dropFingeringChords(score);
+                if (fingerings > 0) log.accept("  dropped " + fingerings + " fingerings entered as chord symbols");
+            }
             if (!spec.generated() && (score.title == null || score.title.isBlank())) score.title = spec.work();
             MusicXmlWriter.write(score, item.groundTruth(), MusicXmlWriter.Options.ENGRAVING);
             Path png = engrave(item.groundTruth(), root, s, spec.engraver());
