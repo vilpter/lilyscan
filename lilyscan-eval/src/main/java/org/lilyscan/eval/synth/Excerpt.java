@@ -25,6 +25,27 @@ public final class Excerpt {
         return digits.isEmpty() ? -1 : Integer.parseInt(digits);
     }
 
+    /**
+     * Removes chord symbols that are really fingerings: a "chord" of kind {@code none} whose
+     * printed text is only a number. Some OpenScore Lieder enter piano fingerings with the chord
+     * symbol tool (Viardot's "À la Fontaine": {@code <root-step text="">C</root-step><kind
+     * text="4">none</kind>}); the source prints "4", but read as a chord it is a C. Returns how
+     * many were removed.
+     */
+    public static int dropFingeringChords(Score score) {
+        int dropped = 0;
+        for (Part p : score.parts) {
+            for (Staff s : p.staves) {
+                for (Measure m : s.measures) {
+                    int before = m.chordSymbols.size();
+                    m.chordSymbols.removeIf(c -> "none".equals(c.kind) && c.text != null && c.text.strip().matches("[0-9]+"));
+                    dropped += before - m.chordSymbols.size();
+                }
+            }
+        }
+        return dropped;
+    }
+
     public static Score of(Score full, int first, int count) {
         int last = first + count - 1;
         Score out = new Score();
